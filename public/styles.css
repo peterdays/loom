@@ -164,7 +164,17 @@ h1 {
   box-shadow: var(--shadow);
 }
 
-.graph { width: 100%; height: min(420px, 55vh); display: block; }
+.graph {
+  width: 100%;
+  height: auto;
+  max-height: min(560px, 70vh);
+  display: block;
+  overflow: visible;
+}
+.graph[data-orient="vertical"] {
+  max-height: none;
+  max-width: 100%;
+}
 .cards { display: grid; gap: 0.75rem; margin-top: 0.5rem; }
 
 .card {
@@ -207,6 +217,26 @@ footer { color: var(--muted); font-size: 0.78rem; padding-bottom: 2rem; }
 .graph .node text { fill: var(--text); font-family: inherit; }
 .graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
 .graph .spine-line { stroke-width: 3; }
+.graph .spine-arrow { fill: var(--spine); stroke: none; }
+.graph .tick {
+  stroke: var(--spine);
+  stroke-width: 1.5;
+  opacity: 0.85;
+}
+.graph .tick-label {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+.graph .axis-caption {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    A — NEON (current): soft curves, cyan/magenta glow
@@ -613,6 +643,20 @@ html[data-skin="ink-schematic"] .graph .edge {
   stroke-linejoin: miter;
   stroke-linecap: square;
 }
+html[data-skin="ink-schematic"] .graph .spine-line { stroke-width: 1.75; }
+html[data-skin="ink-schematic"] .graph .spine-arrow { fill: #111; }
+html[data-skin="ink-schematic"] .graph .tick { stroke: #111; stroke-width: 1; opacity: 0.7; }
+html[data-skin="ink-schematic"] .graph .tick-label {
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  fill: var(--muted);
+}
+html[data-skin="ink-schematic"] .graph .axis-caption {
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  fill: var(--accent);
+}
 html[data-skin="ink-schematic"] .graph .orb {
   fill: var(--panel);
   stroke: #111;
@@ -710,6 +754,13 @@ html[data-skin="ink-brutal"] .graph .node text {
   fill: #000;
 }
 html[data-skin="ink-brutal"] .graph .spine-line { stroke-width: 5; }
+html[data-skin="ink-brutal"] .graph .spine-arrow { fill: #000; }
+html[data-skin="ink-brutal"] .graph .tick { stroke: #000; stroke-width: 2; }
+html[data-skin="ink-brutal"] .graph .tick-label,
+html[data-skin="ink-brutal"] .graph .axis-caption {
+  fill: #000;
+  font-weight: 700;
+}
 
 /* Ink Sepia — warm sepia paper, hard edges, diamond nodes */
 html[data-skin="ink-sepia"] {
