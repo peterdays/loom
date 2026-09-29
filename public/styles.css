@@ -53,3 +53,14 @@ h1 {
 }
 .panel.hidden, .hidden { display: none; }
 footer { color: var(--muted); font-size: 0.78rem; padding-bottom: 2rem; }
+
+.graph .node { cursor: pointer; }
+.graph .node .orb { transition: r 0.15s ease, fill 0.15s ease; }
+.graph .node:hover .orb, .graph .node.active .orb { fill: #5cf6ff; }
+.graph .node.active .orb { stroke: #ff4fd8; stroke-width: 2.5; }
+.card { cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.card.active {
+  border-color: rgba(92,246,255,0.65);
+  box-shadow: 0 0 28px rgba(92,246,255,0.18);
+}
+.card .fork { color: var(--branch); font-size: 0.72rem; margin-bottom: 0.25rem; }

@@ -7,24 +7,45 @@
       "title": "Personal /  bots",
       "started": "2026-09",
       "ended": null,
+      "parent": null,
       "summary": "A lane for personal experiments and side projects.",
       "tags": ["ai", "agents", "personal"]
-    },
-    {
-      "id": "temporal-loom-site",
-      "title": "loom site itself",
-      "started": "2026-09-29",
-      "ended": null,
-      "summary": "This private sandbox: branching temporal timeline UI +  sync stub.",
-      "tags": ["web", "timeline", "stub"]
     },
     {
       "id": "-curation",
       "title": " curation habit",
       "started": "2026-09",
       "ended": null,
+      "parent": "personal-projects",
       "summary": "personal notes hygiene: no automatic AI dumps; notes only on explicit demand.",
       "tags": ["personal notes", "process"]
+    },
+    {
+      "id": "temporal-loom-site",
+      "title": "loom site itself",
+      "started": "2026-09-29",
+      "ended": null,
+      "parent": "personal-projects",
+      "summary": "This private sandbox: branching temporal timeline UI +  sync stub.",
+      "tags": ["web", "timeline", "stub"]
+    },
+    {
+      "id": "agent-fleet",
+      "title": "Specialized Grok fleet",
+      "started": "2026-09",
+      "ended": null,
+      "parent": "personal-projects",
+      "summary": "Sample node: Maestro + domain bots (stubs only — not a notes dump).",
+      "tags": ["agents", "orchestration", "stub"]
+    },
+    {
+      "id": "loom-graph-v1",
+      "title": "Branching graph v1",
+      "started": "2026-09-29",
+      "ended": null,
+      "parent": "temporal-loom-site",
+      "summary": "Loki-style spine with parent→child forks and node focus.",
+      "tags": ["web", "ui", "stub"]
     }
   ]
 }

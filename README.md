@@ -16,7 +16,7 @@ python3 -m http.server 8080 --directory public
 
 ## Temporal graph
 
-`public/` draws a **main time spine** with **project nodes on branches** (Loki / temporal-weave feel), plus a card list. Data: `public/data/projects.json`.
+`public/` draws a **Loki-style temporal tree**: main spine, `parent` forks between nodes, click-to-focus cards. Stub data only in `public/data/projects.json`.
 
 ##  → loom pipeline
 
