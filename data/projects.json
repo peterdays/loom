@@ -1,24 +1,30 @@
 {
-  "source": " (stub)",
+  "source": " (stub — no private notes content)",
   "synced_at": null,
   "projects": [
     {
-      "id": "example-personal-bots",
-      "title": "Personal bots ( lane)",
+      "id": "personal-projects",
+      "title": "Personal /  bots",
       "started": "2026-09",
       "ended": null,
-      "summary": "Personal experiments and side projects.",
-      "tags": ["ai", "agents", "personal notes"],
-      "links": []
+      "summary": "A lane for personal experiments and side projects.",
+      "tags": ["ai", "agents", "personal"]
     },
     {
-      "id": "example-placeholder",
-      "title": "Replace with  exports",
+      "id": "temporal-loom-site",
+      "title": "loom site itself",
       "started": "2026-09-29",
       "ended": null,
-      "summary": "This entry is a stub. Run  (or paste wiki digests into data/projects.json) once the notes path is available.",
-      "tags": ["stub"],
-      "links": []
+      "summary": "This private sandbox: branching temporal timeline UI +  sync stub.",
+      "tags": ["web", "timeline", "stub"]
+    },
+    {
+      "id": "-curation",
+      "title": " curation habit",
+      "started": "2026-09",
+      "ended": null,
+      "summary": "personal notes hygiene: no automatic AI dumps; notes only on explicit demand.",
+      "tags": ["personal notes", "process"]
     }
   ]
 }

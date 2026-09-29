@@ -3,21 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Projects Timeline — </title>
+  <title>loom — temporal weave</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="grid-bg"></div>
+  <div class="void"></div>
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-tab="timeline" type="button">Timeline</button>
+    <button class="tab" data-tab="about" type="button" disabled title="Later">About</button>
+  </nav>
   <header>
-    <p class="eyebrow"> //  FEED</p>
-    <h1>AI Projects Timeline</h1>
-    <p class="lede">Chronological trace of work done with AI, curated from the personal personal notes.</p>
+    <p class="eyebrow">LOOM // TEMPORAL WEAVE</p>
+    <h1>Branching AI timeline</h1>
+    <p class="lede">A main spine of time. Projects fork off as nodes — Loki / temporal-loom aesthetic. Fed from  (read-only).</p>
   </header>
-  <main id="timeline" aria-live="polite">
-    <p class="loading">Loading timeline…</p>
+  <main>
+    <svg id="graph" class="graph" role="img" aria-label="Temporal project graph"></svg>
+    <section id="cards" class="cards" aria-live="polite"></section>
+    <section id="about" class="panel hidden">
+      <p>Personal presentation tab — placeholder for later.</p>
+    </section>
   </main>
   <footer>
-    <span>Source:  → <code>data/projects.json</code></span>
+    <span>Private sandbox · Pages stay off until the repo is deliberately public</span>
   </footer>
   <script src="./app.js"></script>
 </body>
