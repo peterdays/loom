@@ -20,6 +20,8 @@ html {
   --void-a: rgba(92, 246, 255, 0.08);
   --void-b: rgba(199, 125, 255, 0.06);
   --void-size: 48px;
+  --void-opacity: 0.22;
+  --grain-opacity: 0.04;
   --card-active-border: rgba(92, 246, 255, 0.65);
   --card-active-shadow: 0 0 28px rgba(92, 246, 255, 0.18);
   --tab-border: rgba(92, 246, 255, 0.25);
@@ -42,11 +44,51 @@ body {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.22;
+  overflow: hidden;
+  z-index: 0;
+}
+/* Grid / paper hatch — opacity via --void-opacity so grain stays independent */
+.void::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: var(--void-opacity, 0.22);
   background:
     repeating-linear-gradient(0deg, transparent, transparent calc(var(--void-size) - 1px), var(--void-a) var(--void-size)),
     repeating-linear-gradient(90deg, transparent, transparent calc(var(--void-size) - 1px), var(--void-b) var(--void-size));
   transition: opacity 0.25s ease;
+}
+/* Cheap film grain: one static tiled SVG noise + CSS steps() translate (no canvas/WebGL/rAF) */
+.void::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  pointer-events: none;
+  opacity: var(--grain-opacity, 0.045);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  background-repeat: repeat;
+  animation: void-grain 0.9s steps(4) infinite;
+}
+/* Dark skins: invert the (dark) noise so flecks read as light grain */
+html:not([data-skin^="ink"]) .void::after {
+  filter: invert(1);
+}
+@keyframes void-grain {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2.2%, 1.4%); }
+  50% { transform: translate(1.6%, -2.8%); }
+  75% { transform: translate(-1.1%, 2.1%); }
+  100% { transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .void::after {
+    animation: none;
+    /* keep a faint static texture; no motion */
+  }
 }
 
 .tabs, header, main, footer {
@@ -233,7 +275,7 @@ html[data-skin="circuit"] body {
     linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, transparent 2px) 0 0 / 100% 4px,
     var(--bg);
 }
-html[data-skin="circuit"] .void { opacity: 0.35; }
+html[data-skin="circuit"] { --void-opacity: 0.35; --grain-opacity: 0.035; }
 html[data-skin="circuit"] .eyebrow { letter-spacing: 0.12em; }
 html[data-skin="circuit"] h1 {
   font-weight: 700;
@@ -286,7 +328,7 @@ html[data-skin="blueprint"] body {
     radial-gradient(ellipse at 20% 0%, #1a5cb8 0%, transparent 50%),
     var(--bg);
 }
-html[data-skin="blueprint"] .void { opacity: 0.4; }
+html[data-skin="blueprint"] { --void-opacity: 0.4; --grain-opacity: 0.04; }
 html[data-skin="blueprint"] .eyebrow {
   font-family: var(--font-mono);
   border: 1px dashed rgba(255, 255, 255, 0.5);
@@ -361,8 +403,11 @@ html[data-skin="obsidian"] {
 html[data-skin="obsidian"] body {
   background: #050505;
 }
-html[data-skin="obsidian"] .void {
-  opacity: 0.5;
+html[data-skin="obsidian"] {
+  --void-opacity: 0.5;
+  --grain-opacity: 0.035;
+}
+html[data-skin="obsidian"] .void::before {
   background:
     repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0, 0, 0, 0.35) 2px),
     repeating-linear-gradient(0deg, transparent, transparent calc(var(--void-size) - 1px), var(--void-a) var(--void-size));
@@ -441,7 +486,7 @@ html[data-skin^="ink"] body {
   background:
     radial-gradient(ellipse at 50% 0%, #fff8ec 0%, var(--bg) 70%);
 }
-html[data-skin^="ink"] .void { opacity: 0.5; }
+html[data-skin^="ink"] { --void-opacity: 0.5; --grain-opacity: 0.055; }
 html[data-skin^="ink"] .eyebrow {
   font-family: var(--font-mono);
   color: var(--accent);
@@ -521,11 +566,13 @@ html[data-skin="ink-schematic"] {
   --void-a: rgba(0, 0, 0, 0.055);
   --void-b: rgba(196, 30, 58, 0.03);
   --void-size: 28px;
+  --void-opacity: 0.65;
+  --grain-opacity: 0.07;
   --shadow: none;
   --card-active-shadow: inset 0 0 0 2px #c41e3a;
   --font: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
 }
-html[data-skin="ink-schematic"] .void { opacity: 0.65; }
+/* void/grain opacities set below via vars */
 html[data-skin="ink-schematic"] h1 {
   font-weight: 600;
   font-size: clamp(1.4rem, 3.2vw, 2rem);
@@ -609,7 +656,7 @@ html[data-skin="ink-brutal"] {
   --void-a: transparent;
   --void-b: transparent;
 }
-html[data-skin="ink-brutal"] .void { opacity: 0; }
+html[data-skin="ink-brutal"] { --void-opacity: 0; --grain-opacity: 0.04; }
 html[data-skin="ink-brutal"] .eyebrow {
   color: #000;
   letter-spacing: 0.28em;
@@ -689,7 +736,7 @@ html[data-skin="ink-sepia"] body {
   background:
     radial-gradient(ellipse at 40% 0%, #f5ead6 0%, var(--bg) 65%);
 }
-html[data-skin="ink-sepia"] .void { opacity: 0.55; }
+html[data-skin="ink-sepia"] { --void-opacity: 0.55; --grain-opacity: 0.06; }
 html[data-skin="ink-sepia"] h1 { border-bottom-color: #3b2a1a; }
 html[data-skin="ink-sepia"] .tag {
   background: #3b2a1a;
