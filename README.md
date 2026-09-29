@@ -1,50 +1,45 @@
-# jarvas-ai-timeline
+# loom
 
-Temporary personal site: a **chronological timeline of AI projects**, fed from **Jarvas Mnemoteca** (Pedro’s personal second brain / “MinimoTeca”), not from Volupal miolo.
+Personal **temporal loom** — a cyberpunk branching timeline of AI projects, with room for later tabs (e.g. a presentation page).
 
-## Purpose
+Fed **read-only** from **Jarvas Mnemoteca** (Pedro’s personal second brain). Not Volupal `zacarias-miolo`.
 
-- Show what you’ve been building with AI, as a clean cyberpunk timeline.
-- Keep the vault picky: this repo **reads** Mnemoteca (or a stub JSON). It does **not** write notes into the vault.
+## Status
 
-## Quick start
+**Private build sandbox.** Do not assume a public site.
+
+GitHub Pages on a free account only works for **public** repos (private Pages is paid). Pages should go live only when this repo is **deliberately made public** and the content is reviewed for what may appear on the open web. Until then: local static preview only.
 
 ```bash
-# from repo root — any static server
 python3 -m http.server 8080 --directory public
-# open http://localhost:8080
 ```
 
-## Layout
+## Temporal graph
 
-```
-data/projects.json          # SoT JSON used by the sync script (canonical export)
-public/
-  index.html                # timeline page
-  styles.css                # cyberpunk theme
-  app.js                    # loads JSON, sorts newest-first
-  data/projects.json        # copy served to the browser
-scripts/sync-from-mnemoteca.sh
-README.md
-```
+`public/` draws a **main time spine** with **project nodes on branches** (Loki / temporal-weave feel), plus a card list. Data: `public/data/projects.json`.
 
-## Mnemoteca → timeline pipeline
+## Mnemoteca → loom pipeline
 
-1. **Stub (default):** `data/projects.json` ships with placeholder entries so the UI works offline.
-2. **Sync (when vault is reachable):** set `JARVAS_MNEMOTECA_PATH` to a local checkout of jarvas-mnemoteca and run:
+1. Stub JSON ships with non-sensitive sample projects.
+2. Sync (when a vault checkout exists):
 
    ```bash
    export JARVAS_MNEMOTECA_PATH=/path/to/jarvas-mnemoteca
    ./scripts/sync-from-mnemoteca.sh
-   cp data/projects.json public/data/projects.json
    ```
 
-   The script is a **heuristic stub** (scans markdown for AI/agent mentions). Tighten filters once the vault’s project-page convention is fixed.
-3. **Manual:** edit `data/projects.json` (and copy to `public/data/`) when you don’t want auto-import.
+   Vault → site only. **Never** write into Mnemoteca from this repo.
+3. Review `data/projects.json` before any future public Pages cutover — no private second-brain dumps on the public web.
 
-Schema per project: `id`, `title`, `started`, `ended`, `summary`, `tags`, `links`.
+## Layout
 
-## Notes
+```
+data/projects.json
+public/index.html|styles.css|app.js|data/projects.json
+scripts/sync-from-mnemoteca.sh
+README.md
+```
 
-- Temporary / experimental repo under the personal GitHub account.
-- Distinct from Volupal `zacarias-miolo` — do not mix fleet vault writes here.
+## Agent autonomy
+
+The `loom` Grok Bot owns iteration on UI + sync (commit/push to this private repo without per-step approval). Sensitive vault content stays out of git.
