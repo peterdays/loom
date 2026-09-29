@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-skin="neon">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="void"></div>
+  <div class="void" aria-hidden="true"></div>
   <nav class="tabs" aria-label="Sections">
     <button class="tab active" data-tab="timeline" type="button">Timeline</button>
     <button class="tab" data-tab="about" type="button" disabled title="Later">About</button>
@@ -15,7 +15,15 @@
   <header>
     <p class="eyebrow">LOOM // TEMPORAL WEAVE</p>
     <h1>Branching AI timeline</h1>
-    <p class="lede">A main spine of time. Projects fork off as nodes — Loki / temporal-loom aesthetic. Fed from  (read-only).</p>
+    <p class="lede">A main spine of time. Projects fork off as nodes — pick a skin below. Fed from  (read-only stub).</p>
+    <div class="skin-switcher" role="group" aria-label="Timeline skin">
+      <span class="skin-label">Skin</span>
+      <button type="button" class="skin-btn active" data-skin="neon" title="Soft neon curves">Neon</button>
+      <button type="button" class="skin-btn" data-skin="circuit" title="Orthogonal circuit / schematic">Circuit</button>
+      <button type="button" class="skin-btn" data-skin="blueprint" title="Blueprint print">Blueprint</button>
+      <button type="button" class="skin-btn" data-skin="obsidian" title="Phosphor terminal">Obsidian</button>
+      <button type="button" class="skin-btn" data-skin="ink" title="Paper / ink editorial">Ink</button>
+    </div>
   </header>
   <main>
     <svg id="graph" class="graph" role="img" aria-label="Temporal project graph"></svg>

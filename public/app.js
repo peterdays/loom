@@ -1,7 +1,26 @@
+const SKIN_KEY = "loom-skin";
+const SKINS = {
+  neon: { edges: "curve", nodes: "circle", glow: true, dashed: false },
+  circuit: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
+  blueprint: { edges: "ortho", nodes: "circle", glow: false, dashed: true },
+  obsidian: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
+  ink: { edges: "curve", nodes: "diamond", glow: false, dashed: false },
+};
+
+let projectsCache = [];
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
+}
+
+function currentSkin() {
+  return document.documentElement.getAttribute("data-skin") || "neon";
+}
+
+function skinOpts() {
+  return SKINS[currentSkin()] || SKINS.neon;
 }
 
 function layout(projects) {
@@ -21,7 +40,6 @@ function layout(projects) {
   const w = 980;
   const h = 460;
   const padX = 56;
-  const padY = 48;
   const levels = {};
   const queue = [...(children[null] || [])];
   for (const p of queue) levels[p.id] = 0;
@@ -35,14 +53,12 @@ function layout(projects) {
   const maxLevel = Math.max(0, ...Object.values(levels));
   const levelGap = maxLevel === 0 ? 0 : (w - padX * 2) / maxLevel;
 
-  // Assign lanes within each level (alternate around spine)
   const nodes = {};
   const laneCounters = {};
   function place(p) {
     const level = levels[p.id] || 0;
     laneCounters[level] = (laneCounters[level] || 0) + 1;
     const lane = laneCounters[level];
-    const siblings = (children[p.parent && byId[p.parent] ? p.parent : null] || []).length || 1;
     const side = lane % 2 === 0 ? 1 : -1;
     const row = Math.ceil(lane / 2);
     const x = padX + level * levelGap;
@@ -57,48 +73,91 @@ function layout(projects) {
   }
   walk(children[null] || []);
 
-  // Spine follows chronological roots left→right through deepest path
   const ordered = Object.values(nodes).sort((a, b) => a.level - b.level || a.x - b.x);
-  return { w, h, padX, padY, nodes: ordered, byId: nodes, children };
+  return { w, h, padX, nodes: ordered, byId: nodes, children };
+}
+
+function orthoPath(x1, y1, x2, y2) {
+  const mx = Math.round((x1 + x2) / 2);
+  return `M ${x1} ${y1} L ${mx} ${y1} L ${mx} ${y2} L ${x2} ${y2}`;
+}
+
+function curvePath(x1, y1, x2, y2) {
+  const mx = (x1 + x2) / 2;
+  return `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+}
+
+function edgePath(x1, y1, x2, y2, mode) {
+  return mode === "ortho" ? orthoPath(x1, y1, x2, y2) : curvePath(x1, y1, x2, y2);
+}
+
+function nodeShape(n, kind) {
+  const r = 9;
+  if (kind === "rect") {
+    const s = r * 1.6;
+    return `<rect class="orb" x="${n.x - s / 2}" y="${n.y - s / 2}" width="${s}" height="${s}"/>`;
+  }
+  if (kind === "diamond") {
+    const s = r + 2;
+    return `<polygon class="orb" points="${n.x},${n.y - s} ${n.x + s},${n.y} ${n.x},${n.y + s} ${n.x - s},${n.y}"/>`;
+  }
+  const glow = skinOpts().glow ? ' filter="url(#glow)"' : "";
+  return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${r}"${glow}/>`;
 }
 
 function renderGraph(projects) {
   const svg = document.getElementById("graph");
+  if (!svg) return;
   const { w, h, padX, nodes, byId } = layout(projects);
+  const opts = skinOpts();
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("data-edge-mode", opts.edges);
 
   const spineY = h / 2;
   const maxX = Math.max(...nodes.map((n) => n.x), padX + 40);
+  const dash = opts.dashed ? ' stroke-dasharray="6 4"' : "";
+  const glowFilter = opts.glow
+    ? `<filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
+    : "";
+
   const defs = `<defs>
     <linearGradient id="spineGrad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#5cf6ff" stop-opacity="0.15"/>
-      <stop offset="45%" stop-color="#5cf6ff"/>
-      <stop offset="100%" stop-color="#ff4fd8" stop-opacity="0.55"/>
+      <stop offset="0%" stop-color="var(--spine)" stop-opacity="0.2"/>
+      <stop offset="45%" stop-color="var(--spine)"/>
+      <stop offset="100%" stop-color="var(--node)" stop-opacity="0.6"/>
     </linearGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    ${glowFilter}
   </defs>`;
 
-  const spine = `<line class="spine" x1="${padX - 12}" y1="${spineY}" x2="${maxX + 24}" y2="${spineY}"
-    stroke="url(#spineGrad)" stroke-width="3" stroke-linecap="round" />`;
+  const spine = `<line class="spine-line" x1="${padX - 12}" y1="${spineY}" x2="${maxX + 24}" y2="${spineY}"
+    stroke="url(#spineGrad)" stroke-linecap="${opts.edges === "ortho" ? "square" : "round"}"${dash}/>`;
 
   const branches = nodes.map((n) => {
+    let x1, y1;
     if (!n.parent || !byId[n.parent]) {
-      return `<path d="M ${n.x} ${spineY} Q ${n.x} ${(spineY + n.y) / 2} ${n.x} ${n.y}"
-        fill="none" stroke="#c77dff" stroke-width="2" opacity="0.9" filter="url(#glow)"/>`;
+      x1 = n.x;
+      y1 = spineY;
+    } else {
+      const parent = byId[n.parent];
+      x1 = parent.x;
+      y1 = parent.y;
     }
-    const parent = byId[n.parent];
-    const mx = (parent.x + n.x) / 2;
-    return `<path d="M ${parent.x} ${parent.y} C ${mx} ${parent.y}, ${mx} ${n.y}, ${n.x} ${n.y}"
-      fill="none" stroke="#c77dff" stroke-width="2" opacity="0.9" filter="url(#glow)"/>`;
+    const d = edgePath(x1, y1, n.x, n.y, opts.edges);
+    const filt = opts.glow ? ' filter="url(#glow)"' : "";
+    return `<path class="edge" d="${d}" opacity="0.92"${dash}${filt}/>`;
   }).join("");
 
   const dots = nodes.map((n) => {
     const label = escapeHtml((n.title || "").slice(0, 26));
     const ty = n.side < 0 ? n.y - 16 : n.y + 24;
+    const anchor =
+      opts.nodes === "rect"
+        ? `<rect class="anchor" x="${n.x - 3}" y="${spineY - 3}" width="6" height="6" opacity="0.75"/>`
+        : `<circle class="anchor" cx="${n.x}" cy="${spineY}" r="3.5" opacity="0.7"/>`;
     return `<g class="node" tabindex="0" role="button" data-id="${escapeHtml(n.id)}">
-      <circle class="anchor" cx="${n.x}" cy="${spineY}" r="3.5" fill="#5cf6ff" opacity="0.7"/>
-      <circle class="orb" cx="${n.x}" cy="${n.y}" r="9" fill="#ff4fd8" stroke="#e8f0ff" stroke-width="1.5" filter="url(#glow)"/>
-      <text x="${n.x}" y="${ty}" text-anchor="middle" fill="#e8f0ff" font-size="11">${label}</text>
+      ${anchor}
+      ${nodeShape(n, opts.nodes)}
+      <text x="${n.x}" y="${ty}" text-anchor="middle" font-size="11">${label}</text>
     </g>`;
   }).join("");
 
@@ -153,17 +212,40 @@ function renderCards(projects) {
   });
 }
 
+function applySkin(name, { persist = true } = {}) {
+  if (!SKINS[name]) name = "neon";
+  document.documentElement.setAttribute("data-skin", name);
+  document.querySelectorAll(".skin-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.skin === name);
+  });
+  if (persist) {
+    try { localStorage.setItem(SKIN_KEY, name); } catch (_) { /* ignore */ }
+  }
+  if (projectsCache.length) renderGraph(projectsCache);
+}
+
+function initSkinSwitcher() {
+  let saved = "neon";
+  try { saved = localStorage.getItem(SKIN_KEY) || "neon"; } catch (_) { /* ignore */ }
+  if (!SKINS[saved]) saved = "neon";
+  applySkin(saved, { persist: false });
+
+  document.querySelectorAll(".skin-btn").forEach((btn) => {
+    btn.addEventListener("click", () => applySkin(btn.dataset.skin));
+  });
+}
+
 async function load() {
   try {
     const res = await fetch("./data/projects.json", { cache: "no-store" });
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
-    const projects = data.projects || [];
-    renderGraph(projects);
-    renderCards(projects);
+    projectsCache = data.projects || [];
+    renderGraph(projectsCache);
+    renderCards(projectsCache);
   } catch (err) {
     document.getElementById("cards").innerHTML =
-      `<p style="color:#8090b8">Could not load data (${escapeHtml(String(err))})</p>`;
+      `<p style="color:var(--muted)">Could not load data (${escapeHtml(String(err))})</p>`;
   }
 }
 
@@ -187,4 +269,5 @@ document.querySelectorAll(".tab").forEach((btn) => {
   });
 });
 
+initSkinSwitcher();
 load();
