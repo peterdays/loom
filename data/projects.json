@@ -1,0 +1,24 @@
+{
+  "source": " (stub)",
+  "synced_at": null,
+  "projects": [
+    {
+      "id": "example-personal-bots",
+      "title": "Personal bots ( lane)",
+      "started": "2026-09",
+      "ended": null,
+      "summary": "Personal experiments and side projects.",
+      "tags": ["ai", "agents", "personal notes"],
+      "links": []
+    },
+    {
+      "id": "example-placeholder",
+      "title": "Replace with  exports",
+      "started": "2026-09-29",
+      "ended": null,
+      "summary": "This entry is a stub. Run  (or paste wiki digests into data/projects.json) once the notes path is available.",
+      "tags": ["stub"],
+      "links": []
+    }
+  ]
+}
