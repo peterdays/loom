@@ -18,6 +18,18 @@ python3 -m http.server 8080 --directory public
 
 `public/` draws a **Loki-style temporal tree**: main spine, `parent` forks between nodes, click-to-focus cards. Stub data only in `public/data/projects.json`.
 
+A **skin switcher** on the page offers ≥4 distinct looks (CSS themes + edge layout variants):
+
+| Skin | Look | Edges / nodes |
+|------|------|----------------|
+| **Neon** (default) | Soft cyan/magenta glow — original | curved / circles |
+| **Circuit** | CRT grid, monospace, hard angles | orthogonal / squares |
+| **Blueprint** | White-on-blue print, dashed lines, REV stamps | orthogonal / circles |
+| **Obsidian** | Near-black phosphor amber/green, blocky | orthogonal / squares |
+| **Ink** | Cream paper / editorial high-contrast | curved / diamonds |
+
+Choice persists in `localStorage` (`loom-skin`).
+
 ## Mnemoteca → loom pipeline
 
 1. Stub JSON ships with non-sensitive sample projects.

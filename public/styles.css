@@ -1,4 +1,7 @@
-:root {
+/* ── Shared structure ─────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html {
   --bg: #03040a;
   --spine: #5cf6ff;
   --branch: #c77dff;
@@ -6,61 +9,512 @@
   --text: #e8f0ff;
   --muted: #8090b8;
   --panel: rgba(10, 14, 28, 0.92);
-  font-family: "Segoe UI", system-ui, sans-serif;
+  --border: rgba(199, 125, 255, 0.28);
+  --accent: #5cf6ff;
+  --radius: 12px;
+  --tag-radius: 999px;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --shadow: 0 0 24px rgba(255, 79, 216, 0.07);
+  --glow-text: 0 0 20px rgba(92, 246, 255, 0.4), 0 0 40px rgba(255, 79, 216, 0.25);
+  --void-a: rgba(92, 246, 255, 0.08);
+  --void-b: rgba(199, 125, 255, 0.06);
+  --void-size: 48px;
+  --card-active-border: rgba(92, 246, 255, 0.65);
+  --card-active-shadow: 0 0 28px rgba(92, 246, 255, 0.18);
+  --tab-border: rgba(92, 246, 255, 0.25);
+  --skin-btn-bg: transparent;
+  --skin-btn-border: rgba(92, 246, 255, 0.3);
+  --edge-width: 2;
+  font-family: var(--font);
 }
-* { box-sizing: border-box; }
+
 body {
-  margin: 0; min-height: 100vh; color: var(--text);
-  background: radial-gradient(900px 500px at 50% -20%, #1a0630 0%, transparent 55%),
-              radial-gradient(700px 400px at 80% 30%, #041828 0%, transparent 50%),
-              var(--bg);
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font);
+  transition: background 0.25s ease, color 0.2s ease;
 }
+
 .void {
-  position: fixed; inset: 0; pointer-events: none; opacity: 0.22;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
   background:
-    repeating-linear-gradient(0deg, transparent, transparent 47px, rgba(92,246,255,0.08) 48px),
-    repeating-linear-gradient(90deg, transparent, transparent 47px, rgba(199,125,255,0.06) 48px);
+    repeating-linear-gradient(0deg, transparent, transparent calc(var(--void-size) - 1px), var(--void-a) var(--void-size)),
+    repeating-linear-gradient(90deg, transparent, transparent calc(var(--void-size) - 1px), var(--void-b) var(--void-size));
+  transition: opacity 0.25s ease;
 }
-.tabs, header, main, footer { position: relative; max-width: 960px; margin: 0 auto; padding: 1rem 1.25rem; }
+
+.tabs, header, main, footer {
+  position: relative;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+
 .tabs { display: flex; gap: 0.5rem; padding-top: 1.25rem; }
+
 .tab {
-  background: transparent; color: var(--muted); border: 1px solid rgba(92,246,255,0.25);
-  border-radius: 999px; padding: 0.35rem 0.9rem; cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--tab-border);
+  border-radius: var(--tag-radius);
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
 }
-.tab.active { color: var(--spine); border-color: var(--spine); box-shadow: 0 0 12px rgba(92,246,255,0.25); }
+.tab.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
 .tab:disabled { opacity: 0.4; cursor: not-allowed; }
-.eyebrow { letter-spacing: 0.28em; font-size: 0.68rem; color: var(--spine); margin: 0 0 0.4rem; }
+
+.eyebrow {
+  letter-spacing: 0.28em;
+  font-size: 0.68rem;
+  color: var(--accent);
+  margin: 0 0 0.4rem;
+}
 h1 {
-  margin: 0; font-size: clamp(1.7rem, 4vw, 2.5rem);
-  text-shadow: 0 0 20px rgba(92,246,255,0.4), 0 0 40px rgba(255,79,216,0.25);
+  margin: 0;
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  text-shadow: var(--glow-text);
 }
 .lede { color: var(--muted); max-width: 40rem; }
+
+/* Skin switcher */
+.skin-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+.skin-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 0.25rem;
+}
+.skin-btn {
+  background: var(--skin-btn-bg);
+  color: var(--muted);
+  border: 1px solid var(--skin-btn-border);
+  border-radius: var(--tag-radius);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.skin-btn:hover { color: var(--text); border-color: var(--accent); }
+.skin-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: var(--shadow);
+}
+
 .graph { width: 100%; height: min(420px, 55vh); display: block; }
 .cards { display: grid; gap: 0.75rem; margin-top: 0.5rem; }
+
 .card {
-  background: var(--panel); border: 1px solid rgba(199,125,255,0.28);
-  border-radius: 12px; padding: 0.9rem 1rem;
-  box-shadow: 0 0 24px rgba(255,79,216,0.07);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .card h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
-.card .meta { color: var(--spine); font-size: 0.8rem; margin-bottom: 0.35rem; }
+.card .meta { color: var(--accent); font-size: 0.8rem; margin-bottom: 0.35rem; }
 .card p { margin: 0; color: var(--muted); line-height: 1.45; }
+.card .fork { color: var(--branch); font-size: 0.72rem; margin-bottom: 0.25rem; }
+.card.active {
+  border-color: var(--card-active-border);
+  box-shadow: var(--card-active-shadow);
+}
+
 .tags { margin-top: 0.55rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .tag {
-  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--branch); border: 1px solid rgba(199,125,255,0.4);
-  padding: 0.12rem 0.4rem; border-radius: 999px;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--branch);
+  border: 1px solid color-mix(in srgb, var(--branch) 50%, transparent);
+  padding: 0.12rem 0.4rem;
+  border-radius: var(--tag-radius);
 }
+
 .panel.hidden, .hidden { display: none; }
 footer { color: var(--muted); font-size: 0.78rem; padding-bottom: 2rem; }
 
 .graph .node { cursor: pointer; }
 .graph .node .orb { transition: r 0.15s ease, fill 0.15s ease; }
-.graph .node:hover .orb, .graph .node.active .orb { fill: #5cf6ff; }
-.graph .node.active .orb { stroke: #ff4fd8; stroke-width: 2.5; }
-.card { cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-.card.active {
-  border-color: rgba(92,246,255,0.65);
-  box-shadow: 0 0 28px rgba(92,246,255,0.18);
+.graph .node:hover .orb,
+.graph .node.active .orb { fill: var(--accent); }
+.graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
+.graph .node text { fill: var(--text); font-family: inherit; }
+.graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
+.graph .spine-line { stroke-width: 3; }
+
+/* ═══════════════════════════════════════════════════════════════
+   A — NEON (current): soft curves, cyan/magenta glow
+   ═══════════════════════════════════════════════════════════════ */
+html[data-skin="neon"] {
+  --bg: #03040a;
+  --spine: #5cf6ff;
+  --branch: #c77dff;
+  --node: #ff4fd8;
+  --text: #e8f0ff;
+  --muted: #8090b8;
+  --panel: rgba(10, 14, 28, 0.92);
+  --border: rgba(199, 125, 255, 0.28);
+  --accent: #5cf6ff;
+  --radius: 12px;
+  --tag-radius: 999px;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --shadow: 0 0 24px rgba(255, 79, 216, 0.07);
+  --glow-text: 0 0 20px rgba(92, 246, 255, 0.4), 0 0 40px rgba(255, 79, 216, 0.25);
+  --void-a: rgba(92, 246, 255, 0.08);
+  --void-b: rgba(199, 125, 255, 0.06);
+  --void-size: 48px;
+  --card-active-border: rgba(92, 246, 255, 0.65);
+  --card-active-shadow: 0 0 28px rgba(92, 246, 255, 0.18);
+  --tab-border: rgba(92, 246, 255, 0.25);
+  --skin-btn-border: rgba(92, 246, 255, 0.3);
 }
-.card .fork { color: var(--branch); font-size: 0.72rem; margin-bottom: 0.25rem; }
+
+html[data-skin="neon"] body {
+  background:
+    radial-gradient(900px 500px at 50% -20%, #1a0630 0%, transparent 55%),
+    radial-gradient(700px 400px at 80% 30%, #041828 0%, transparent 50%),
+    var(--bg);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   B — CIRCUIT: orthogonal edges, monospace, CRT grid, hard angles
+   ═══════════════════════════════════════════════════════════════ */
+html[data-skin="circuit"] {
+  --bg: #0a0e0a;
+  --spine: #39ff14;
+  --branch: #00e5a0;
+  --node: #c8ff00;
+  --text: #d4ffd4;
+  --muted: #6a9a6a;
+  --panel: rgba(8, 18, 8, 0.95);
+  --border: rgba(57, 255, 20, 0.35);
+  --accent: #39ff14;
+  --radius: 0;
+  --tag-radius: 0;
+  --font: var(--font-mono);
+  --shadow: none;
+  --glow-text: none;
+  --void-a: rgba(57, 255, 20, 0.07);
+  --void-b: rgba(57, 255, 20, 0.04);
+  --void-size: 24px;
+  --card-active-border: #39ff14;
+  --card-active-shadow: inset 0 0 0 1px #39ff14;
+  --tab-border: rgba(57, 255, 20, 0.4);
+  --skin-btn-border: rgba(57, 255, 20, 0.4);
+  --edge-width: 1.5;
+}
+
+html[data-skin="circuit"] body {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, transparent 2px) 0 0 / 100% 4px,
+    var(--bg);
+}
+html[data-skin="circuit"] .void { opacity: 0.35; }
+html[data-skin="circuit"] .eyebrow { letter-spacing: 0.12em; }
+html[data-skin="circuit"] h1 {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+}
+html[data-skin="circuit"] .card {
+  border-left: 3px solid var(--accent);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+html[data-skin="circuit"] .tag {
+  border-style: dashed;
+  letter-spacing: 0.08em;
+}
+html[data-skin="circuit"] .graph .node .orb {
+  /* square nodes via CSS won't work on circles — JS draws rects for circuit */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   C — BLUEPRINT: white/blue print, dashed lines, stamp labels
+   ═══════════════════════════════════════════════════════════════ */
+html[data-skin="blueprint"] {
+  --bg: #0b3d91;
+  --spine: #ffffff;
+  --branch: #7eb6ff;
+  --node: #ffffff;
+  --text: #e8f2ff;
+  --muted: #9ec0e8;
+  --panel: rgba(8, 45, 110, 0.88);
+  --border: rgba(255, 255, 255, 0.45);
+  --accent: #ffffff;
+  --radius: 2px;
+  --tag-radius: 2px;
+  --font: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --shadow: none;
+  --glow-text: none;
+  --void-a: rgba(255, 255, 255, 0.12);
+  --void-b: rgba(255, 255, 255, 0.06);
+  --void-size: 32px;
+  --card-active-border: #ffffff;
+  --card-active-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+  --tab-border: rgba(255, 255, 255, 0.4);
+  --skin-btn-border: rgba(255, 255, 255, 0.4);
+  --edge-width: 1.75;
+}
+
+html[data-skin="blueprint"] body {
+  background:
+    radial-gradient(ellipse at 20% 0%, #1a5cb8 0%, transparent 50%),
+    var(--bg);
+}
+html[data-skin="blueprint"] .void { opacity: 0.4; }
+html[data-skin="blueprint"] .eyebrow {
+  font-family: var(--font-mono);
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  letter-spacing: 0.2em;
+}
+html[data-skin="blueprint"] h1 {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+}
+html[data-skin="blueprint"] .card {
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-style: solid;
+  position: relative;
+}
+html[data-skin="blueprint"] .card::before {
+  content: "REV A";
+  position: absolute;
+  top: 0.45rem;
+  right: 0.6rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-mono);
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  padding: 0.1rem 0.35rem;
+}
+html[data-skin="blueprint"] .card .meta {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+html[data-skin="blueprint"] .tag {
+  border-style: dashed;
+  font-family: var(--font-mono);
+}
+html[data-skin="blueprint"] .skin-btn.active,
+html[data-skin="blueprint"] .tab.active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   D — OBSIDIAN: near-black, amber/green phosphor, blocky, no glow
+   ═══════════════════════════════════════════════════════════════ */
+html[data-skin="obsidian"] {
+  --bg: #050505;
+  --spine: #ffb000;
+  --branch: #33ff66;
+  --node: #ffb000;
+  --text: #c8c8a8;
+  --muted: #6a6a50;
+  --panel: #0c0c0c;
+  --border: #2a2a1a;
+  --accent: #ffb000;
+  --radius: 0;
+  --tag-radius: 0;
+  --font: var(--font-mono);
+  --shadow: none;
+  --glow-text: none;
+  --void-a: rgba(255, 176, 0, 0.04);
+  --void-b: transparent;
+  --void-size: 16px;
+  --card-active-border: #ffb000;
+  --card-active-shadow: none;
+  --tab-border: #3a3a28;
+  --skin-btn-border: #3a3a28;
+  --edge-width: 2;
+}
+
+html[data-skin="obsidian"] body {
+  background: #050505;
+}
+html[data-skin="obsidian"] .void {
+  opacity: 0.5;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0, 0, 0, 0.35) 2px),
+    repeating-linear-gradient(0deg, transparent, transparent calc(var(--void-size) - 1px), var(--void-a) var(--void-size));
+}
+html[data-skin="obsidian"] .eyebrow {
+  color: var(--branch);
+  letter-spacing: 0.08em;
+}
+html[data-skin="obsidian"] h1 {
+  color: var(--accent);
+  font-weight: 400;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  text-transform: lowercase;
+}
+html[data-skin="obsidian"] .lede::before {
+  content: "> ";
+  color: var(--branch);
+}
+html[data-skin="obsidian"] .card {
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  background: #0a0a0a;
+}
+html[data-skin="obsidian"] .card h2 {
+  color: var(--accent);
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+html[data-skin="obsidian"] .card .meta { color: var(--branch); }
+html[data-skin="obsidian"] .tag {
+  border: 1px solid #3a3a28;
+  color: var(--muted);
+  text-transform: lowercase;
+}
+html[data-skin="obsidian"] .skin-btn {
+  border-radius: 0;
+  text-transform: lowercase;
+}
+html[data-skin="obsidian"] .skin-btn.active {
+  background: #1a1400;
+  color: var(--accent);
+}
+html[data-skin="obsidian"] .tab { border-radius: 0; }
+html[data-skin="obsidian"] footer { font-family: var(--font-mono); }
+
+/* ═══════════════════════════════════════════════════════════════
+   E — INK: paper / editorial, high-contrast black on cream
+   ═══════════════════════════════════════════════════════════════ */
+html[data-skin="ink"] {
+  --bg: #f4efe6;
+  --spine: #111111;
+  --branch: #c41e3a;
+  --node: #111111;
+  --text: #1a1a1a;
+  --muted: #5a5548;
+  --panel: #fffdf8;
+  --border: #1a1a1a;
+  --accent: #c41e3a;
+  --radius: 0;
+  --tag-radius: 0;
+  --font: "Georgia", "Times New Roman", serif;
+  --shadow: 4px 4px 0 #111111;
+  --glow-text: none;
+  --void-a: rgba(0, 0, 0, 0.04);
+  --void-b: transparent;
+  --void-size: 40px;
+  --card-active-border: #c41e3a;
+  --card-active-shadow: 4px 4px 0 #c41e3a;
+  --tab-border: #1a1a1a;
+  --skin-btn-border: #1a1a1a;
+  --edge-width: 2.5;
+}
+
+html[data-skin="ink"] body {
+  background:
+    radial-gradient(ellipse at 50% 0%, #fff8ec 0%, var(--bg) 70%);
+}
+html[data-skin="ink"] .void { opacity: 0.5; }
+html[data-skin="ink"] .eyebrow {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  font-size: 0.62rem;
+}
+html[data-skin="ink"] h1 {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  border-bottom: 3px solid #111;
+  display: inline-block;
+  padding-bottom: 0.2rem;
+}
+html[data-skin="ink"] .lede {
+  font-style: italic;
+  max-width: 36rem;
+}
+html[data-skin="ink"] .card {
+  border: 2px solid #111;
+  box-shadow: var(--shadow);
+}
+html[data-skin="ink"] .card h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+html[data-skin="ink"] .card .meta {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+html[data-skin="ink"] .tag {
+  background: #111;
+  color: #f4efe6;
+  border-color: #111;
+  font-family: var(--font-mono);
+}
+html[data-skin="ink"] .skin-btn,
+html[data-skin="ink"] .tab {
+  border-width: 2px;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+html[data-skin="ink"] .skin-btn.active,
+html[data-skin="ink"] .tab.active {
+  background: #111;
+  color: #f4efe6;
+  border-color: #111;
+  box-shadow: none;
+}
+html[data-skin="ink"] footer {
+  font-family: var(--font-mono);
+  border-top: 2px solid #111;
+  padding-top: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* SVG theming via CSS variables (works for all skins) */
+.graph .orb { fill: var(--node); stroke: var(--text); stroke-width: 1.5; }
+.graph .anchor { fill: var(--spine); }
+.graph .edge { stroke: var(--branch); stroke-width: var(--edge-width); }
+.graph .node text { fill: var(--text); font-family: inherit; font-size: 11px; }
+.graph .node:hover .orb,
+.graph .node.active .orb { fill: var(--accent); }
+.graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
+
+html[data-skin="circuit"] .graph .edge { stroke-linejoin: miter; stroke-linecap: square; }
+html[data-skin="blueprint"] .graph .edge { stroke-linejoin: miter; }
+html[data-skin="obsidian"] .graph .edge { stroke: var(--branch); }
+html[data-skin="obsidian"] .graph .orb { fill: var(--node); stroke: var(--accent); }
+html[data-skin="ink"] .graph .edge { stroke: var(--branch); }
+html[data-skin="ink"] .graph .orb { fill: var(--node); stroke: #111; stroke-width: 2; }
+html[data-skin="ink"] .graph .node text { font-family: Georgia, serif; font-size: 12px; fill: #111; }
