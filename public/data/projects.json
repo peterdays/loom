@@ -7,24 +7,45 @@
       "title": "Skynet / Jarvas bots",
       "started": "2026-09",
       "ended": null,
+      "parent": null,
       "summary": "Personal agent lane outside Volupal. Vault: jarvas-mnemoteca (picky, on-demand only).",
       "tags": ["ai", "agents", "skynet"]
-    },
-    {
-      "id": "temporal-loom-site",
-      "title": "loom site itself",
-      "started": "2026-09-29",
-      "ended": null,
-      "summary": "This private sandbox: branching temporal timeline UI + Mnemoteca sync stub.",
-      "tags": ["web", "timeline", "stub"]
     },
     {
       "id": "mnemoteca-curation",
       "title": "Mnemoteca curation habit",
       "started": "2026-09",
       "ended": null,
+      "parent": "skynet-lane",
       "summary": "Second-brain hygiene: no automatic AI dumps; vault only on explicit demand.",
       "tags": ["second-brain", "process"]
+    },
+    {
+      "id": "temporal-loom-site",
+      "title": "loom site itself",
+      "started": "2026-09-29",
+      "ended": null,
+      "parent": "skynet-lane",
+      "summary": "This private sandbox: branching temporal timeline UI + Mnemoteca sync stub.",
+      "tags": ["web", "timeline", "stub"]
+    },
+    {
+      "id": "agent-fleet",
+      "title": "Specialized Grok fleet",
+      "started": "2026-09",
+      "ended": null,
+      "parent": "skynet-lane",
+      "summary": "Sample node: Maestro + domain bots (stubs only — not a vault dump).",
+      "tags": ["agents", "orchestration", "stub"]
+    },
+    {
+      "id": "loom-graph-v1",
+      "title": "Branching graph v1",
+      "started": "2026-09-29",
+      "ended": null,
+      "parent": "temporal-loom-site",
+      "summary": "Loki-style spine with parent→child forks and node focus.",
+      "tags": ["web", "ui", "stub"]
     }
   ]
 }
