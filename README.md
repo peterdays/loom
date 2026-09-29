@@ -16,19 +16,19 @@ python3 -m http.server 8080 --directory public
 
 ## Temporal graph
 
-`public/` draws a **Loki-style temporal tree**: main spine, `parent` forks between nodes, click-to-focus cards. Stub data only in `public/data/projects.json`.
+`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports), with `parent` forks as short branches and click-to-focus cards. Stub data only in `public/data/projects.json`.
 
 A **skin switcher** on the page offers ≥4 distinct looks (CSS themes + edge layout variants):
 
 | Skin | Look | Edges / nodes |
 |------|------|----------------|
-| **Neon** (default) | Soft cyan/magenta glow — original | curved / circles |
+| **Neon** | Soft cyan/magenta glow | curved / circles |
 | **Circuit** | CRT grid, monospace, hard angles | orthogonal / squares |
 | **Blueprint** | White-on-blue print, dashed lines, REV stamps | orthogonal / circles |
 | **Obsidian** | Near-black phosphor amber/green, blocky | orthogonal / squares |
 | **Ink** | Cream paper / editorial (baseline) | curved / diamonds |
 | **Ink Ortho** | Same cream/red ink palette, hard angles | orthogonal / squares |
-| **Ink Schematic** | Thin technical strokes, stamp labels, paper grid | orthogonal / squares |
+| **Ink Schematic** (default) | Thin technical strokes, stamp labels, paper grid | orthogonal / squares |
 | **Ink Brutal** | High-contrast black on cream, thick angles | orthogonal / squares |
 | **Ink Sepia** | Warm sepia paper, hard edges | orthogonal / diamonds |
 
