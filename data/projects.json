@@ -1,0 +1,24 @@
+{
+  "source": "jarvas-mnemoteca (stub)",
+  "synced_at": null,
+  "projects": [
+    {
+      "id": "example-skynet-bots",
+      "title": "Skynet bots (Jarvas lane)",
+      "started": "2026-09",
+      "ended": null,
+      "summary": "Personal second-brain and bot experiments outside Volupal — vault: jarvas-mnemoteca.",
+      "tags": ["ai", "agents", "second-brain"],
+      "links": []
+    },
+    {
+      "id": "example-placeholder",
+      "title": "Replace with Mnemoteca exports",
+      "started": "2026-09-29",
+      "ended": null,
+      "summary": "This entry is a stub. Run scripts/sync-from-mnemoteca.sh (or paste wiki digests into data/projects.json) once the vault path is available.",
+      "tags": ["stub"],
+      "links": []
+    }
+  ]
+}
