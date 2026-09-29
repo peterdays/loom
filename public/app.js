@@ -1,4 +1,5 @@
 const SKIN_KEY = "loom-skin";
+const DEFAULT_SKIN = "ink-schematic";
 const SKINS = {
   neon: { edges: "curve", nodes: "circle", glow: true, dashed: false },
   circuit: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
@@ -20,11 +21,11 @@ function escapeHtml(s) {
 }
 
 function currentSkin() {
-  return document.documentElement.getAttribute("data-skin") || "neon";
+  return document.documentElement.getAttribute("data-skin") || DEFAULT_SKIN;
 }
 
 function skinOpts() {
-  return SKINS[currentSkin()] || SKINS.neon;
+  return SKINS[currentSkin()] || SKINS[DEFAULT_SKIN];
 }
 
 function layout(projects) {
@@ -231,7 +232,7 @@ function renderCards(projects) {
 }
 
 function applySkin(name, { persist = true } = {}) {
-  if (!SKINS[name]) name = "neon";
+  if (!SKINS[name]) name = DEFAULT_SKIN;
   document.documentElement.setAttribute("data-skin", name);
   document.querySelectorAll(".skin-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.skin === name);
@@ -243,9 +244,9 @@ function applySkin(name, { persist = true } = {}) {
 }
 
 function initSkinSwitcher() {
-  let saved = "neon";
-  try { saved = localStorage.getItem(SKIN_KEY) || "neon"; } catch (_) { /* ignore */ }
-  if (!SKINS[saved]) saved = "neon";
+  let saved = DEFAULT_SKIN;
+  try { saved = localStorage.getItem(SKIN_KEY) || DEFAULT_SKIN; } catch (_) { /* ignore */ }
+  if (!SKINS[saved]) saved = DEFAULT_SKIN;
   applySkin(saved, { persist: false });
 
   document.querySelectorAll(".skin-btn").forEach((btn) => {
