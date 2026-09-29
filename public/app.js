@@ -5,6 +5,10 @@ const SKINS = {
   blueprint: { edges: "ortho", nodes: "circle", glow: false, dashed: true },
   obsidian: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
   ink: { edges: "curve", nodes: "diamond", glow: false, dashed: false },
+  "ink-ortho": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
+  "ink-schematic": { edges: "ortho", nodes: "rect", glow: false, dashed: false, stamp: true },
+  "ink-brutal": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
+  "ink-sepia": { edges: "ortho", nodes: "diamond", glow: false, dashed: false },
 };
 
 let projectsCache = [];
@@ -105,6 +109,22 @@ function nodeShape(n, kind) {
   return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${r}"${glow}/>`;
 }
 
+function nodeLabel(n, opts) {
+  const label = escapeHtml((n.title || "").slice(0, 26));
+  if (opts.stamp) {
+    const tw = Math.max(36, label.length * 6.4 + 8);
+    const th = 15;
+    const tx = n.x - tw / 2;
+    const tyBox = n.side < 0 ? n.y - 30 : n.y + 14;
+    return `<g class="stamp-label">
+      <rect class="stamp" x="${tx}" y="${tyBox}" width="${tw}" height="${th}"/>
+      <text x="${n.x}" y="${tyBox + 11}" text-anchor="middle" font-size="9">${label}</text>
+    </g>`;
+  }
+  const ty = n.side < 0 ? n.y - 16 : n.y + 24;
+  return `<text x="${n.x}" y="${ty}" text-anchor="middle" font-size="11">${label}</text>`;
+}
+
 function renderGraph(projects) {
   const svg = document.getElementById("graph");
   if (!svg) return;
@@ -148,16 +168,14 @@ function renderGraph(projects) {
   }).join("");
 
   const dots = nodes.map((n) => {
-    const label = escapeHtml((n.title || "").slice(0, 26));
-    const ty = n.side < 0 ? n.y - 16 : n.y + 24;
-    const anchor =
-      opts.nodes === "rect"
-        ? `<rect class="anchor" x="${n.x - 3}" y="${spineY - 3}" width="6" height="6" opacity="0.75"/>`
-        : `<circle class="anchor" cx="${n.x}" cy="${spineY}" r="3.5" opacity="0.7"/>`;
+    const hard = opts.nodes === "rect" || opts.edges === "ortho";
+    const anchor = hard
+      ? `<rect class="anchor" x="${n.x - 3}" y="${spineY - 3}" width="6" height="6" opacity="0.75"/>`
+      : `<circle class="anchor" cx="${n.x}" cy="${spineY}" r="3.5" opacity="0.7"/>`;
     return `<g class="node" tabindex="0" role="button" data-id="${escapeHtml(n.id)}">
       ${anchor}
       ${nodeShape(n, opts.nodes)}
-      <text x="${n.x}" y="${ty}" text-anchor="middle" font-size="11">${label}</text>
+      ${nodeLabel(n, opts)}
     </g>`;
   }).join("");
 
