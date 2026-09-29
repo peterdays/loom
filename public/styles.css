@@ -409,9 +409,10 @@ html[data-skin="obsidian"] .tab { border-radius: 0; }
 html[data-skin="obsidian"] footer { font-family: var(--font-mono); }
 
 /* ═══════════════════════════════════════════════════════════════
-   E — INK: paper / editorial, high-contrast black on cream
+   E — INK FAMILY: cream/paper editorial (shared) + hard-edge variants
+   Baseline Ink keeps soft curves; Ortho/Schematic/Brutal/Sepia use hard edges.
    ═══════════════════════════════════════════════════════════════ */
-html[data-skin="ink"] {
+html[data-skin^="ink"] {
   --bg: #f4efe6;
   --spine: #111111;
   --branch: #c41e3a;
@@ -436,18 +437,18 @@ html[data-skin="ink"] {
   --edge-width: 2.5;
 }
 
-html[data-skin="ink"] body {
+html[data-skin^="ink"] body {
   background:
     radial-gradient(ellipse at 50% 0%, #fff8ec 0%, var(--bg) 70%);
 }
-html[data-skin="ink"] .void { opacity: 0.5; }
-html[data-skin="ink"] .eyebrow {
+html[data-skin^="ink"] .void { opacity: 0.5; }
+html[data-skin^="ink"] .eyebrow {
   font-family: var(--font-mono);
   color: var(--accent);
   letter-spacing: 0.2em;
   font-size: 0.62rem;
 }
-html[data-skin="ink"] h1 {
+html[data-skin^="ink"] h1 {
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -455,32 +456,32 @@ html[data-skin="ink"] h1 {
   display: inline-block;
   padding-bottom: 0.2rem;
 }
-html[data-skin="ink"] .lede {
+html[data-skin^="ink"] .lede {
   font-style: italic;
   max-width: 36rem;
 }
-html[data-skin="ink"] .card {
+html[data-skin^="ink"] .card {
   border: 2px solid #111;
   box-shadow: var(--shadow);
 }
-html[data-skin="ink"] .card h2 {
+html[data-skin^="ink"] .card h2 {
   font-size: 1.15rem;
   font-weight: 700;
 }
-html[data-skin="ink"] .card .meta {
+html[data-skin^="ink"] .card .meta {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-html[data-skin="ink"] .tag {
+html[data-skin^="ink"] .tag {
   background: #111;
   color: #f4efe6;
   border-color: #111;
   font-family: var(--font-mono);
 }
-html[data-skin="ink"] .skin-btn,
-html[data-skin="ink"] .tab {
+html[data-skin^="ink"] .skin-btn,
+html[data-skin^="ink"] .tab {
   border-width: 2px;
   border-radius: 0;
   font-family: var(--font-mono);
@@ -488,19 +489,230 @@ html[data-skin="ink"] .tab {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-html[data-skin="ink"] .skin-btn.active,
-html[data-skin="ink"] .tab.active {
+html[data-skin^="ink"] .skin-btn.active,
+html[data-skin^="ink"] .tab.active {
   background: #111;
   color: #f4efe6;
   border-color: #111;
   box-shadow: none;
 }
-html[data-skin="ink"] footer {
+html[data-skin^="ink"] footer {
   font-family: var(--font-mono);
   border-top: 2px solid #111;
   padding-top: 0.75rem;
   margin-top: 1rem;
 }
+
+/* Ink Ortho — same cream/red, orthogonal polylines, square nodes */
+html[data-skin="ink-ortho"] {
+  --edge-width: 2.25;
+  --shadow: 3px 3px 0 #111111;
+}
+html[data-skin="ink-ortho"] .graph .edge {
+  stroke-linejoin: miter;
+  stroke-linecap: square;
+}
+
+/* Ink Schematic — thin technical strokes, stamp labels, faint paper grid */
+html[data-skin="ink-schematic"] {
+  --branch: #8b1a2b;
+  --accent: #8b1a2b;
+  --edge-width: 1.15;
+  --void-a: rgba(0, 0, 0, 0.055);
+  --void-b: rgba(196, 30, 58, 0.03);
+  --void-size: 28px;
+  --shadow: none;
+  --card-active-shadow: inset 0 0 0 2px #c41e3a;
+  --font: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+}
+html[data-skin="ink-schematic"] .void { opacity: 0.65; }
+html[data-skin="ink-schematic"] h1 {
+  font-weight: 600;
+  font-size: clamp(1.4rem, 3.2vw, 2rem);
+  border-bottom-width: 1.5px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+html[data-skin="ink-schematic"] .lede { font-style: normal; font-family: var(--font-mono); font-size: 0.9rem; }
+html[data-skin="ink-schematic"] .eyebrow {
+  border: 1px dashed var(--accent);
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+}
+html[data-skin="ink-schematic"] .card {
+  border-width: 1px;
+  border-style: solid;
+  position: relative;
+}
+html[data-skin="ink-schematic"] .card::before {
+  content: "SHEET";
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  padding: 0.08rem 0.3rem;
+}
+html[data-skin="ink-schematic"] .tag {
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+}
+html[data-skin="ink-schematic"] .graph .edge {
+  stroke-linejoin: miter;
+  stroke-linecap: square;
+}
+html[data-skin="ink-schematic"] .graph .orb {
+  fill: var(--panel);
+  stroke: #111;
+  stroke-width: 1.25;
+}
+html[data-skin="ink-schematic"] .graph .stamp {
+  fill: var(--panel);
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+html[data-skin="ink-schematic"] .graph .stamp-label text {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  fill: #111;
+}
+html[data-skin="ink-schematic"] .skin-btn.active,
+html[data-skin="ink-schematic"] .tab.active {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
+/* Ink Brutal — thick black hard angles, minimal decoration */
+html[data-skin="ink-brutal"] {
+  --spine: #000000;
+  --branch: #000000;
+  --node: #000000;
+  --accent: #000000;
+  --text: #000000;
+  --muted: #3a3a3a;
+  --panel: #faf6ee;
+  --border: #000000;
+  --card-active-border: #000000;
+  --card-active-shadow: 6px 6px 0 #000000;
+  --shadow: 6px 6px 0 #000000;
+  --edge-width: 4;
+  --void-a: transparent;
+  --void-b: transparent;
+}
+html[data-skin="ink-brutal"] .void { opacity: 0; }
+html[data-skin="ink-brutal"] .eyebrow {
+  color: #000;
+  letter-spacing: 0.28em;
+}
+html[data-skin="ink-brutal"] h1 {
+  border-bottom: 6px solid #000;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+}
+html[data-skin="ink-brutal"] .lede { font-style: normal; font-weight: 600; }
+html[data-skin="ink-brutal"] .card {
+  border-width: 3px;
+  box-shadow: var(--shadow);
+}
+html[data-skin="ink-brutal"] .card .fork { color: #000; }
+html[data-skin="ink-brutal"] .card .meta { color: #000; }
+html[data-skin="ink-brutal"] .tag {
+  background: #000;
+  color: #f4efe6;
+  border-color: #000;
+  font-weight: 700;
+}
+html[data-skin="ink-brutal"] .skin-btn.active,
+html[data-skin="ink-brutal"] .tab.active {
+  background: #000;
+  color: #f4efe6;
+  border-color: #000;
+}
+html[data-skin="ink-brutal"] .graph .edge {
+  stroke-linejoin: miter;
+  stroke-linecap: square;
+  stroke: #000;
+}
+html[data-skin="ink-brutal"] .graph .orb {
+  fill: #000;
+  stroke: #000;
+  stroke-width: 0;
+}
+html[data-skin="ink-brutal"] .graph .node:hover .orb,
+html[data-skin="ink-brutal"] .graph .node.active .orb {
+  fill: #f4efe6;
+  stroke: #000;
+  stroke-width: 3;
+}
+html[data-skin="ink-brutal"] .graph .node text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  fill: #000;
+}
+html[data-skin="ink-brutal"] .graph .spine-line { stroke-width: 5; }
+
+/* Ink Sepia — warm sepia paper, hard edges, diamond nodes */
+html[data-skin="ink-sepia"] {
+  --bg: #e8dcc8;
+  --spine: #3b2a1a;
+  --branch: #8b4513;
+  --node: #3b2a1a;
+  --text: #2a1c10;
+  --muted: #6b5340;
+  --panel: #f3e8d4;
+  --border: #5c4030;
+  --accent: #8b4513;
+  --card-active-border: #8b4513;
+  --card-active-shadow: 4px 4px 0 #5c4030;
+  --shadow: 4px 4px 0 #5c4030;
+  --tab-border: #5c4030;
+  --skin-btn-border: #5c4030;
+  --edge-width: 2.25;
+  --void-a: rgba(92, 64, 48, 0.07);
+  --void-b: rgba(139, 69, 19, 0.04);
+  --void-size: 36px;
+}
+html[data-skin="ink-sepia"] body {
+  background:
+    radial-gradient(ellipse at 40% 0%, #f5ead6 0%, var(--bg) 65%);
+}
+html[data-skin="ink-sepia"] .void { opacity: 0.55; }
+html[data-skin="ink-sepia"] h1 { border-bottom-color: #3b2a1a; }
+html[data-skin="ink-sepia"] .tag {
+  background: #3b2a1a;
+  color: #f3e8d4;
+  border-color: #3b2a1a;
+}
+html[data-skin="ink-sepia"] .skin-btn.active,
+html[data-skin="ink-sepia"] .tab.active {
+  background: #3b2a1a;
+  color: #f3e8d4;
+  border-color: #3b2a1a;
+}
+html[data-skin="ink-sepia"] .graph .edge {
+  stroke-linejoin: miter;
+  stroke-linecap: square;
+  stroke: var(--branch);
+}
+html[data-skin="ink-sepia"] .graph .orb {
+  fill: var(--node);
+  stroke: #3b2a1a;
+  stroke-width: 2;
+}
+html[data-skin="ink-sepia"] footer { border-top-color: #5c4030; }
 
 /* SVG theming via CSS variables (works for all skins) */
 .graph .orb { fill: var(--node); stroke: var(--text); stroke-width: 1.5; }
@@ -515,6 +727,8 @@ html[data-skin="circuit"] .graph .edge { stroke-linejoin: miter; stroke-linecap:
 html[data-skin="blueprint"] .graph .edge { stroke-linejoin: miter; }
 html[data-skin="obsidian"] .graph .edge { stroke: var(--branch); }
 html[data-skin="obsidian"] .graph .orb { fill: var(--node); stroke: var(--accent); }
-html[data-skin="ink"] .graph .edge { stroke: var(--branch); }
+html[data-skin^="ink"] .graph .edge { stroke: var(--branch); }
 html[data-skin="ink"] .graph .orb { fill: var(--node); stroke: #111; stroke-width: 2; }
 html[data-skin="ink"] .graph .node text { font-family: Georgia, serif; font-size: 12px; fill: #111; }
+html[data-skin="ink-ortho"] .graph .orb { fill: var(--node); stroke: #111; stroke-width: 2; }
+html[data-skin="ink-ortho"] .graph .node text { font-family: Georgia, serif; font-size: 12px; fill: #111; }

@@ -26,7 +26,11 @@ A **skin switcher** on the page offers ≥4 distinct looks (CSS themes + edge la
 | **Circuit** | CRT grid, monospace, hard angles | orthogonal / squares |
 | **Blueprint** | White-on-blue print, dashed lines, REV stamps | orthogonal / circles |
 | **Obsidian** | Near-black phosphor amber/green, blocky | orthogonal / squares |
-| **Ink** | Cream paper / editorial high-contrast | curved / diamonds |
+| **Ink** | Cream paper / editorial (baseline) | curved / diamonds |
+| **Ink Ortho** | Same cream/red ink palette, hard angles | orthogonal / squares |
+| **Ink Schematic** | Thin technical strokes, stamp labels, paper grid | orthogonal / squares |
+| **Ink Brutal** | High-contrast black on cream, thick angles | orthogonal / squares |
+| **Ink Sepia** | Warm sepia paper, hard edges | orthogonal / diamonds |
 
 Choice persists in `localStorage` (`loom-skin`).
 
