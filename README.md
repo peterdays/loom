@@ -16,7 +16,7 @@ python3 -m http.server 8080 --directory public
 
 ## Temporal graph
 
-`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). On **Ink Schematic** (default), **Neon**, and **Ink**, `parent` forks are **mold hyphae** — organic strokes that leave the straight TIME spine. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Click a node to focus its card. Stub data only in `public/data/projects.json`. Grain overlay is unchanged.
+`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). On **Ink Schematic** (default), **Neon**, **Ink**, and the **bio / mycelium** skins, `parent` forks are **mold hyphae** — organic strokes that leave the straight TIME spine. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Click a node to focus its card. Stub data only in `public/data/projects.json`. Grain overlay is unchanged.
 
 A **Forks** control (separate from skins) picks the stroke variation; default is **Ribbon** so load is not dense mycelium:
 
@@ -42,6 +42,12 @@ A **skin switcher** on the page offers ≥4 distinct looks (CSS themes + edge la
 | **Ink Schematic** (default) | Thin technical strokes, stamp labels, paper grid | mold forks (style via Forks) / squares |
 | **Ink Brutal** | High-contrast black on cream, thick angles | orthogonal / squares |
 | **Ink Sepia** | Warm sepia paper, hard edges | orthogonal / diamonds |
+| **Mycelium Night** | Black/navy substrate, teal–green glow | mold hyphae / soft glow-dots |
+| **Agar Plate** | Pale culture dish, brown/olive | mold hyphae / irregular nodules |
+| **Fluorescence** | Dark + magenta filaments, orange junctions | mold hyphae / soft glow-dots |
+| **Spores** | Deep blue + lime capillary hyphae | mold hyphae / hyphal tips |
+
+Bio skins are **variations to compare** — default remains **Ink Schematic**. Organic nodes (glow-dots, nodules, hyphal tips) replace hard white squares on those skins; TIME spine stays readable; fork styles still apply on mold paths.
 
 Skin choice persists in `localStorage` (`loom-skin`).
 

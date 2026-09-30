@@ -10,6 +10,11 @@ const SKINS = {
   "ink-schematic": { edges: "mold", nodes: "rect", glow: false, dashed: false, stamp: true },
   "ink-brutal": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
   "ink-sepia": { edges: "ortho", nodes: "diamond", glow: false, dashed: false },
+  /* Bio / mycelium family — organic nodes + mold hyphae; Ink family unchanged */
+  "mycelium-night": { edges: "mold", nodes: "glow-dot", glow: true, dashed: false },
+  "agar-plate": { edges: "mold", nodes: "nodule", glow: false, dashed: false },
+  fluorescence: { edges: "mold", nodes: "glow-dot", glow: true, dashed: false },
+  spores: { edges: "mold", nodes: "hyphal-tip", glow: true, dashed: false },
 };
 
 const FORK_STYLE_KEY = "loom-fork-style";
@@ -606,6 +611,7 @@ function moldFork(p, c, vertical) {
 
 function nodeShape(n, kind) {
   const r = 8;
+  const glow = skinOpts().glow ? ' filter="url(#glow)"' : "";
   if (kind === "rect") {
     const s = 13;
     return `<rect class="orb" x="${n.x - s / 2}" y="${n.y - s / 2}" width="${s}" height="${s}"/>`;
@@ -614,7 +620,40 @@ function nodeShape(n, kind) {
     const s = r + 2;
     return `<polygon class="orb" points="${n.x},${n.y - s} ${n.x + s},${n.y} ${n.x},${n.y + s} ${n.x - s},${n.y}"/>`;
   }
-  const glow = skinOpts().glow ? ' filter="url(#glow)"' : "";
+  /* Soft glowing junction — mycelium night / fluorescence */
+  if (kind === "glow-dot") {
+    const rnd = mulberry32(hashSeed(String(n.id || "")));
+    const core = 5.2 + rnd() * 1.8;
+    const halo = core + 3.8 + rnd() * 1.6;
+    return `<circle class="orb orb-halo" cx="${n.x}" cy="${n.y}" r="${fmt(halo)}"${glow}/>` +
+      `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${fmt(core)}"${glow}/>`;
+  }
+  /* Irregular culture nodule — agar plate (seeded ellipse + soft lobe) */
+  if (kind === "nodule") {
+    const rnd = mulberry32(hashSeed(String(n.id || "")));
+    const rx = 5.2 + rnd() * 2.8;
+    const ry = 4.1 + rnd() * 2.4;
+    const rot = Math.floor(rnd() * 70 - 35);
+    const lobeR = 2.4 + rnd() * 1.6;
+    const ang = rnd() * Math.PI * 2;
+    const lx = n.x + Math.cos(ang) * (rx * 0.55);
+    const ly = n.y + Math.sin(ang) * (ry * 0.55);
+    return `<ellipse class="orb" cx="${n.x}" cy="${n.y}" rx="${fmt(rx)}" ry="${fmt(ry)}" transform="rotate(${rot} ${n.x} ${n.y})"/>` +
+      `<circle class="orb orb-lobe" cx="${fmt(lx)}" cy="${fmt(ly)}" r="${fmt(lobeR)}"/>`;
+  }
+  /* Small hyphal tip — spores (soft core + tapered tip) */
+  if (kind === "hyphal-tip") {
+    const rnd = mulberry32(hashSeed(String(n.id || "")));
+    const core = 4.6 + rnd() * 1.4;
+    const ang = rnd() * Math.PI * 2;
+    const tipLen = 7 + rnd() * 4;
+    const tx = n.x + Math.cos(ang) * tipLen;
+    const ty = n.y + Math.sin(ang) * tipLen;
+    const midX = n.x + Math.cos(ang) * tipLen * 0.55 + Math.cos(ang + 1.2) * 1.4;
+    const midY = n.y + Math.sin(ang) * tipLen * 0.55 + Math.sin(ang + 1.2) * 1.4;
+    return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${fmt(core)}"${glow}/>` +
+      `<path class="orb orb-tip" d="M ${fmt(n.x)} ${fmt(n.y)} Q ${fmt(midX)} ${fmt(midY)} ${fmt(tx)} ${fmt(ty)}"${glow}/>`;
+  }
   return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${r}"${glow}/>`;
 }
 

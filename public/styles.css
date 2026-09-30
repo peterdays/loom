@@ -73,8 +73,9 @@ body {
   background-repeat: repeat;
   animation: void-grain 0.9s steps(4) infinite;
 }
-/* Dark skins: invert the (dark) noise so flecks read as light grain */
-html:not([data-skin^="ink"]) .void::after {
+/* Dark skins: invert the (dark) noise so flecks read as light grain.
+   Light paper skins (ink*, agar-plate) keep the raw noise. */
+html:not([data-skin^="ink"]):not([data-skin="agar-plate"]) .void::after {
   filter: invert(1);
 }
 @keyframes void-grain {
@@ -891,6 +892,291 @@ html[data-skin="ink-sepia"] .graph .orb {
 html[data-skin="ink-sepia"] footer { border-top-color: #5c4030; }
 
 
+
+/* ═══════════════════════════════════════════════════════════════
+   BIO / MYCELIUM FAMILY — fluorescent mycelium refs
+   Dark substrate + glowing hyphae, or soft agar-plate culture.
+   Mold forks + organic nodes (glow-dot / nodule / hyphal-tip).
+   Ink Schematic family is unchanged; these are variations to compare.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Shared bio mold hyphae glow layers */
+html[data-skin="mycelium-night"] .graph .edge.mold-sheath,
+html[data-skin="fluorescence"] .graph .edge.mold-sheath,
+html[data-skin="spores"] .graph .edge.mold-sheath,
+html[data-skin="agar-plate"] .graph .edge.mold-sheath {
+  stroke-width: 6.2;
+  stroke-opacity: 0.28;
+  fill: none;
+  stroke-linecap: round;
+}
+html[data-skin="mycelium-night"] .graph .edge.mold-mid,
+html[data-skin="fluorescence"] .graph .edge.mold-mid,
+html[data-skin="spores"] .graph .edge.mold-mid,
+html[data-skin="agar-plate"] .graph .edge.mold-mid {
+  stroke-width: 3;
+  stroke-opacity: 0.5;
+  fill: none;
+  stroke-linecap: round;
+}
+html[data-skin="mycelium-night"] .graph .edge.mold-core,
+html[data-skin="fluorescence"] .graph .edge.mold-core,
+html[data-skin="spores"] .graph .edge.mold-core,
+html[data-skin="agar-plate"] .graph .edge.mold-core {
+  stroke-width: 1.35;
+  fill: none;
+}
+html[data-skin="mycelium-night"] .graph .edge.mold-whisker,
+html[data-skin="fluorescence"] .graph .edge.mold-whisker,
+html[data-skin="spores"] .graph .edge.mold-whisker,
+html[data-skin="agar-plate"] .graph .edge.mold-whisker {
+  stroke-width: 0.8;
+  stroke-opacity: 0.55;
+  fill: none;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+html[data-skin="mycelium-night"] .graph .edge.mold-anas,
+html[data-skin="fluorescence"] .graph .edge.mold-anas,
+html[data-skin="spores"] .graph .edge.mold-anas,
+html[data-skin="agar-plate"] .graph .edge.mold-anas {
+  stroke-width: 1;
+  stroke-opacity: 0.4;
+  fill: none;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* Soft halo / lobe / tip pieces stay clickable via parent .node */
+.graph .orb-halo {
+  fill: color-mix(in srgb, var(--node) 35%, transparent);
+  stroke: none;
+  pointer-events: none;
+}
+.graph .orb-lobe {
+  opacity: 0.85;
+}
+.graph .orb-tip {
+  fill: none;
+  stroke: var(--node);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.graph .node:hover .orb-halo,
+.graph .node.active .orb-halo {
+  fill: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.graph .node:hover .orb-tip,
+.graph .node.active .orb-tip {
+  stroke: var(--accent);
+}
+
+/* ── Mycelium Night: black/navy + teal/green glow ─────────────── */
+html[data-skin="mycelium-night"] {
+  --bg: #040810;
+  --spine: #5eead4;
+  --branch: #34d399;
+  --node: #a7f3d0;
+  --text: #e0f2fe;
+  --muted: #64748b;
+  --panel: rgba(6, 12, 24, 0.94);
+  --border: rgba(52, 211, 153, 0.28);
+  --accent: #2dd4bf;
+  --radius: 14px;
+  --tag-radius: 999px;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --shadow: 0 0 28px rgba(45, 212, 191, 0.12);
+  --glow-text: 0 0 22px rgba(52, 211, 153, 0.35), 0 0 48px rgba(45, 212, 191, 0.18);
+  --void-a: rgba(45, 212, 191, 0.06);
+  --void-b: rgba(14, 165, 233, 0.04);
+  --void-size: 52px;
+  --void-opacity: 0.18;
+  --grain-opacity: 0.05;
+  --card-active-border: rgba(45, 212, 191, 0.7);
+  --card-active-shadow: 0 0 32px rgba(52, 211, 153, 0.2);
+  --tab-border: rgba(45, 212, 191, 0.28);
+  --skin-btn-border: rgba(45, 212, 191, 0.32);
+  --edge-width: 1.8;
+}
+html[data-skin="mycelium-night"] body {
+  background:
+    radial-gradient(800px 480px at 40% -10%, #0a1a2e 0%, transparent 55%),
+    radial-gradient(600px 360px at 90% 40%, #061820 0%, transparent 50%),
+    var(--bg);
+}
+html[data-skin="mycelium-night"] .graph .orb {
+  fill: var(--node);
+  stroke: color-mix(in srgb, var(--spine) 55%, transparent);
+  stroke-width: 1.2;
+}
+html[data-skin="mycelium-night"] .graph .spine-line { stroke-width: 2.4; }
+html[data-skin="mycelium-night"] .graph .edge.mold-sheath { stroke-opacity: 0.34; }
+
+/* ── Agar Plate: pale culture dish, brown/olive hyphae ────────── */
+html[data-skin="agar-plate"] {
+  --bg: #f3ecd8;
+  --spine: #5c4a32;
+  --branch: #6b7c3a;
+  --node: #8b6914;
+  --text: #2c2416;
+  --muted: #7a6e58;
+  --panel: rgba(255, 252, 240, 0.92);
+  --border: rgba(107, 124, 58, 0.35);
+  --accent: #7a8f3d;
+  --radius: 16px;
+  --tag-radius: 999px;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --shadow: 0 2px 16px rgba(92, 74, 50, 0.08);
+  --glow-text: none;
+  --void-a: rgba(139, 105, 20, 0.05);
+  --void-b: rgba(107, 124, 58, 0.04);
+  --void-size: 44px;
+  --void-opacity: 0.35;
+  --grain-opacity: 0.06;
+  --card-active-border: rgba(122, 143, 61, 0.75);
+  --card-active-shadow: 0 0 0 2px rgba(107, 124, 58, 0.25);
+  --tab-border: rgba(92, 74, 50, 0.3);
+  --skin-btn-border: rgba(92, 74, 50, 0.3);
+  --edge-width: 2;
+}
+html[data-skin="agar-plate"] body {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 45%, #fff8e7 0%, #f0e6cc 55%, #e8dcc0 100%);
+}
+html[data-skin="agar-plate"] h1 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+html[data-skin="agar-plate"] .card {
+  border-radius: 18px;
+  background: rgba(255, 253, 245, 0.95);
+}
+html[data-skin="agar-plate"] .tag {
+  background: color-mix(in srgb, var(--branch) 12%, transparent);
+  color: var(--branch);
+  border-color: color-mix(in srgb, var(--branch) 40%, transparent);
+}
+html[data-skin="agar-plate"] .graph .orb {
+  fill: var(--node);
+  stroke: #5c4a32;
+  stroke-width: 1.35;
+}
+html[data-skin="agar-plate"] .graph .spine-line { stroke-width: 2.2; opacity: 0.85; }
+html[data-skin="agar-plate"] .graph .edge.mold-sheath {
+  stroke-width: 5.5;
+  stroke-opacity: 0.22;
+}
+html[data-skin="agar-plate"] .skin-btn.active,
+html[data-skin="agar-plate"] .tab.active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* ── Fluorescence: dark + magenta filaments, orange junctions ─── */
+html[data-skin="fluorescence"] {
+  --bg: #08040e;
+  --spine: #f472b6;
+  --branch: #e879f9;
+  --node: #fb923c;
+  --text: #fce7f3;
+  --muted: #9d8aab;
+  --panel: rgba(16, 8, 24, 0.94);
+  --border: rgba(232, 121, 249, 0.3);
+  --accent: #f0abfc;
+  --radius: 12px;
+  --tag-radius: 999px;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --shadow: 0 0 28px rgba(251, 146, 60, 0.1);
+  --glow-text: 0 0 20px rgba(240, 171, 252, 0.4), 0 0 42px rgba(251, 146, 60, 0.22);
+  --void-a: rgba(232, 121, 249, 0.07);
+  --void-b: rgba(251, 146, 60, 0.04);
+  --void-size: 48px;
+  --void-opacity: 0.2;
+  --grain-opacity: 0.045;
+  --card-active-border: rgba(251, 146, 60, 0.75);
+  --card-active-shadow: 0 0 30px rgba(232, 121, 249, 0.22);
+  --tab-border: rgba(232, 121, 249, 0.3);
+  --skin-btn-border: rgba(232, 121, 249, 0.32);
+  --edge-width: 1.8;
+}
+html[data-skin="fluorescence"] body {
+  background:
+    radial-gradient(780px 460px at 30% -15%, #2a0a28 0%, transparent 55%),
+    radial-gradient(520px 340px at 85% 50%, #1a0810 0%, transparent 48%),
+    var(--bg);
+}
+html[data-skin="fluorescence"] .graph .orb {
+  fill: var(--node);
+  stroke: color-mix(in srgb, #fb923c 70%, #fff);
+  stroke-width: 1.15;
+}
+html[data-skin="fluorescence"] .graph .orb-halo {
+  fill: color-mix(in srgb, var(--node) 42%, transparent);
+}
+html[data-skin="fluorescence"] .graph .edge { stroke: var(--branch); }
+html[data-skin="fluorescence"] .graph .edge.mold-sheath {
+  stroke-opacity: 0.36;
+  stroke-width: 6.8;
+}
+html[data-skin="fluorescence"] .card .meta { color: var(--node); }
+html[data-skin="fluorescence"] .tag {
+  color: var(--node);
+  border-color: color-mix(in srgb, var(--node) 45%, transparent);
+}
+
+/* ── Spores: deep blue + lime capillary hyphae ────────────────── */
+html[data-skin="spores"] {
+  --bg: #020818;
+  --spine: #38bdf8;
+  --branch: #a3e635;
+  --node: #bef264;
+  --text: #e0f2fe;
+  --muted: #64748b;
+  --panel: rgba(4, 12, 32, 0.94);
+  --border: rgba(163, 230, 53, 0.28);
+  --accent: #84cc16;
+  --radius: 10px;
+  --tag-radius: 999px;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --shadow: 0 0 26px rgba(163, 230, 53, 0.1);
+  --glow-text: 0 0 18px rgba(56, 189, 248, 0.35), 0 0 40px rgba(163, 230, 53, 0.2);
+  --void-a: rgba(56, 189, 248, 0.06);
+  --void-b: rgba(163, 230, 53, 0.04);
+  --void-size: 40px;
+  --void-opacity: 0.2;
+  --grain-opacity: 0.05;
+  --card-active-border: rgba(163, 230, 53, 0.7);
+  --card-active-shadow: 0 0 28px rgba(56, 189, 248, 0.18);
+  --tab-border: rgba(56, 189, 248, 0.28);
+  --skin-btn-border: rgba(163, 230, 53, 0.3);
+  --edge-width: 1.6;
+}
+html[data-skin="spores"] body {
+  background:
+    radial-gradient(720px 440px at 55% -12%, #0a2040 0%, transparent 55%),
+    radial-gradient(480px 300px at 10% 60%, #061428 0%, transparent 50%),
+    var(--bg);
+}
+html[data-skin="spores"] .graph .orb {
+  fill: var(--node);
+  stroke: color-mix(in srgb, var(--branch) 60%, transparent);
+  stroke-width: 1.1;
+}
+html[data-skin="spores"] .graph .orb-tip {
+  stroke: var(--node);
+  stroke-width: 2;
+}
+html[data-skin="spores"] .graph .edge.mold-core { stroke-width: 1.15; }
+html[data-skin="spores"] .graph .edge.mold-sheath {
+  stroke-width: 5.8;
+  stroke-opacity: 0.3;
+}
+html[data-skin="spores"] .graph .spine-line { stroke-width: 2.2; }
+html[data-skin="spores"] .tag {
+  color: var(--branch);
+  border-color: color-mix(in srgb, var(--branch) 45%, transparent);
+}
+
 /* Fork-style overrides (mold skins): demote dense mycelium look */
 html[data-fork-style="calm"] .graph .edge.mold-sheath,
 html[data-fork-style="sparse-mycelium"] .graph .edge.mold-sheath {
@@ -927,6 +1213,10 @@ html[data-skin="blueprint"] .graph .edge { stroke-linejoin: miter; }
 html[data-skin="obsidian"] .graph .edge { stroke: var(--branch); }
 html[data-skin="obsidian"] .graph .orb { fill: var(--node); stroke: var(--accent); }
 html[data-skin^="ink"] .graph .edge { stroke: var(--branch); }
+html[data-skin="mycelium-night"] .graph .edge,
+html[data-skin="agar-plate"] .graph .edge,
+html[data-skin="fluorescence"] .graph .edge,
+html[data-skin="spores"] .graph .edge { stroke: var(--branch); }
 
 /* Ink mold hyphae — editorial paper, same mycelium taper knobs */
 html[data-skin="ink"] .graph .edge.mold-sheath {
