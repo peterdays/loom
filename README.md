@@ -16,19 +16,19 @@ python3 -m http.server 8080 --directory public
 
 ## Temporal graph
 
-`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). On the default skin, `parent` forks are **mold paths** — organic hypha-like curves, not orthogonal stubs. The meander is seeded from the child project id (FNV-1a → mulberry32), so a reload draws the same curves. Nested sibling lanes use a smaller amplitude. The spine itself stays straight. Click a node to focus its card. Stub data only in `public/data/projects.json`.
+`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). On **Ink Schematic** (default), **Neon**, and **Ink**, `parent` forks are **mold hyphae** — denser irregular meanders with root→tip stroke taper, decorative side-whiskers, and occasional anastomosing loops that rejoin the same fork (never fake nodes). Meander + whiskers are seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. The TIME spine stays straight. Click a node to focus its card. Stub data only in `public/data/projects.json`. Grain overlay is unchanged.
 
 A **skin switcher** on the page offers ≥4 distinct looks (CSS themes + edge layout variants):
 
 | Skin | Look | Edges / nodes |
 |------|------|----------------|
-| **Neon** | Soft cyan/magenta glow | curved / circles |
+| **Neon** | Soft cyan/magenta glow | mold hyphae / circles |
 | **Circuit** | CRT grid, monospace, hard angles | orthogonal / squares |
 | **Blueprint** | White-on-blue print, dashed lines, REV stamps | orthogonal / circles |
 | **Obsidian** | Near-black phosphor amber/green, blocky | orthogonal / squares |
-| **Ink** | Cream paper / editorial (baseline) | curved / diamonds |
+| **Ink** | Cream paper / editorial (baseline) | mold hyphae / diamonds |
 | **Ink Ortho** | Same cream/red ink palette, hard angles | orthogonal / squares |
-| **Ink Schematic** (default) | Thin technical strokes, stamp labels, paper grid | mold hyphae (seeded) / squares |
+| **Ink Schematic** (default) | Thin technical strokes, stamp labels, paper grid | mycelium mold (taper + whiskers) / squares |
 | **Ink Brutal** | High-contrast black on cream, thick angles | orthogonal / squares |
 | **Ink Sepia** | Warm sepia paper, hard edges | orthogonal / diamonds |
 
