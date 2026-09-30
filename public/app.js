@@ -881,7 +881,7 @@ function renderCards(projects) {
 function applySkin(name, { persist = true } = {}) {
   if (!SKINS[name]) name = DEFAULT_SKIN;
   document.documentElement.setAttribute("data-skin", name);
-  document.querySelectorAll(".skin-btn").forEach((btn) => {
+  document.querySelectorAll(".skin-btn:not(.fork-btn)").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.skin === name);
   });
   if (persist) {
@@ -896,7 +896,7 @@ function initSkinSwitcher() {
   if (!SKINS[saved]) saved = DEFAULT_SKIN;
   applySkin(saved, { persist: false });
 
-  document.querySelectorAll(".skin-btn").forEach((btn) => {
+  document.querySelectorAll(".skin-btn:not(.fork-btn)").forEach((btn) => {
     btn.addEventListener("click", () => applySkin(btn.dataset.skin));
   });
 }
