@@ -1,11 +1,11 @@
 const SKIN_KEY = "loom-skin";
 const DEFAULT_SKIN = "ink-schematic";
 const SKINS = {
-  neon: { edges: "curve", nodes: "circle", glow: true, dashed: false },
+  neon: { edges: "mold", nodes: "circle", glow: true, dashed: false },
   circuit: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
   blueprint: { edges: "ortho", nodes: "circle", glow: false, dashed: true },
   obsidian: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
-  ink: { edges: "curve", nodes: "diamond", glow: false, dashed: false },
+  ink: { edges: "mold", nodes: "diamond", glow: false, dashed: false },
   "ink-ortho": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
   "ink-schematic": { edges: "mold", nodes: "rect", glow: false, dashed: false, stamp: true },
   "ink-brutal": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
@@ -242,10 +242,11 @@ function mulberry32(seed) {
 }
 
 /**
- * Open curve through pts. Tension is tight (÷8, not ÷6) so the hypha
- * follows the samples instead of looping back across the time spine.
+ * Open curve through pts. Catmull-Rom-ish beziers with tight tension (÷6)
+ * so the hypha follows samples instead of looping back across the time spine.
  */
 function moldSmooth(pts) {
+  if (!pts || pts.length < 2) return "";
   const d = [`M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`];
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[Math.max(0, i - 1)];
@@ -261,14 +262,47 @@ function moldSmooth(pts) {
   return d.join(" ");
 }
 
+function moldLerpPt(a, b, t) {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+/** Sample a point + unit tangent along a polyline (t in [0,1]). */
+function moldSample(pts, t) {
+  if (pts.length < 2) return { x: pts[0].x, y: pts[0].y, tx: 1, ty: 0 };
+  const segLens = [];
+  let total = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const len = Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y) || 1e-6;
+    segLens.push(len);
+    total += len;
+  }
+  let target = Math.max(0, Math.min(1, t)) * total;
+  for (let i = 0; i < segLens.length; i++) {
+    if (target <= segLens[i] || i === segLens.length - 1) {
+      const u = target / segLens[i];
+      const a = pts[i];
+      const b = pts[i + 1];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const inv = 1 / (Math.hypot(dx, dy) || 1);
+      return { x: a.x + dx * u, y: a.y + dy * u, tx: dx * inv, ty: dy * inv };
+    }
+    target -= segLens[i];
+  }
+  const last = pts[pts.length - 1];
+  const prev = pts[pts.length - 2];
+  const dx = last.x - prev.x;
+  const dy = last.y - prev.y;
+  const inv = 1 / (Math.hypot(dx, dy) || 1);
+  return { x: last.x, y: last.y, tx: dx * inv, ty: dy * inv };
+}
+
 /**
- * Organic fork from parent → child. Primary forks peel off the straight
- * time spine, then meander like a hypha (alternating bends, uneven spacing).
- * Nested sibling lanes use a smaller amplitude. RNG is seeded only from the
- * child project id, so a reload draws the same curve.
+ * Build the main hypha point chain: peel off the straight time spine, then
+ * meander with denser, uneven samples (mycelium irregularity). Seeded from
+ * child project id. Nested sibling lanes stay quieter.
  */
-function moldFork(p, c, vertical) {
-  const rnd = mulberry32(hashSeed(String(c.id || "")));
+function moldHyphaPoints(p, c, vertical, rnd) {
   const nested = (p.side || 0) !== 0;
   const spine = p.spine ?? (vertical ? p.x : p.y);
   const dx = c.x - p.x;
@@ -285,26 +319,30 @@ function moldFork(p, c, vertical) {
   if (!nested) peel = vertical ? 28 : (outY > 0 ? 46 : 26);
   peel = Math.min(peel, dist * 0.4);
   const amp = nested
-    ? Math.min(9, 4 + dist * 0.03)
-    : Math.min(26, 12 + dist * 0.028);
+    ? Math.min(10, 4.5 + dist * 0.032)
+    : Math.min(30, 13 + dist * 0.032);
 
   const pts = [{ x: p.x, y: p.y }];
   const latX = vertical ? 0 : 1;
   const latY = vertical ? 1 : 0;
   if (peel > 6) {
-    const j1 = (rnd() * 2 - 1) * Math.min(8, amp * 0.45);
-    const j2 = (rnd() * 2 - 1) * Math.min(6, amp * 0.28);
+    const j1 = (rnd() * 2 - 1) * Math.min(9, amp * 0.48);
+    const j2 = (rnd() * 2 - 1) * Math.min(7, amp * 0.32);
     pts.push({
-      x: p.x + outX * peel * 0.38 + latX * j1,
-      y: p.y + outY * peel * 0.38 + latY * j1,
+      x: p.x + outX * peel * 0.32 + latX * j1,
+      y: p.y + outY * peel * 0.32 + latY * j1,
     });
     pts.push({
-      x: p.x + outX * peel * 0.78 + latX * j2 * 0.35,
-      y: p.y + outY * peel * 0.78 + latY * j2 * 0.35,
+      x: p.x + outX * peel * 0.62 + latX * j2 * 0.4,
+      y: p.y + outY * peel * 0.62 + latY * j2 * 0.4,
     });
     pts.push({
-      x: p.x + outX * peel + latX * j2,
-      y: p.y + outY * peel + latY * j2,
+      x: p.x + outX * peel * 0.88 + latX * j2,
+      y: p.y + outY * peel * 0.88 + latY * j2,
+    });
+    pts.push({
+      x: p.x + outX * peel + latX * j2 * 0.55,
+      y: p.y + outY * peel + latY * j2 * 0.55,
     });
   }
 
@@ -317,17 +355,22 @@ function moldFork(p, c, vertical) {
   const pyn = ex / el;
   const ox = vertical ? outX : 0;
   const oy = vertical ? 0 : outY;
-  const nMid = el < 80 ? 2 : el < 180 ? 3 : el < 360 ? 4 : 5;
-  let prevT = 0.06;
+  // Denser mid samples → irregular anastomosing feel along the hypha.
+  const nMid = el < 70 ? 3 : el < 140 ? 5 : el < 240 ? 7 : el < 380 ? 9 : 11;
+  let prevT = 0.04;
   for (let i = 1; i <= nMid; i++) {
     const t = i / (nMid + 1);
-    const tt = Math.min(0.92, Math.max(prevT + 0.08, t + (rnd() - 0.5) * 0.12));
+    const jitter = (rnd() - 0.5) * 0.1;
+    const tt = Math.min(0.94, Math.max(prevT + 0.045, t + jitter));
     prevT = tt;
     const taper = Math.sin(Math.PI * tt);
-    const side = i % 2 === 0 ? 1 : -1;
-    const gain = 0.4 + rnd() * 0.75;
-    const w = side * gain * amp * taper;
-    const outwardBoost = (0.12 + rnd() * 0.38) * amp * taper * (nested ? 0.2 : 1);
+    // Alternate sides with occasional same-side doubles (real hyphae aren't metronomes).
+    const side = (i % 2 === 0 ? 1 : -1) * (rnd() < 0.18 ? -1 : 1);
+    const gain = 0.35 + rnd() * 0.9;
+    // High-frequency secondary wiggle on top of the primary bend.
+    const micro = (rnd() * 2 - 1) * amp * 0.22 * taper;
+    const w = side * gain * amp * taper + micro;
+    const outwardBoost = (0.1 + rnd() * 0.42) * amp * taper * (nested ? 0.18 : 1);
     let x = ax + ex * tt + pxn * w + ox * outwardBoost;
     let y = ay + ey * tt + pyn * w + oy * outwardBoost;
     if (!nested && !vertical) {
@@ -339,7 +382,101 @@ function moldFork(p, c, vertical) {
     pts.push({ x, y });
   }
   pts.push({ x: c.x, y: c.y });
-  return moldSmooth(pts);
+  return { pts, nested, amp, el, outX, outY, spine };
+}
+
+/**
+ * Decorative side-whiskers: short secondary filaments that die out and never
+ * land on a node (no fake terminals). Seeded from the same RNG stream.
+ */
+function moldWhiskers(pts, rnd, nested, amp) {
+  const out = [];
+  if (pts.length < 4) return out;
+  const count = nested ? 2 + (rnd() < 0.5 ? 1 : 0) : 4 + Math.floor(rnd() * 4);
+  for (let i = 0; i < count; i++) {
+    const t = 0.14 + rnd() * 0.68;
+    const s = moldSample(pts, t);
+    const nx = -s.ty;
+    const ny = s.tx;
+    const side = rnd() < 0.5 ? 1 : -1;
+    const len = (nested ? 6 : 9) + rnd() * (nested ? 9 : 16);
+    const bend = (rnd() * 2 - 1) * 0.35;
+    const mid = {
+      x: s.x + nx * side * len * 0.55 + s.tx * bend * len,
+      y: s.y + ny * side * len * 0.55 + s.ty * bend * len,
+    };
+    const tip = {
+      x: s.x + nx * side * len + s.tx * bend * len * 1.4,
+      y: s.y + ny * side * len + s.ty * bend * len * 1.4,
+    };
+    // Tiny 3-pt path — reads as a hair, not a branch to a node.
+    out.push(moldSmooth([{ x: s.x, y: s.y }, mid, tip]));
+  }
+  return out;
+}
+
+/**
+ * Anastomosing loops: leave the main hypha and rejoin further along it.
+ * Decorative only — no extra graph nodes. Keeps the mesh/mycelium feel.
+ */
+function moldAnastomoses(pts, rnd, nested, amp) {
+  const out = [];
+  if (nested || pts.length < 5) return out;
+  const n = rnd() < 0.72 ? 1 : (rnd() < 0.45 ? 2 : 0);
+  for (let i = 0; i < n; i++) {
+    const t0 = 0.22 + rnd() * 0.28;
+    const span = 0.14 + rnd() * 0.2;
+    const t1 = Math.min(0.88, t0 + span);
+    const a = moldSample(pts, t0);
+    const b = moldSample(pts, t1);
+    const nx = -(a.ty + b.ty) * 0.5;
+    const ny = (a.tx + b.tx) * 0.5;
+    const nlen = Math.hypot(nx, ny) || 1;
+    const side = rnd() < 0.5 ? 1 : -1;
+    const bulge = (0.55 + rnd() * 0.85) * Math.min(amp * 0.95, 22);
+    const midT = 0.35 + rnd() * 0.3;
+    const midBase = moldLerpPt(
+      { x: a.x, y: a.y },
+      { x: b.x, y: b.y },
+      midT
+    );
+    const loop = [
+      { x: a.x, y: a.y },
+      {
+        x: a.x + (nx / nlen) * side * bulge * 0.55 + a.tx * span * 12,
+        y: a.y + (ny / nlen) * side * bulge * 0.55 + a.ty * span * 12,
+      },
+      {
+        x: midBase.x + (nx / nlen) * side * bulge,
+        y: midBase.y + (ny / nlen) * side * bulge,
+      },
+      {
+        x: b.x + (nx / nlen) * side * bulge * 0.4 - b.tx * span * 8,
+        y: b.y + (ny / nlen) * side * bulge * 0.4 - b.ty * span * 8,
+      },
+      { x: b.x, y: b.y },
+    ];
+    out.push(moldSmooth(loop));
+  }
+  return out;
+}
+
+/**
+ * Organic fork from parent → child as a mycelium-like bundle:
+ * main hypha + root-thick sheath taper + decorative whiskers + occasional
+ * anastomosing loops. All deterministic from child project id.
+ */
+function moldForkBundle(p, c, vertical) {
+  const rnd = mulberry32(hashSeed(String(c.id || "")));
+  const { pts, nested, amp } = moldHyphaPoints(p, c, vertical, rnd);
+  const main = moldSmooth(pts);
+  const whiskers = moldWhiskers(pts, rnd, nested, amp);
+  const anastomoses = moldAnastomoses(pts, rnd, nested, amp);
+  return { main, whiskers, anastomoses, nested };
+}
+
+function moldFork(p, c, vertical) {
+  return moldForkBundle(p, c, vertical).main;
 }
 
 function nodeShape(n, kind) {
@@ -470,12 +607,24 @@ function renderGraph(projects) {
 
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
     const parent = byId[n.parent];
-    const d = edgePath(parent, n, opts.edges, vertical);
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
-    // One extra static stroke (no animation) so the hypha reads as a thread, not a hairline.
     if (opts.edges === "mold") {
-      return `<path class="edge mold-sheath" d="${d}"/><path class="edge" d="${d}"${dash}${filt}/>`;
+      const bundle = moldForkBundle(parent, n, vertical);
+      const d = bundle.main;
+      // Root-thick sheath (pathLength dash covers only the parent half) + tip-thin core.
+      // Static SVG only — no animation. Whiskers/anastomoses are decorative (no nodes).
+      const sheath = `<path class="edge mold-sheath" d="${d}" pathLength="100" stroke-dasharray="40 64"/>`;
+      const mid = `<path class="edge mold-mid" d="${d}" pathLength="100" stroke-dasharray="68 36"/>`;
+      const core = `<path class="edge mold-core" d="${d}"${dash}${filt}/>`;
+      const loops = bundle.anastomoses.map((ad) =>
+        `<path class="edge mold-anas" d="${ad}"/>`
+      ).join("");
+      const whisk = bundle.whiskers.map((wd) =>
+        `<path class="edge mold-whisker" d="${wd}"/>`
+      ).join("");
+      return loops + sheath + mid + core + whisk;
     }
+    const d = edgePath(parent, n, opts.edges, vertical);
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
   }).join("");
 
