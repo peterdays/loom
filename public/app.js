@@ -1,5 +1,5 @@
 const SKIN_KEY = "loom-skin";
-const DEFAULT_SKIN = "ink-schematic";
+const DEFAULT_SKIN = "spores";
 const SKINS = {
   neon: { edges: "mold", nodes: "circle", glow: true, dashed: false },
   circuit: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
