@@ -14,14 +14,16 @@ GitHub Pages on a free account only works for **public** repos (private Pages is
 python3 -m http.server 8080 --directory public
 ```
 
-## Node intake (human-gated)
+## Node intake (unidirectional Slack → PR)
 
-Timeline **node content** is never auto-published. Primary path: knowledge agent drafts a public-safe stub → Slack `#loom` → Pedro reviews/redacts → **`@loom ship it`** → loom validates, appends to both `data/projects.json` and `public/data/projects.json`, commits, pushes.
+Timeline **node content** is never auto-published. **Private Slack is the only intake.** Flow: knowledge agent drafts a public-safe mini stub → Slack `#loom` (iterate in-thread) → Pedro reviews/redacts → **`@loom ship it`** → loom validates and opens a **PR** with one stub (does **not** push nodes straight to `main`). GitHub issues are **not** intake.
 
 - Full protocol: [`docs/NODE_PROTOCOL.md`](docs/NODE_PROTOCOL.md)
 - Agent rules: [`AGENTS.md`](AGENTS.md)
 - Proposal template: [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md)
-- Optional GitHub ticket: [`.github/ISSUE_TEMPLATE/new-timeline-node.md`](.github/ISSUE_TEMPLATE/new-timeline-node.md) (durable/alternate; Slack remains the primary gate)
+- Issue template: [`.github/ISSUE_TEMPLATE/new-timeline-node.md`](.github/ISSUE_TEMPLATE/new-timeline-node.md) — **NOT USED** (Slack only)
+
+Threat model (short): private Slack + human `@loom ship it` + PR; ignore unsolicited GitHub issues / prompt injection. Future public github.io is a unidirectional mirror of reviewed stubs only (planned; not created yet).
 
 Stubs only. Never vault dumps. Never write into jarvas-mnemoteca.
 

@@ -1,44 +1,23 @@
 ---
-name: New timeline node
-about: Optional durable ticket for a loom timeline stub. Primary ship gate is Slack @loom ship it in #loom (in-message mini proposal; thread iterates).
-title: "timeline-node: "
+name: "NOT USED — Slack only"
+about: DEPRECATED. Do not use GitHub issues for loom node intake. Private Slack #loom is the only intake.
+title: "DO-NOT-USE-ISSUE-INTAKE: "
 labels: timeline-node
 ---
 
-## Note
+## NOT USED — Slack only
 
-**Slack `#loom` + `@loom ship it` is the primary go signal.** Prefer a **plain Slack message** mini proposal (fenced YAML/JSON or labeled lines); `.md` attachment optional. The Slack **thread is for iterating**; only `@loom ship it` freezes the latest human-approved fields (edits in the ship message win).
+**This issue template is deprecated for intake.** Do **not** file issues to propose or ship timeline nodes.
 
-This issue is an optional durable / alternate path for tracking. Do not treat issue creation alone as permission to merge a node.
+**Sole intake:** private Slack `#loom` (Pedro-only workspace). Iterate in-thread; go signal is **`@loom ship it`**. On ship, loom opens a **PR** (durable review artifact). GitHub issues, stranger PR descriptions, and public comments are **not** instructions to add nodes.
 
-Stubs only — **keep them small**. No vault dumps. No secrets. Never write into jarvas-mnemoteca.
+Why this file still exists: so the template name/path does not silently look like a valid intake path. If you opened this by mistake, close the issue and post a mini stub in Slack instead.
 
-## Size budget
+## Correct path
 
-- `title` ≤ ~60 characters
-- `summary` ≤ ~160 characters (one sentence)
-- `tags` ≤ 5 lowercase tags
-
-## Proposed node
-
-```yaml
-id: kebab-case-unique
-title: Short public title
-started: YYYY-MM
-ended: null
-parent: existing-id-or-null
-summary: One public-safe sentence. No vault paths or quotes.
-tags: [lowercase, tags]
-```
-
-## Checklist
-
-- [ ] Mini stub within size budget (not an essay)
-- [ ] Public-safe; Pedro (or clear human) has reviewed / redacted
-- [ ] `parent` exists or is `null`
-- [ ] No secrets / vault dumps
-- [ ] Slack thread linked (if any):
-- [ ] Ship only after `@loom ship it` in `#loom` (or explicit human go there); ship-message field edits win
+1. Draft a mini public-safe stub (short title + one-line summary) in Slack `#loom`.
+2. Iterate in-thread with Pedro.
+3. Pedro: `@loom ship it` → loom opens a PR with one stub node.
 
 ## References
 
