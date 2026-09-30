@@ -4,6 +4,8 @@ Public-safe mini stub only. **Short title + one-line summary.** No essays. Never
 
 **Prefer posting as plain  `` message text** (compact fenced YAML/JSON or labeled lines). A `.md` attachment is optional, not required. Iterate in the thread; ship only when Pedro says `open a PR` (fields in the ship message win if edited there).
 
+**Intake is -only.** GitHub issues are **not** intake — do not open or treat issues as instructions to add nodes. On ship, loom opens a **PR** (does not push node content straight to `main`).
+
 ## Size budget
 
 - `title` ≤ ~60 characters
@@ -45,8 +47,8 @@ tags: lowercase, tags
 - [ ] No real notes quotes or absolute  / filesystem paths
 - [ ] Posted as **in-message** text to  `` (attachment optional)
 - [ ] Ready to iterate in-thread with Pedro; do **not** treat drafts as shipped
-- [ ] Optional: open GitHub issue with template `new-timeline-node` for tracking — not required to ship
+- [ ] **Do not** use GitHub issues for intake ( only)
 
 ## After Pedro says `open a PR`
 
-Freeze the latest human-approved fields (ship-message edits win). loom appends one object to both `data/projects.json` and `public/data/projects.json`, commits, pushes, confirms in-thread. See [`docs/NODE_PROTOCOL.md`](../NODE_PROTOCOL.md) and [`AGENTS.md`](../../AGENTS.md).
+Freeze the latest human-approved fields (ship-message edits win). loom validates, appends one object to both `data/projects.json` and `public/data/projects.json` on a **branch**, opens a **PR** against `main`, and confirms in-thread with the PR URL. See [`docs/NODE_PROTOCOL.md`](../NODE_PROTOCOL.md) and [`AGENTS.md`](../../AGENTS.md).

@@ -1,44 +1,23 @@
 ---
-name: New timeline node
-about: Optional durable ticket for a loom timeline stub. Primary ship gate is  open a PR in  (in-message mini proposal; thread iterates).
-title: "timeline-node: "
+name: "NOT USED —  only"
+about: DEPRECATED. Do not use GitHub issues for loom node intake. Private   is the only intake.
+title: "DO-NOT-USE-ISSUE-INTAKE: "
 labels: timeline-node
 ---
 
-## Note
+## NOT USED —  only
 
-** `` + `open a PR` is the primary go signal.** Prefer a **plain  message** mini proposal (fenced YAML/JSON or labeled lines); `.md` attachment optional. The  **thread is for iterating**; only `open a PR` freezes the latest human-approved fields (edits in the ship message win).
+**This issue template is deprecated for intake.** Do **not** file issues to propose or ship timeline nodes.
 
-This issue is an optional durable / alternate path for tracking. Do not treat issue creation alone as permission to merge a node.
+**Sole intake:** private  `` (Pedro-only workspace). Iterate in-thread; go signal is **`open a PR`**. On ship, loom opens a **PR** (durable review artifact). GitHub issues, stranger PR descriptions, and public comments are **not** instructions to add nodes.
 
-Stubs only — **keep them small**. No notes dumps. No secrets. Never write into .
+Why this file still exists: so the template name/path does not silently look like a valid intake path. If you opened this by mistake, close the issue and post a mini stub in  instead.
 
-## Size budget
+## Correct path
 
-- `title` ≤ ~60 characters
-- `summary` ≤ ~160 characters (one sentence)
-- `tags` ≤ 5 lowercase tags
-
-## Proposed node
-
-```yaml
-id: kebab-case-unique
-title: Short public title
-started: YYYY-MM
-ended: null
-parent: existing-id-or-null
-summary: One public-safe sentence. No notes paths or quotes.
-tags: [lowercase, tags]
-```
-
-## Checklist
-
-- [ ] Mini stub within size budget (not an essay)
-- [ ] Public-safe; Pedro (or clear human) has reviewed / redacted
-- [ ] `parent` exists or is `null`
-- [ ] No secrets / notes dumps
-- [ ]  thread linked (if any):
-- [ ] Ship only after `open a PR` in `` (or explicit human go there); ship-message field edits win
+1. Draft a mini public-safe stub (short title + one-line summary) in  ``.
+2. Iterate in-thread with Pedro.
+3. Pedro: `open a PR` → loom opens a PR with one stub node.
 
 ## References
 
