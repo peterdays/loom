@@ -7,7 +7,7 @@ const SKINS = {
   obsidian: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
   ink: { edges: "curve", nodes: "diamond", glow: false, dashed: false },
   "ink-ortho": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
-  "ink-schematic": { edges: "ortho", nodes: "rect", glow: false, dashed: false, stamp: true },
+  "ink-schematic": { edges: "mold", nodes: "rect", glow: false, dashed: false, stamp: true },
   "ink-brutal": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
   "ink-sepia": { edges: "ortho", nodes: "diamond", glow: false, dashed: false },
 };
@@ -211,7 +211,135 @@ function curveFork(p, c, vertical) {
 }
 
 function edgePath(p, c, mode, vertical) {
+  if (mode === "mold") return moldFork(p, c, vertical);
   return mode === "ortho" ? orthoFork(p, c, vertical) : curveFork(p, c, vertical);
+}
+
+function fmt(n) {
+  const v = Math.round(n * 10) / 10;
+  return Object.is(v, -0) ? "0" : String(v);
+}
+
+/** FNV-1a → uint32. Same project id always yields the same meander. */
+function hashSeed(str) {
+  let h = 2166136261;
+  const s = String(str);
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function rand() {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Open curve through pts. Tension is tight (÷8, not ÷6) so the hypha
+ * follows the samples instead of looping back across the time spine.
+ */
+function moldSmooth(pts) {
+  const d = [`M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${fmt(c1x)} ${fmt(c1y)} ${fmt(c2x)} ${fmt(c2y)} ${fmt(p2.x)} ${fmt(p2.y)}`);
+  }
+  return d.join(" ");
+}
+
+/**
+ * Organic fork from parent → child. Primary forks peel off the straight
+ * time spine, then meander like a hypha (alternating bends, uneven spacing).
+ * Nested sibling lanes use a smaller amplitude. RNG is seeded only from the
+ * child project id, so a reload draws the same curve.
+ */
+function moldFork(p, c, vertical) {
+  const rnd = mulberry32(hashSeed(String(c.id || "")));
+  const nested = (p.side || 0) !== 0;
+  const spine = p.spine ?? (vertical ? p.x : p.y);
+  const dx = c.x - p.x;
+  const dy = c.y - p.y;
+  const dist = Math.hypot(dx, dy) || 1;
+
+  let outX = 0;
+  let outY = 0;
+  if (vertical) outX = Math.sign(c.x - spine) || 1;
+  else outY = Math.sign(c.y - spine) || Math.sign(c.side) || -1;
+
+  // Peel off the spine before wandering. Downward forks clear the date labels.
+  let peel = 0;
+  if (!nested) peel = vertical ? 28 : (outY > 0 ? 46 : 26);
+  peel = Math.min(peel, dist * 0.4);
+  const amp = nested
+    ? Math.min(9, 4 + dist * 0.03)
+    : Math.min(26, 12 + dist * 0.028);
+
+  const pts = [{ x: p.x, y: p.y }];
+  const latX = vertical ? 0 : 1;
+  const latY = vertical ? 1 : 0;
+  if (peel > 6) {
+    const j1 = (rnd() * 2 - 1) * Math.min(8, amp * 0.45);
+    const j2 = (rnd() * 2 - 1) * Math.min(6, amp * 0.28);
+    pts.push({
+      x: p.x + outX * peel * 0.38 + latX * j1,
+      y: p.y + outY * peel * 0.38 + latY * j1,
+    });
+    pts.push({
+      x: p.x + outX * peel * 0.78 + latX * j2 * 0.35,
+      y: p.y + outY * peel * 0.78 + latY * j2 * 0.35,
+    });
+    pts.push({
+      x: p.x + outX * peel + latX * j2,
+      y: p.y + outY * peel + latY * j2,
+    });
+  }
+
+  const ax = pts[pts.length - 1].x;
+  const ay = pts[pts.length - 1].y;
+  const ex = c.x - ax;
+  const ey = c.y - ay;
+  const el = Math.hypot(ex, ey) || 1;
+  const pxn = -ey / el;
+  const pyn = ex / el;
+  const ox = vertical ? outX : 0;
+  const oy = vertical ? 0 : outY;
+  const nMid = el < 80 ? 2 : el < 180 ? 3 : el < 360 ? 4 : 5;
+  let prevT = 0.06;
+  for (let i = 1; i <= nMid; i++) {
+    const t = i / (nMid + 1);
+    const tt = Math.min(0.92, Math.max(prevT + 0.08, t + (rnd() - 0.5) * 0.12));
+    prevT = tt;
+    const taper = Math.sin(Math.PI * tt);
+    const side = i % 2 === 0 ? 1 : -1;
+    const gain = 0.4 + rnd() * 0.75;
+    const w = side * gain * amp * taper;
+    const outwardBoost = (0.12 + rnd() * 0.38) * amp * taper * (nested ? 0.2 : 1);
+    let x = ax + ex * tt + pxn * w + ox * outwardBoost;
+    let y = ay + ey * tt + pyn * w + oy * outwardBoost;
+    if (!nested && !vertical) {
+      if (outY < 0) y = Math.min(y, spine - 7);
+      else y = Math.max(y, spine + 44);
+    } else if (!nested && vertical) {
+      x = Math.max(x, spine + 10);
+    }
+    pts.push({ x, y });
+  }
+  pts.push({ x: c.x, y: c.y });
+  return moldSmooth(pts);
 }
 
 function nodeShape(n, kind) {
@@ -344,12 +472,17 @@ function renderGraph(projects) {
     const parent = byId[n.parent];
     const d = edgePath(parent, n, opts.edges, vertical);
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
+    // One extra static stroke (no animation) so the hypha reads as a thread, not a hairline.
+    if (opts.edges === "mold") {
+      return `<path class="edge mold-sheath" d="${d}"/><path class="edge" d="${d}"${dash}${filt}/>`;
+    }
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
   }).join("");
 
   const dots = nodes.map((n) => {
-    const hard = opts.nodes === "rect" || opts.edges === "ortho";
-    const anchor = n.side === 0
+    const hard = opts.edges === "ortho";
+    // Mold forks already leave the spine; a time-peg under the node would read as an ortho stub.
+    const anchor = opts.edges === "mold" || n.side === 0
       ? ""
       : (vertical
         ? (hard
