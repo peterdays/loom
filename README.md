@@ -16,7 +16,18 @@ python3 -m http.server 8080 --directory public
 
 ## Temporal graph
 
-`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). On **Ink Schematic** (default), **Neon**, and **Ink**, `parent` forks are **mold hyphae** — denser irregular meanders with root→tip stroke taper, decorative side-whiskers, and occasional anastomosing loops that rejoin the same fork (never fake nodes). Meander + whiskers are seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. The TIME spine stays straight. Click a node to focus its card. Stub data only in `public/data/projects.json`. Grain overlay is unchanged.
+`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). On **Ink Schematic** (default), **Neon**, and **Ink**, `parent` forks are **mold hyphae** — organic strokes that leave the straight TIME spine. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Click a node to focus its card. Stub data only in `public/data/projects.json`. Grain overlay is unchanged.
+
+A **Forks** control (separate from skins) picks the stroke variation; default is **Calm** so load is not dense mycelium:
+
+| Fork style | Look |
+|------------|------|
+| **Calm** (default) | Single smooth organic hypha, light meander, optional thin sheath — no whiskers/loops |
+| **Ribbon** | Soft tapered stroke only, gentle S-curves, very restrained |
+| **Ink etched** | Thin single stroke with slight paper-pen jitter, no layers |
+| **Sparse** | At most 1–2 tiny whiskers, no anastomosing loops, lighter than the old dense pass |
+
+Fork choice persists in `localStorage` (`loom-fork-style`), independent of skin.
 
 A **skin switcher** on the page offers ≥4 distinct looks (CSS themes + edge layout variants):
 
@@ -28,11 +39,11 @@ A **skin switcher** on the page offers ≥4 distinct looks (CSS themes + edge la
 | **Obsidian** | Near-black phosphor amber/green, blocky | orthogonal / squares |
 | **Ink** | Cream paper / editorial (baseline) | mold hyphae / diamonds |
 | **Ink Ortho** | Same cream/red ink palette, hard angles | orthogonal / squares |
-| **Ink Schematic** (default) | Thin technical strokes, stamp labels, paper grid | mycelium mold (taper + whiskers) / squares |
+| **Ink Schematic** (default) | Thin technical strokes, stamp labels, paper grid | mold forks (style via Forks) / squares |
 | **Ink Brutal** | High-contrast black on cream, thick angles | orthogonal / squares |
 | **Ink Sepia** | Warm sepia paper, hard edges | orthogonal / diamonds |
 
-Choice persists in `localStorage` (`loom-skin`).
+Skin choice persists in `localStorage` (`loom-skin`).
 
 ## Mnemoteca → loom pipeline
 

@@ -163,6 +163,15 @@ h1 {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   box-shadow: var(--shadow);
 }
+.fork-switcher { margin-top: 0.45rem; }
+
+/* Thin optional sheath for calm / sparse fork styles */
+.graph .edge.mold-sheath-thin {
+  stroke-width: 2.4;
+  stroke-opacity: 0.18;
+  fill: none;
+  stroke-linecap: round;
+}
 
 .graph {
   width: 100%;
@@ -588,6 +597,7 @@ html[data-skin^="ink"] .tag {
   font-family: var(--font-mono);
 }
 html[data-skin^="ink"] .skin-btn,
+html[data-skin^="ink"] .fork-btn,
 html[data-skin^="ink"] .tab {
   border-width: 2px;
   border-radius: 0;
@@ -743,6 +753,7 @@ html[data-skin="ink-schematic"] .graph .stamp-label text {
   fill: #111;
 }
 html[data-skin="ink-schematic"] .skin-btn.active,
+html[data-skin="ink-schematic"] .fork-btn.active,
 html[data-skin="ink-schematic"] .tab.active {
   background: transparent;
   color: var(--accent);
@@ -878,6 +889,29 @@ html[data-skin="ink-sepia"] .graph .orb {
   stroke-width: 2;
 }
 html[data-skin="ink-sepia"] footer { border-top-color: #5c4030; }
+
+
+/* Fork-style overrides (mold skins): demote dense mycelium look */
+html[data-fork-style="calm"] .graph .edge.mold-sheath,
+html[data-fork-style="sparse-mycelium"] .graph .edge.mold-sheath {
+  stroke-width: 2.6;
+  stroke-opacity: 0.2;
+}
+html[data-fork-style="ribbon"] .graph .edge.mold-sheath {
+  stroke-width: 4.2;
+  stroke-opacity: 0.22;
+}
+html[data-fork-style="ribbon"] .graph .edge.mold-mid {
+  stroke-width: 2.1;
+  stroke-opacity: 0.42;
+}
+html[data-fork-style="ink-etched"] .graph .edge.mold-core {
+  stroke-width: 0.85;
+}
+html[data-fork-style="sparse-mycelium"] .graph .edge.mold-whisker {
+  stroke-width: 0.55;
+  stroke-opacity: 0.4;
+}
 
 /* SVG theming via CSS variables (works for all skins) */
 .graph .orb { fill: var(--node); stroke: var(--text); stroke-width: 1.5; }
