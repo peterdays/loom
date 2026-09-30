@@ -18,12 +18,12 @@ python3 -m http.server 8080 --directory public
 
 `public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). On **Ink Schematic** (default), **Neon**, and **Ink**, `parent` forks are **mold hyphae** — organic strokes that leave the straight TIME spine. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Click a node to focus its card. Stub data only in `public/data/projects.json`. Grain overlay is unchanged.
 
-A **Forks** control (separate from skins) picks the stroke variation; default is **Calm** so load is not dense mycelium:
+A **Forks** control (separate from skins) picks the stroke variation; default is **Ribbon** so load is not dense mycelium:
 
 | Fork style | Look |
 |------------|------|
-| **Calm** (default) | Single smooth organic hypha, light meander, optional thin sheath — no whiskers/loops |
-| **Ribbon** | Soft tapered stroke only, gentle S-curves, very restrained |
+| **Calm** | Single smooth organic hypha, light meander, optional thin sheath — no whiskers/loops |
+| **Ribbon** (default) | Soft tapered stroke only, gentle S-curves, very restrained |
 | **Ink etched** | Thin single stroke with slight paper-pen jitter, no layers |
 | **Sparse** | At most 1–2 tiny whiskers, no anastomosing loops, lighter than the old dense pass |
 

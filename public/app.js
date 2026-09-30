@@ -13,7 +13,7 @@ const SKINS = {
 };
 
 const FORK_STYLE_KEY = "loom-fork-style";
-const DEFAULT_FORK_STYLE = "calm";
+const DEFAULT_FORK_STYLE = "ribbon";
 /** Fork stroke variations (mold skins only). Independent of loom-skin. */
 const FORK_STYLES = {
   calm: {
