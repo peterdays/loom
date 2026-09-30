@@ -485,7 +485,7 @@ html[data-skin="obsidian"] footer { font-family: var(--font-mono); }
 
 /* ═══════════════════════════════════════════════════════════════
    E — INK FAMILY: cream/paper editorial (shared) + hard-edge variants
-   Baseline Ink keeps soft curves; Ortho/Schematic/Brutal/Sepia use hard edges.
+   Baseline Ink keeps soft curves; Schematic uses seeded mold forks; Ortho/Brutal/Sepia stay hard.
    ═══════════════════════════════════════════════════════════════ */
 html[data-skin^="ink"] {
   --bg: #f4efe6;
@@ -588,7 +588,7 @@ html[data-skin="ink-ortho"] .graph .edge {
   stroke-linecap: square;
 }
 
-/* Ink Schematic — thin technical strokes, stamp labels, faint paper grid */
+/* Ink Schematic — thin technical strokes, stamp labels, seeded mold forks, faint paper grid */
 html[data-skin="ink-schematic"] {
   --branch: #8b1a2b;
   --accent: #8b1a2b;
@@ -640,8 +640,13 @@ html[data-skin="ink-schematic"] .tag {
   border: 1px dashed var(--accent);
 }
 html[data-skin="ink-schematic"] .graph .edge {
-  stroke-linejoin: miter;
-  stroke-linecap: square;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+html[data-skin="ink-schematic"] .graph .edge.mold-sheath {
+  stroke-width: 3.5;
+  stroke-opacity: 0.16;
+  fill: none;
 }
 html[data-skin="ink-schematic"] .graph .spine-line { stroke-width: 1.75; }
 html[data-skin="ink-schematic"] .graph .spine-arrow { fill: #111; }
