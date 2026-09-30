@@ -12,6 +12,60 @@ const SKINS = {
   "ink-sepia": { edges: "ortho", nodes: "diamond", glow: false, dashed: false },
 };
 
+const FORK_STYLE_KEY = "loom-fork-style";
+const DEFAULT_FORK_STYLE = "calm";
+/** Fork stroke variations (mold skins only). Independent of loom-skin. */
+const FORK_STYLES = {
+  calm: {
+    ampScale: 0.52,
+    midScale: 0.42,
+    peelScale: 0.88,
+    microScale: 0.35,
+    sheath: "thin",
+    midLayer: false,
+    maxWhiskers: 0,
+    whiskerTiny: false,
+    anastomoses: false,
+    jitter: 0,
+  },
+  ribbon: {
+    ampScale: 0.32,
+    midScale: 0.28,
+    peelScale: 0.72,
+    microScale: 0.12,
+    sheath: "soft",
+    midLayer: true,
+    maxWhiskers: 0,
+    whiskerTiny: false,
+    anastomoses: false,
+    jitter: 0,
+  },
+  "ink-etched": {
+    ampScale: 0.22,
+    midScale: 0.55,
+    peelScale: 0.62,
+    microScale: 0.08,
+    sheath: "none",
+    midLayer: false,
+    maxWhiskers: 0,
+    whiskerTiny: false,
+    anastomoses: false,
+    jitter: 1.15,
+  },
+  "sparse-mycelium": {
+    ampScale: 0.68,
+    midScale: 0.62,
+    peelScale: 0.92,
+    microScale: 0.55,
+    sheath: "thin",
+    midLayer: false,
+    maxWhiskers: 2,
+    whiskerTiny: true,
+    anastomoses: false,
+    jitter: 0,
+  },
+};
+
 let projectsCache = [];
 let activeId = null;
 let orientMode = "horizontal";
@@ -28,6 +82,14 @@ function currentSkin() {
 
 function skinOpts() {
   return SKINS[currentSkin()] || SKINS[DEFAULT_SKIN];
+}
+
+function currentForkStyle() {
+  return document.documentElement.getAttribute("data-fork-style") || DEFAULT_FORK_STYLE;
+}
+
+function forkOpts() {
+  return FORK_STYLES[currentForkStyle()] || FORK_STYLES[DEFAULT_FORK_STYLE];
 }
 
 function parseTime(s) {
@@ -299,15 +361,21 @@ function moldSample(pts, t) {
 
 /**
  * Build the main hypha point chain: peel off the straight time spine, then
- * meander with denser, uneven samples (mycelium irregularity). Seeded from
- * child project id. Nested sibling lanes stay quieter.
+ * meander. Amplitude / sample density / jitter come from fork style.
+ * Seeded from child project id. Nested sibling lanes stay quieter.
  */
-function moldHyphaPoints(p, c, vertical, rnd) {
+function moldHyphaPoints(p, c, vertical, rnd, style) {
+  const st = style || FORK_STYLES[DEFAULT_FORK_STYLE];
   const nested = (p.side || 0) !== 0;
   const spine = p.spine ?? (vertical ? p.x : p.y);
   const dx = c.x - p.x;
   const dy = c.y - p.y;
   const dist = Math.hypot(dx, dy) || 1;
+  const ampScale = st.ampScale ?? 1;
+  const midScale = st.midScale ?? 1;
+  const peelScale = st.peelScale ?? 1;
+  const microScale = st.microScale ?? 1;
+  const pointJitter = st.jitter ?? 0;
 
   let outX = 0;
   let outY = 0;
@@ -317,33 +385,60 @@ function moldHyphaPoints(p, c, vertical, rnd) {
   // Peel off the spine before wandering. Downward forks clear the date labels.
   let peel = 0;
   if (!nested) peel = vertical ? 28 : (outY > 0 ? 46 : 26);
-  peel = Math.min(peel, dist * 0.4);
-  const amp = nested
+  peel = Math.min(peel * peelScale, dist * 0.4);
+  const ampBase = nested
     ? Math.min(10, 4.5 + dist * 0.032)
     : Math.min(30, 13 + dist * 0.032);
+  const amp = ampBase * ampScale;
 
   const pts = [{ x: p.x, y: p.y }];
   const latX = vertical ? 0 : 1;
   const latY = vertical ? 1 : 0;
   if (peel > 6) {
+    // Calm/ribbon: fewer peel waypoints → smoother organic leave.
+    const peelSteps = midScale < 0.4 ? 2 : midScale < 0.55 ? 3 : 4;
     const j1 = (rnd() * 2 - 1) * Math.min(9, amp * 0.48);
     const j2 = (rnd() * 2 - 1) * Math.min(7, amp * 0.32);
-    pts.push({
-      x: p.x + outX * peel * 0.32 + latX * j1,
-      y: p.y + outY * peel * 0.32 + latY * j1,
-    });
-    pts.push({
-      x: p.x + outX * peel * 0.62 + latX * j2 * 0.4,
-      y: p.y + outY * peel * 0.62 + latY * j2 * 0.4,
-    });
-    pts.push({
-      x: p.x + outX * peel * 0.88 + latX * j2,
-      y: p.y + outY * peel * 0.88 + latY * j2,
-    });
-    pts.push({
-      x: p.x + outX * peel + latX * j2 * 0.55,
-      y: p.y + outY * peel + latY * j2 * 0.55,
-    });
+    if (peelSteps <= 2) {
+      pts.push({
+        x: p.x + outX * peel * 0.45 + latX * j1 * 0.5,
+        y: p.y + outY * peel * 0.45 + latY * j1 * 0.5,
+      });
+      pts.push({
+        x: p.x + outX * peel + latX * j2 * 0.35,
+        y: p.y + outY * peel + latY * j2 * 0.35,
+      });
+    } else if (peelSteps === 3) {
+      pts.push({
+        x: p.x + outX * peel * 0.35 + latX * j1,
+        y: p.y + outY * peel * 0.35 + latY * j1,
+      });
+      pts.push({
+        x: p.x + outX * peel * 0.72 + latX * j2 * 0.45,
+        y: p.y + outY * peel * 0.72 + latY * j2 * 0.45,
+      });
+      pts.push({
+        x: p.x + outX * peel + latX * j2 * 0.4,
+        y: p.y + outY * peel + latY * j2 * 0.4,
+      });
+    } else {
+      pts.push({
+        x: p.x + outX * peel * 0.32 + latX * j1,
+        y: p.y + outY * peel * 0.32 + latY * j1,
+      });
+      pts.push({
+        x: p.x + outX * peel * 0.62 + latX * j2 * 0.4,
+        y: p.y + outY * peel * 0.62 + latY * j2 * 0.4,
+      });
+      pts.push({
+        x: p.x + outX * peel * 0.88 + latX * j2,
+        y: p.y + outY * peel * 0.88 + latY * j2,
+      });
+      pts.push({
+        x: p.x + outX * peel + latX * j2 * 0.55,
+        y: p.y + outY * peel + latY * j2 * 0.55,
+      });
+    }
   }
 
   const ax = pts[pts.length - 1].x;
@@ -355,22 +450,22 @@ function moldHyphaPoints(p, c, vertical, rnd) {
   const pyn = ex / el;
   const ox = vertical ? outX : 0;
   const oy = vertical ? 0 : outY;
-  // Denser mid samples → irregular anastomosing feel along the hypha.
-  const nMid = el < 70 ? 3 : el < 140 ? 5 : el < 240 ? 7 : el < 380 ? 9 : 11;
+  const denseMid = el < 70 ? 3 : el < 140 ? 5 : el < 240 ? 7 : el < 380 ? 9 : 11;
+  const nMid = Math.max(2, Math.round(denseMid * midScale));
   let prevT = 0.04;
   for (let i = 1; i <= nMid; i++) {
     const t = i / (nMid + 1);
-    const jitter = (rnd() - 0.5) * 0.1;
-    const tt = Math.min(0.94, Math.max(prevT + 0.045, t + jitter));
+    const jitter = (rnd() - 0.5) * (0.06 + 0.04 * midScale);
+    const tt = Math.min(0.94, Math.max(prevT + 0.05, t + jitter));
     prevT = tt;
     const taper = Math.sin(Math.PI * tt);
-    // Alternate sides with occasional same-side doubles (real hyphae aren't metronomes).
-    const side = (i % 2 === 0 ? 1 : -1) * (rnd() < 0.18 ? -1 : 1);
-    const gain = 0.35 + rnd() * 0.9;
-    // High-frequency secondary wiggle on top of the primary bend.
-    const micro = (rnd() * 2 - 1) * amp * 0.22 * taper;
+    // Ribbon/calm: gentle S-curve (mostly alternate). Sparse keeps occasional doubles.
+    const flipChance = midScale > 0.55 ? 0.18 : 0.06;
+    const side = (i % 2 === 0 ? 1 : -1) * (rnd() < flipChance ? -1 : 1);
+    const gain = midScale > 0.55 ? (0.35 + rnd() * 0.9) : (0.45 + rnd() * 0.45);
+    const micro = (rnd() * 2 - 1) * amp * 0.22 * taper * microScale;
     const w = side * gain * amp * taper + micro;
-    const outwardBoost = (0.1 + rnd() * 0.42) * amp * taper * (nested ? 0.18 : 1);
+    const outwardBoost = (0.1 + rnd() * 0.42) * amp * taper * (nested ? 0.18 : 1) * Math.min(1, ampScale + 0.2);
     let x = ax + ex * tt + pxn * w + ox * outwardBoost;
     let y = ay + ey * tt + pyn * w + oy * outwardBoost;
     if (!nested && !vertical) {
@@ -382,6 +477,16 @@ function moldHyphaPoints(p, c, vertical, rnd) {
     pts.push({ x, y });
   }
   pts.push({ x: c.x, y: c.y });
+
+  // Paper-pen jitter for ink-etched (skip endpoints so nodes stay clean).
+  if (pointJitter > 0 && pts.length > 2) {
+    for (let i = 1; i < pts.length - 1; i++) {
+      pts[i] = {
+        x: pts[i].x + (rnd() * 2 - 1) * pointJitter,
+        y: pts[i].y + (rnd() * 2 - 1) * pointJitter,
+      };
+    }
+  }
   return { pts, nested, amp, el, outX, outY, spine };
 }
 
@@ -389,18 +494,30 @@ function moldHyphaPoints(p, c, vertical, rnd) {
  * Decorative side-whiskers: short secondary filaments that die out and never
  * land on a node (no fake terminals). Seeded from the same RNG stream.
  */
-function moldWhiskers(pts, rnd, nested, amp) {
+function moldWhiskers(pts, rnd, nested, amp, style) {
   const out = [];
   if (pts.length < 4) return out;
-  const count = nested ? 2 + (rnd() < 0.5 ? 1 : 0) : 4 + Math.floor(rnd() * 4);
+  const maxW = style && Number.isFinite(style.maxWhiskers) ? style.maxWhiskers : 0;
+  if (maxW <= 0) return out;
+  const tiny = !!(style && style.whiskerTiny);
+  // Sparse: at most 1–2 tiny whiskers. Nested lanes stay quieter.
+  let count;
+  if (tiny) {
+    count = nested ? (rnd() < 0.35 ? 1 : 0) : (1 + (rnd() < 0.45 ? 1 : 0));
+    count = Math.min(count, maxW);
+  } else {
+    count = nested ? Math.min(maxW, 1 + (rnd() < 0.5 ? 1 : 0)) : Math.min(maxW, 2 + Math.floor(rnd() * 2));
+  }
   for (let i = 0; i < count; i++) {
-    const t = 0.14 + rnd() * 0.68;
+    const t = 0.18 + rnd() * 0.58;
     const s = moldSample(pts, t);
     const nx = -s.ty;
     const ny = s.tx;
     const side = rnd() < 0.5 ? 1 : -1;
-    const len = (nested ? 6 : 9) + rnd() * (nested ? 9 : 16);
-    const bend = (rnd() * 2 - 1) * 0.35;
+    const len = tiny
+      ? ((nested ? 4 : 5) + rnd() * (nested ? 5 : 7))
+      : ((nested ? 6 : 9) + rnd() * (nested ? 9 : 16));
+    const bend = (rnd() * 2 - 1) * (tiny ? 0.22 : 0.35);
     const mid = {
       x: s.x + nx * side * len * 0.55 + s.tx * bend * len,
       y: s.y + ny * side * len * 0.55 + s.ty * bend * len,
@@ -409,7 +526,6 @@ function moldWhiskers(pts, rnd, nested, amp) {
       x: s.x + nx * side * len + s.tx * bend * len * 1.4,
       y: s.y + ny * side * len + s.ty * bend * len * 1.4,
     };
-    // Tiny 3-pt path — reads as a hair, not a branch to a node.
     out.push(moldSmooth([{ x: s.x, y: s.y }, mid, tip]));
   }
   return out;
@@ -419,9 +535,10 @@ function moldWhiskers(pts, rnd, nested, amp) {
  * Anastomosing loops: leave the main hypha and rejoin further along it.
  * Decorative only — no extra graph nodes. Keeps the mesh/mycelium feel.
  */
-function moldAnastomoses(pts, rnd, nested, amp) {
+function moldAnastomoses(pts, rnd, nested, amp, style) {
   const out = [];
   if (nested || pts.length < 5) return out;
+  if (style && style.anastomoses === false) return out;
   const n = rnd() < 0.72 ? 1 : (rnd() < 0.45 ? 2 : 0);
   for (let i = 0; i < n; i++) {
     const t0 = 0.22 + rnd() * 0.28;
@@ -462,17 +579,25 @@ function moldAnastomoses(pts, rnd, nested, amp) {
 }
 
 /**
- * Organic fork from parent → child as a mycelium-like bundle:
- * main hypha + root-thick sheath taper + decorative whiskers + occasional
- * anastomosing loops. All deterministic from child project id.
+ * Organic fork from parent → child. Geometry + decoration level follow the
+ * selected fork style (calm / ribbon / ink-etched / sparse-mycelium).
+ * All deterministic from child project id.
  */
 function moldForkBundle(p, c, vertical) {
+  const style = forkOpts();
   const rnd = mulberry32(hashSeed(String(c.id || "")));
-  const { pts, nested, amp } = moldHyphaPoints(p, c, vertical, rnd);
+  const { pts, nested, amp } = moldHyphaPoints(p, c, vertical, rnd, style);
   const main = moldSmooth(pts);
-  const whiskers = moldWhiskers(pts, rnd, nested, amp);
-  const anastomoses = moldAnastomoses(pts, rnd, nested, amp);
-  return { main, whiskers, anastomoses, nested };
+  const whiskers = moldWhiskers(pts, rnd, nested, amp, style);
+  const anastomoses = moldAnastomoses(pts, rnd, nested, amp, style);
+  return {
+    main,
+    whiskers,
+    anastomoses,
+    nested,
+    sheath: style.sheath || "none",
+    midLayer: !!style.midLayer,
+  };
 }
 
 function moldFork(p, c, vertical) {
@@ -548,6 +673,7 @@ function renderGraph(projects) {
   svg.style.aspectRatio = `${w} / ${h}`;
   svg.setAttribute("data-edge-mode", opts.edges);
   svg.setAttribute("data-orient", vertical ? "vertical" : "horizontal");
+  svg.setAttribute("data-fork-style", currentForkStyle());
 
   const first = nodes[0];
   const last = nodes[nodes.length - 1];
@@ -611,10 +737,17 @@ function renderGraph(projects) {
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
       const d = bundle.main;
-      // Root-thick sheath (pathLength dash covers only the parent half) + tip-thin core.
-      // Static SVG only — no animation. Whiskers/anastomoses are decorative (no nodes).
-      const sheath = `<path class="edge mold-sheath" d="${d}" pathLength="100" stroke-dasharray="40 64"/>`;
-      const mid = `<path class="edge mold-mid" d="${d}" pathLength="100" stroke-dasharray="68 36"/>`;
+      // Layers depend on fork style: calm/sparse thin sheath; ribbon soft taper;
+      // ink-etched is a single core stroke. Whiskers only for sparse-mycelium.
+      let layers = "";
+      if (bundle.sheath === "soft") {
+        layers += `<path class="edge mold-sheath" d="${d}" pathLength="100" stroke-dasharray="40 64"/>`;
+        if (bundle.midLayer) {
+          layers += `<path class="edge mold-mid" d="${d}" pathLength="100" stroke-dasharray="68 36"/>`;
+        }
+      } else if (bundle.sheath === "thin") {
+        layers += `<path class="edge mold-sheath mold-sheath-thin" d="${d}" pathLength="100" stroke-dasharray="36 70"/>`;
+      }
       const core = `<path class="edge mold-core" d="${d}"${dash}${filt}/>`;
       const loops = bundle.anastomoses.map((ad) =>
         `<path class="edge mold-anas" d="${ad}"/>`
@@ -622,7 +755,7 @@ function renderGraph(projects) {
       const whisk = bundle.whiskers.map((wd) =>
         `<path class="edge mold-whisker" d="${wd}"/>`
       ).join("");
-      return loops + sheath + mid + core + whisk;
+      return loops + layers + core + whisk;
     }
     const d = edgePath(parent, n, opts.edges, vertical);
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
@@ -729,6 +862,29 @@ function initSkinSwitcher() {
   });
 }
 
+function applyForkStyle(name, { persist = true } = {}) {
+  if (!FORK_STYLES[name]) name = DEFAULT_FORK_STYLE;
+  document.documentElement.setAttribute("data-fork-style", name);
+  document.querySelectorAll(".fork-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.fork === name);
+  });
+  if (persist) {
+    try { localStorage.setItem(FORK_STYLE_KEY, name); } catch (_) { /* ignore */ }
+  }
+  if (projectsCache.length) renderGraph(projectsCache);
+}
+
+function initForkSwitcher() {
+  let saved = DEFAULT_FORK_STYLE;
+  try { saved = localStorage.getItem(FORK_STYLE_KEY) || DEFAULT_FORK_STYLE; } catch (_) { /* ignore */ }
+  if (!FORK_STYLES[saved]) saved = DEFAULT_FORK_STYLE;
+  applyForkStyle(saved, { persist: false });
+
+  document.querySelectorAll(".fork-btn").forEach((btn) => {
+    btn.addEventListener("click", () => applyForkStyle(btn.dataset.fork));
+  });
+}
+
 async function load() {
   try {
     const res = await fetch("./data/projects.json", { cache: "no-store" });
@@ -769,4 +925,5 @@ window.addEventListener("resize", () => {
 });
 
 initSkinSwitcher();
+initForkSwitcher();
 load();
