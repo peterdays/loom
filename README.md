@@ -13,6 +13,8 @@ python3 scripts/smoke-page.py
 
 `scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#about`, `.tab`, `.skin-btn`, `.fork-btn`) plus the Spores / Ribbon defaults are still in the HTML. It also runs `node --check public/app.js` when `node` is on `PATH`.
 
+The site is served from `public/` via [`.github/workflows/pages.yml`](.github/workflows/pages.yml); the project URL will be https://peterdays.github.io/loom once Pages is turned on.
+
 ## Add a project node
 
 This repo does not ingest private notes. New nodes arrive as pull requests.
@@ -74,6 +76,7 @@ docs/FEATURE_MAP.md
 docs/proposals/_TEMPLATE.md
 schemas/projects.schema.json
 .github/workflows/validate-projects.yml
+.github/workflows/pages.yml
 .github/ISSUE_TEMPLATE/new-timeline-node.md
 data/projects.json
 public/index.html|styles.css|app.js|data/projects.json
