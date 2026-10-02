@@ -77,7 +77,7 @@ Do **not** hand-edit the dual JSON unless you must. On a branch:
 2. Shape reference: **`schemas/projects.schema.json`**.
 3. One-page map: **[`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md)**.
 4. Filled proposal → argv or append: **`scripts/proposal-to-node.py`** (parses [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md) shapes — fenced YAML/JSON or labeled lines — and calls `add-node.py`).
-5. CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) runs `python3 scripts/add-node.py --validate-only` on pull requests and pushes to `main`.
+5. CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) on pull requests and pushes to `main` runs `python3 scripts/add-node.py --validate-only` and `python3 scripts/smoke-page.py` (page wiring + `node --check`). Private repos spend GitHub Actions private free minutes — keep the jobs small.
 
 ```bash
 python3 scripts/add-node.py --dry-run \
