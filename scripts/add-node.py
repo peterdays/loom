@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Append one timeline node to both data/projects.json and public/data/projects.json.
 
-Validates against AGENTS.md field rules (stdlib; no heavy deps). Prefer this over
-hand-editing JSON. Always run on a branch; open a PR — never push node content
-straight to main.
+Validates against AGENTS.md field rules and schemas/projects.schema.json
+(stdlib subset checker; no extra packages). Prefer this over hand-editing JSON.
+Always run on a branch; open a PR — never push node content straight to main.
 
 Examples:
   python3 scripts/add-node.py --dry-run \\
-    --id loom-agent-tooling --title "Agent node tooling" \\
+    --id example-stub --title "Example stub" \\
     --started 2026-10-02 --parent temporal-loom-site \\
-    --summary "Schema + add-node.py so bots append stubs safely." \\
-    --tag process --tag agents --tag stub
+    --summary "One public-safe sentence." \\
+    --tag stub
 
   python3 scripts/add-node.py --validate-only
 """
@@ -196,6 +196,182 @@ def validate_node_fields(
     return errs
 
 
+# Keywords this offline checker understands. Unknown validation keywords fail
+# closed so --validate-only cannot silently skip a schema change.
+_SCHEMA_META = {
+    "$schema",
+    "$id",
+    "$comment",
+    "$defs",
+    "title",
+    "description",
+    "examples",
+    "default",
+}
+_SCHEMA_HANDLED = _SCHEMA_META | {
+    "$ref",
+    "type",
+    "required",
+    "additionalProperties",
+    "properties",
+    "pattern",
+    "minLength",
+    "maxLength",
+    "maxItems",
+    "items",
+    "oneOf",
+}
+_TYPE_CHECKS = {
+    "object": lambda v: isinstance(v, dict),
+    "array": lambda v: isinstance(v, list),
+    "string": lambda v: isinstance(v, str),
+    "null": lambda v: v is None,
+    "boolean": lambda v: isinstance(v, bool),
+    "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),
+    "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+}
+
+
+def _resolve_ref(root: dict[str, Any], ref: str) -> dict[str, Any]:
+    if not ref.startswith("#/"):
+        die(f"unsupported schema $ref '{ref}' (only #/ pointers)")
+    node: Any = root
+    for part in ref[2:].split("/"):
+        part = part.replace("~1", "/").replace("~0", "~")
+        if not isinstance(node, dict) or part not in node:
+            die(f"unresolvable schema $ref '{ref}'")
+        node = node[part]
+    if not isinstance(node, dict):
+        die(f"schema $ref '{ref}' did not resolve to an object")
+    return node
+
+
+def _unsupported_keywords(schema: Any, path: str = "$") -> list[str]:
+    errs: list[str] = []
+    if not isinstance(schema, dict):
+        return [f"schema {path}: expected an object"]
+    unknown = sorted(set(schema) - _SCHEMA_HANDLED)
+    if unknown:
+        errs.append(f"schema {path}: unsupported keywords {unknown}")
+    if "$ref" in schema and len(schema) == 1:
+        return errs
+    props = schema.get("properties")
+    if isinstance(props, dict):
+        for key, sub in props.items():
+            errs.extend(_unsupported_keywords(sub, f"{path}.properties.{key}"))
+    if "items" in schema:
+        errs.extend(_unsupported_keywords(schema["items"], f"{path}.items"))
+    if isinstance(schema.get("oneOf"), list):
+        for i, sub in enumerate(schema["oneOf"]):
+            errs.extend(_unsupported_keywords(sub, f"{path}.oneOf[{i}]"))
+    defs = schema.get("$defs")
+    if isinstance(defs, dict):
+        for key, sub in defs.items():
+            errs.extend(_unsupported_keywords(sub, f"{path}.$defs.{key}"))
+    extra = schema.get("additionalProperties")
+    if isinstance(extra, dict):
+        errs.extend(_unsupported_keywords(extra, f"{path}.additionalProperties"))
+    return errs
+
+
+def _schema_type_ok(instance: Any, expected: Any) -> bool:
+    types = expected if isinstance(expected, list) else [expected]
+    return any(_TYPE_CHECKS[t](instance) for t in types if t in _TYPE_CHECKS)
+
+
+def schema_validate(
+    instance: Any,
+    schema: dict[str, Any],
+    root: dict[str, Any],
+    path: str = "$",
+) -> list[str]:
+    """Validate instance against the subset of JSON Schema draft 2020-12 we ship."""
+    errs: list[str] = []
+    if "$ref" in schema:
+        target = _resolve_ref(root, schema["$ref"])
+        errs.extend(schema_validate(instance, target, root, path))
+        rest = {k: v for k, v in schema.items() if k != "$ref"}
+        if rest:
+            errs.extend(schema_validate(instance, rest, root, path))
+        return errs
+
+    if "oneOf" in schema:
+        matches = 0
+        for sub in schema["oneOf"]:
+            if not schema_validate(instance, sub, root, path):
+                matches += 1
+        if matches != 1:
+            errs.append(f"{path}: expected exactly one oneOf match, got {matches}")
+        rest = {k: v for k, v in schema.items() if k != "oneOf"}
+        if rest:
+            errs.extend(schema_validate(instance, rest, root, path))
+        return errs
+
+    expected = schema.get("type")
+    if expected is not None and not _schema_type_ok(instance, expected):
+        return [f"{path}: expected type {expected}"]
+
+    if isinstance(instance, str):
+        min_len = schema.get("minLength")
+        max_len = schema.get("maxLength")
+        if isinstance(min_len, int) and len(instance) < min_len:
+            errs.append(f"{path}: shorter than minLength {min_len}")
+        if isinstance(max_len, int) and len(instance) > max_len:
+            errs.append(f"{path}: longer than maxLength {max_len}")
+        pattern = schema.get("pattern")
+        if isinstance(pattern, str) and re.search(pattern, instance) is None:
+            errs.append(f"{path}: does not match pattern {pattern}")
+
+    if isinstance(instance, list):
+        max_items = schema.get("maxItems")
+        if isinstance(max_items, int) and len(instance) > max_items:
+            errs.append(f"{path}: more than maxItems {max_items}")
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            for i, item in enumerate(instance):
+                errs.extend(schema_validate(item, item_schema, root, f"{path}[{i}]"))
+
+    if isinstance(instance, dict) and (
+        "properties" in schema or "required" in schema or "additionalProperties" in schema
+    ):
+        props = schema.get("properties")
+        if not isinstance(props, dict):
+            props = {}
+        for key in schema.get("required") or []:
+            if key not in instance:
+                errs.append(f"{path}: missing required '{key}'")
+        if schema.get("additionalProperties") is False:
+            extra = sorted(set(instance) - set(props))
+            if extra:
+                errs.append(f"{path}: additional properties {extra}")
+        for key, sub in props.items():
+            if key in instance and isinstance(sub, dict):
+                errs.extend(schema_validate(instance[key], sub, root, f"{path}.{key}"))
+    return errs
+
+
+def collect_schema_errors(data: dict[str, Any], public: dict[str, Any]) -> list[str]:
+    if not SCHEMA_PATH.is_file():
+        return [f"schema missing at {SCHEMA_PATH.relative_to(ROOT)}"]
+    try:
+        schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return [f"invalid schema JSON: {e}"]
+    if not isinstance(schema, dict):
+        return ["schema root must be an object"]
+    errs = _unsupported_keywords(schema)
+    if errs:
+        return errs
+    for label, doc in (
+        ("data/projects.json", data),
+        ("public/data/projects.json", public),
+    ):
+        errs.extend(
+            f"{label}: {e}" for e in schema_validate(doc, schema, schema, "$")
+        )
+    return errs
+
+
 def build_node(args: argparse.Namespace) -> dict[str, Any]:
     ended: Any = args.ended
     if ended is not None and str(ended).lower() in ("null", "none", ""):
@@ -215,8 +391,24 @@ def build_node(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+_TAG_BLOCK = re.compile(
+    r'("tags": )\[\n(?:[ \t]+"(?:[^"\\]|\\.)*",?\n)+[ \t]*\]'
+)
+
+
+def _compact_tag_block(match: re.Match[str]) -> str:
+    """Keep tags on one line so appends do not reflow existing stubs."""
+    raw = match.group(0)
+    items = re.findall(r'"((?:[^"\\]|\\.)*)"', raw)
+    values = items[1:]  # first hit is the key name "tags"
+    body = ", ".join(f'"{v}"' for v in values)
+    return f"{match.group(1)}[{body}]"
+
+
 def write_json(path: Path, data: dict[str, Any]) -> None:
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    text = json.dumps(data, indent=2, ensure_ascii=False)
+    text = _TAG_BLOCK.sub(_compact_tag_block, text)
+    path.write_text(text + "\n", encoding="utf-8")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -254,7 +446,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--validate-only",
         action="store_true",
-        help="validate existing dual JSON files (and schema file presence); do not append",
+        help="validate both projects.json files against field rules and schemas/projects.schema.json; do not append",
     )
     return p.parse_args(argv)
 
@@ -266,20 +458,27 @@ def main(argv: list[str] | None = None) -> None:
     ensure_in_sync(data, public)
 
     file_errs = validate_existing_file(data, DATA_PATH)
+    schema_errs = collect_schema_errors(data, public)
+    if args.validate_only:
+        errs = file_errs + schema_errs
+        if errs:
+            for e in errs:
+                print(f"add-node: {e}", file=sys.stderr)
+            die("validation failed")
+        print(
+            f"ok: {len(data['projects'])} nodes; "
+            f"data/ and public/data/ in sync; schema ok ({SCHEMA_PATH.relative_to(ROOT)})"
+        )
+        return
+
     if file_errs:
         for e in file_errs:
             print(f"add-node: {e}", file=sys.stderr)
         die("existing projects.json failed validation")
-
-    if not SCHEMA_PATH.is_file():
-        print(f"add-node: warning: schema missing at {SCHEMA_PATH}", file=sys.stderr)
-
-    if args.validate_only:
-        print(
-            f"ok: {len(data['projects'])} nodes; "
-            f"data/ and public/data/ in sync; schema at {SCHEMA_PATH.relative_to(ROOT)}"
-        )
-        return
+    if schema_errs:
+        for e in schema_errs:
+            print(f"add-node: {e}", file=sys.stderr)
+        die("JSON schema validation failed")
 
     needed = ("id", "title", "started", "summary")
     missing = [k for k in needed if getattr(args, k) is None]

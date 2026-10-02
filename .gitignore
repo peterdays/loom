@@ -3,3 +3,5 @@ node_modules/
 .env
 *.log
 .preview/
+__pycache__/
+*.pyc

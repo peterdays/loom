@@ -73,9 +73,11 @@ Discourage long essays. Title + one-line summary is enough.
 
 Do **not** hand-edit the dual JSON unless you must. On a branch:
 
-1. Validate / append with **`scripts/add-node.py`** (stdlib checks matching this table; keeps both files in sync).
+1. Validate / append with **`scripts/add-node.py`** (stdlib checks matching this table; keeps both files in sync). `--validate-only` also checks both JSON files against **`schemas/projects.schema.json`** with an offline subset checker (no extra packages).
 2. Shape reference: **`schemas/projects.schema.json`**.
 3. One-page map: **[`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md)**.
+4. Filled proposal → argv or append: **`scripts/proposal-to-node.py`** (parses [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md) shapes — fenced YAML/JSON or labeled lines — and calls `add-node.py`).
+5. CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) runs `python3 scripts/add-node.py --validate-only` on pull requests and pushes to `main`.
 
 ```bash
 python3 scripts/add-node.py --dry-run \
@@ -84,9 +86,12 @@ python3 scripts/add-node.py --dry-run \
   --summary "One public-safe sentence." --tag stub
 
 python3 scripts/add-node.py --validate-only
+
+python3 scripts/proposal-to-node.py path/to/proposal.md          # dry-run
+python3 scripts/proposal-to-node.py path/to/proposal.md --apply  # append both JSON files
 ```
 
-Still open a **PR** after  go — the script only edits files locally.
+Still open a **PR** after  go — the scripts only edit files locally.
 
 ### Refuse if
 
