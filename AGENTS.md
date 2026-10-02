@@ -7,6 +7,7 @@
 
 - **Read-only Mnemoteca.** Jarvas Mnemoteca is a personal vault. Sync may *read* it when a vault path is configured; this repo must **never** write into jarvas-mnemoteca.
 - **Stubs / samples only in git.** Never commit vault dumps, real private notes, client secrets, credentials, or unannounced/top-secret project details.
+- **No token helpers in git.** Do not commit PAT/push scripts, `.env` files, private keys, or absolute paths to a secret store. See [`docs/PUBLIC_CUTOVER.md`](docs/PUBLIC_CUTOVER.md).
 - **Pages stay off** until a deliberate public cutover after content review. Do not treat this as a live public site.
 - **UI iteration autonomy remains.** loom may iterate HTML/CSS/JS skins, forks, and layout without per-step human approval.
 - **Node content is always human-gated.** Never add or publish a timeline node from an unreviewed proposal.

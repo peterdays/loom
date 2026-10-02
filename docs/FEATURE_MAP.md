@@ -16,7 +16,6 @@ One-page map of what matters when adding timeline nodes or touching the UI. Deta
 | **Proposal shape** | Mini stub fields | `docs/proposals/_TEMPLATE.md` |
 | **Agent rules** | Hard boundaries, field table, refuse criteria | `AGENTS.md` |
 | **Mnemoteca sync stub** | Read-only vault → site when path set; never write vault | `scripts/sync-from-mnemoteca.sh` |
-| **Push helpers** | Token HTTPS / Git Data API for private repo | `scripts/push-with-token.sh`, `scripts/push-via-git-data-api.py` |
 
 ## Append a node (preferred)
 

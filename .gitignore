@@ -1,7 +1,28 @@
 .DS_Store
 node_modules/
 .env
+.env.*
+!.env.example
 *.log
 .preview/
 __pycache__/
 *.pyc
+
+# Secrets and local credential material
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+secrets.json
+box-secrets.json
+**/credentials.json
+**/credentials.yml
+*.secret
+
+# Host-local PAT push helpers. They hardcode secret-store paths and must not return.
+scripts/push-with-token.sh
+scripts/push-via-git-data-api.py

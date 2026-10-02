@@ -2,11 +2,11 @@
 
 Personal **temporal loom** — a cyberpunk branching timeline of AI projects, with room for later tabs (e.g. a presentation page).
 
-Fed **read-only** from **Jarvas Mnemoteca** (Pedro’s personal second brain). Not Volupal `zacarias-miolo`.
+Fed **read-only** from **Jarvas Mnemoteca** (a personal second brain). Not company product code.
 
 ## Status
 
-**Private build sandbox.** Do not assume a public site.
+**Private build sandbox.** Do not assume a public site. Pre-public scan and the visibility checklist: [`docs/PUBLIC_CUTOVER.md`](docs/PUBLIC_CUTOVER.md). This repo stays private until that checklist is done by hand.
 
 GitHub Pages on a free account only works for **public** repos (private Pages is paid). Pages should go live only when this repo is **deliberately made public** and the content is reviewed for what may appear on the open web. Until then: local static preview only.
 
@@ -76,7 +76,7 @@ Skin choice persists in `localStorage` (`loom-skin`).
 2. Sync (when a vault checkout exists):
 
    ```bash
-   export JARVAS_MNEMOTECA_PATH=/path/to/jarvas-mnemoteca
+   export JARVAS_MNEMOTECA_PATH=/path/to/vault
    ./scripts/sync-from-mnemoteca.sh
    ```
 
@@ -89,6 +89,7 @@ Skin choice persists in `localStorage` (`loom-skin`).
 AGENTS.md
 docs/NODE_PROTOCOL.md
 docs/FEATURE_MAP.md
+docs/PUBLIC_CUTOVER.md
 docs/proposals/_TEMPLATE.md
 schemas/projects.schema.json
 .github/workflows/validate-projects.yml

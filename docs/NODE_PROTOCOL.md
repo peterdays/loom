@@ -149,7 +149,7 @@ title: Client X confidential rebuild of the entire Q4 engagement and strategy ov
 started: 2026-09
 ended: null
 parent: skynet-lane
-summary: See /Users/pedro/jarvas-mnemoteca/Clients/X/notes.md — API key sk-live-… and the private strategy doc. Also here is a long essay about every meeting, deliverable, and internal opinion that does not belong on a timeline stub at all.
+summary: See /path/to/private-vault/notes.md — API key sk-live-EXAMPLE and the private strategy doc. Also here is a long essay about every meeting, deliverable, and internal opinion that does not belong on a timeline stub at all.
 tags: [client-x, secret, q4, strategy, meetings, essay]
 ```
 

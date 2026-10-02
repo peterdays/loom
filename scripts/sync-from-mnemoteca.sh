@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Read-only: jarvas-mnemoteca → data/projects.json (never write into the vault).
+# Read-only: local vault → data/projects.json (never write into the vault).
+# Output can contain note text. Review it before any commit; do not publish vault dumps.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/data/projects.json"
@@ -13,7 +14,7 @@ fi
 
 export JARVAS_MNEMOTECA_PATH OUT PUBLIC_OUT
 python3 << 'PY'
-import json, os, pathlib, datetime, re
+import json, os, pathlib, datetime, re, sys
 vault = pathlib.Path(os.environ["JARVAS_MNEMOTECA_PATH"])
 out = pathlib.Path(os.environ["OUT"])
 public_out = pathlib.Path(os.environ["PUBLIC_OUT"])
@@ -38,15 +39,15 @@ for path in sorted(vault.rglob("*.md")):
         if dm:
             started = dm.group(1)
     rel = str(path.relative_to(vault))
-    summary = next((ln.strip("# ").strip() for ln in text.splitlines() if ln.strip() and not ln.startswith("---")), rel)
+    summary = next((ln.strip("# ").strip() for ln in text.splitlines() if ln.strip() and not ln.startswith("---")), "Vault note")
+    # Do not emit vault-relative paths. A committed source_path would publish the vault layout.
     projects.append({
         "id": re.sub(r"[^a-z0-9]+", "-", rel.lower()).strip("-")[:80],
         "title": title[:120],
         "started": started,
-        "ended": null if False else None,
-        "summary": (summary[:240] + ("…" if len(summary) > 240 else "")),
+        "ended": None,
+        "summary": (summary[:160] + ("…" if len(summary) > 160 else "")),
         "tags": ["mnemoteca"],
-        "source_path": rel,
     })
 payload = {
     "source": "jarvas-mnemoteca",
@@ -61,4 +62,5 @@ out.write_text(text, encoding="utf-8")
 public_out.parent.mkdir(parents=True, exist_ok=True)
 public_out.write_text(text, encoding="utf-8")
 print(f"Wrote {len(projects)} projects to {out}")
+print("Review before commit: summaries are copied from note text. Do not commit private lines.", file=sys.stderr)
 PY
