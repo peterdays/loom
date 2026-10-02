@@ -46,6 +46,15 @@
       "parent": "temporal-loom-site",
       "summary": "Loki-style spine with parent→child forks and node focus.",
       "tags": ["web", "ui", "stub"]
+    },
+    {
+      "id": "loom-agent-tooling",
+      "title": "Agent node tooling",
+      "started": "2026-10-02",
+      "ended": null,
+      "parent": "temporal-loom-site",
+      "summary": "Schema + add-node.py so bots append stubs safely.",
+      "tags": ["process", "agents", "stub"]
     }
   ]
 }
