@@ -11,7 +11,7 @@ One-page map of what matters when adding timeline nodes or touching the UI. Deta
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
 | **add-node helper** | Preferred way to append **one** validated stub on a branch. `--validate-only` checks field rules and `schemas/projects.schema.json` (stdlib, no extra packages) | `scripts/add-node.py` |
 | **Proposal helper** | Filled `_TEMPLATE.md` shape (markdown file or stdin YAML/labeled lines) → `add-node.py` argv or append | `scripts/proposal-to-node.py` |
-| **CI** | Pull requests and pushes to `main` run `python3 scripts/add-node.py --validate-only` | `.github/workflows/validate-projects.yml` |
+| **CI** | PRs and pushes to `main`: `add-node.py --validate-only` and a page smoke. Private repos spend GitHub Actions **private free minutes** (not unlimited public minutes) — keep jobs small | `.github/workflows/validate-projects.yml`, `scripts/smoke-page.py` |
 | **Intake protocol** | Slack `#loom` → `@loom ship it` → **PR** (not direct `main`) | `docs/NODE_PROTOCOL.md`, `AGENTS.md` |
 | **Proposal shape** | Mini stub fields | `docs/proposals/_TEMPLATE.md` |
 | **Agent rules** | Hard boundaries, field table, refuse criteria | `AGENTS.md` |
@@ -32,7 +32,10 @@ python3 scripts/add-node.py \
 
 python3 scripts/add-node.py --validate-only   # dual JSON + schema
 python3 scripts/add-node.py --dry-run …       # print node, no write
+python3 scripts/smoke-page.py                 # serve public/ and check the page
 ```
+
+`scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#about`, `.tab`, `.skin-btn`, `.fork-btn`, default skin **Spores** / fork **Ribbon**). `node --check public/app.js` runs when `node` is on `PATH`. Same checks are the `page-smoke` job in CI.
 
 ## Proposal → node
 
