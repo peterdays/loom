@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/peterdays/loom/schemas/projects.schema.json",
+  "title": "loom projects file",
+  "description": "Shape of data/projects.json and public/data/projects.json. Field rules match AGENTS.md.",
+  "type": "object",
+  "required": ["source", "synced_at", "projects"],
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "type": "string",
+      "description": "Provenance label (stubs only — never notes dumps)."
+    },
+    "synced_at": {
+      "type": ["string", "null"],
+      "description": "ISO timestamp of last sync, or null for stub data."
+    },
+    "projects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/projectNode" }
+    }
+  },
+  "$defs": {
+    "projectNode": {
+      "type": "object",
+      "required": ["id", "title", "started", "ended", "parent", "summary", "tags"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "description": "kebab-case, unique across the projects array"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "short public title"
+        },
+        "started": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}(-\\d{2})?$",
+          "description": "YYYY-MM or YYYY-MM-DD"
+        },
+        "ended": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}(-\\d{2})?$"
+            }
+          ],
+          "description": "null or same date format as started"
+        },
+        "parent": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            }
+          ],
+          "description": "existing project id, or null for a new root"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "one public-safe sentence"
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "description": "lowercase kebab tags, ≤ 5"
+        }
+      }
+    }
+  }
+}

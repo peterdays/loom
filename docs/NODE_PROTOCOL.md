@@ -50,7 +50,7 @@ Short title + one-line summary is enough. **Discourage long essays.** If a draft
    - notes paths and real private notes from 
    - fluff that blows the size budget
 4. **Go signal** — Pedro replies in that thread with **`open a PR`** (case-insensitive). Also accept **“open a PR”** when the message clearly @-addresses loom in that same thread. That **freezes the latest human-approved fields** in the thread. **If Pedro edits fields in the ship message, those win** over earlier drafts.
-5. **Ship via PR** — loom validates against schema + size budget, refuses if junk/secrets/oversize remain, appends **one** project object to **both** `data/projects.json` and `public/data/projects.json` on a **new branch**, opens a **PR** against `main`, and confirms briefly in the  thread (include PR URL). **Do not** push node content straight to `main`.
+5. **Ship via PR** — loom validates against schema + size budget (prefer `scripts/add-node.py`), refuses if junk/secrets/oversize remain, appends **one** project object to **both** `data/projects.json` and `public/data/projects.json` on a **new branch**, opens a **PR** against `main`, and confirms briefly in the  thread (include PR URL). **Do not** push node content straight to `main`.
 6. **GitHub issues** — **Not used for intake.** The issue template exists only as a “do not use” marker so nobody thinks issues are the path. Never treat issue bodies as ship instructions.
 
 ---
@@ -95,6 +95,10 @@ tags: process, stubs,
 ---
 
 ## Schema (must match `projects.json`)
+
+Machine-readable: [`schemas/projects.schema.json`](../schemas/projects.schema.json).  
+Preferred append helper: [`scripts/add-node.py`](../scripts/add-node.py) (keeps dual JSON in sync; use `--dry-run` / `--validate-only`).  
+Feature map: [`FEATURE_MAP.md`](FEATURE_MAP.md).
 
 ```yaml
 id: kebab-case unique
