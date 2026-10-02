@@ -1,6 +1,6 @@
-# Feature map (for bots)
+# Feature map
 
-One-page map of what matters when adding timeline nodes or touching the UI. Details live in the linked files — do not treat this as a novel.
+One-page map for adding a timeline node or touching the UI.
 
 | Feature | What it is | Where |
 |---------|------------|--------|
@@ -9,37 +9,35 @@ One-page map of what matters when adding timeline nodes or touching the UI. Deta
 | **Forks** | Parent→child hypha stroke styles (default **Ribbon**); key `loom-fork-style` | `public/app.js`, Forks control |
 | **Node data (dual path)** | Same `projects` array in two files — keep in sync | `data/projects.json`, `public/data/projects.json` |
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
-| **add-node helper** | Preferred way to append **one** validated stub on a branch. `--validate-only` checks field rules and `schemas/projects.schema.json` (stdlib, no extra packages) | `scripts/add-node.py` |
-| **Proposal helper** | Filled `_TEMPLATE.md` shape (markdown file or stdin YAML/labeled lines) → `add-node.py` argv or append | `scripts/proposal-to-node.py` |
-| **CI** | PRs and pushes to `main`: `add-node.py --validate-only` and a page smoke. Private repos spend GitHub Actions **private free minutes** (not unlimited public minutes) — keep jobs small | `.github/workflows/validate-projects.yml`, `scripts/smoke-page.py` |
-| **Intake protocol** |  `` → `open a PR` → **PR** (not direct `main`) | `docs/NODE_PROTOCOL.md`, `AGENTS.md` |
+| **add-node helper** | Append **one** validated stub on a branch. `--validate-only` checks field rules and the schema (stdlib) | `scripts/add-node.py` |
+| **Proposal helper** | Filled `_TEMPLATE.md` shape (markdown file or stdin YAML/labeled lines) → `add-node.py` | `scripts/proposal-to-node.py` |
+| **CI** | Pull requests and pushes to `main`: `add-node.py --validate-only` and a page smoke | `.github/workflows/validate-projects.yml`, `scripts/smoke-page.py` |
+| **Node protocol** | Open a PR that adds a node via `add-node.py`. A reviewer checks the graph and the page | `docs/NODE_PROTOCOL.md`, `AGENTS.md` |
 | **Proposal shape** | Mini stub fields | `docs/proposals/_TEMPLATE.md` |
-| **Agent rules** | Hard boundaries, field table, refuse criteria | `AGENTS.md` |
-| ** sync stub** | Read-only notes → site when path set; never write notes | `` |
-| **Push helpers** | Token HTTPS / Git Data API for private repo | ``, `` |
+| **Agent rules** | Boundaries, field table, refuse criteria | `AGENTS.md` |
 
-## Append a node (preferred)
+## Append a node
 
 ```bash
-# on a feature branch — never straight to main for node content
+# on a feature branch — open a pull request for the node
 python3 scripts/add-node.py \
   --id my-stub-id \
   --title "Short public title" \
   --started 2026-10-02 \
   --parent temporal-loom-site \
-  --summary "One public-safe sentence about the stub." \
+  --summary "One public sentence about the stub." \
   --tag stub --tag process
 
-python3 scripts/add-node.py --validate-only   # dual JSON + schema
-python3 scripts/add-node.py --dry-run …       # print node, no write
-python3 scripts/smoke-page.py                 # serve public/ and check the page
+python3 scripts/add-node.py --validate-only
+python3 scripts/add-node.py --dry-run …
+python3 scripts/smoke-page.py
 ```
 
-`scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#about`, `.tab`, `.skin-btn`, `.fork-btn`, default skin **Spores** / fork **Ribbon**). `node --check public/app.js` runs when `node` is on `PATH`. Same checks are the `page-smoke` job in CI.
+`scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#about`, `.tab`, `.skin-btn`, `.fork-btn`, default skin **Spores** / fork **Ribbon**). `node --check public/app.js` runs when `node` is on `PATH`. The same checks are the `page-smoke` job in CI.
 
 ## Proposal → node
 
-`scripts/proposal-to-node.py` parses a filled proposal and **calls** `add-node.py` (it does not duplicate validation). Default is dry-run. `--apply` appends on the current branch — still open a PR.
+`scripts/proposal-to-node.py` parses a filled proposal and **calls** `add-node.py`. Default is dry-run. `--apply` appends on the current branch. Open a pull request afterward.
 
 ```bash
 python3 scripts/proposal-to-node.py --print-argv <<'EOF'
@@ -48,7 +46,7 @@ title: Example stub
 started: 2026-10-02
 ended: null
 parent: temporal-loom-site
-summary: One public-safe sentence.
+summary: One public sentence.
 tags: [stub]
 EOF
 
@@ -57,11 +55,11 @@ python3 scripts/proposal-to-node.py docs/proposals/some-filled-proposal.md --app
 
 `docs/proposals/loom-agent-tooling.md` is the filled proposal already applied for the tooling stub. Running it again is refused (duplicate id).
 
-Then commit and open a PR against `main`. Real node ships still need Pedro’s `open a PR` in the  `` thread.
+Then open a pull request against `main`. A reviewer checks the graph and the page still work.
 
 ## Do not regress
 
 - Default skin **Spores**, default fork **Ribbon**
-- Stubs only — no notes dumps, no writes into 
-- Dual JSON must stay identical for `projects`
-- GitHub issues are **not** intake
+- Chronological spine
+- Dual JSON `projects` arrays stay identical
+- Sample nodes only — this repo does not ingest private notes

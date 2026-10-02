@@ -1,24 +1,24 @@
 {
-  "source": " (stub — no private notes content)",
+  "source": "stubs",
   "synced_at": null,
   "projects": [
     {
       "id": "personal-projects",
-      "title": "Personal /  bots",
+      "title": "Personal projects",
       "started": "2026-09",
       "ended": null,
       "parent": null,
       "summary": "A lane for personal experiments and side projects.",
-      "tags": ["ai", "agents", "personal"]
+      "tags": ["personal", "projects"]
     },
     {
-      "id": "-curation",
-      "title": " curation habit",
+      "id": "project-notes",
+      "title": "Project notes",
       "started": "2026-09",
       "ended": null,
       "parent": "personal-projects",
-      "summary": "personal notes hygiene: no automatic AI dumps; notes only on explicit demand.",
-      "tags": ["personal notes", "process"]
+      "summary": "Short public lines kept with each personal project.",
+      "tags": ["notes", "process"]
     },
     {
       "id": "temporal-loom-site",
@@ -26,17 +26,17 @@
       "started": "2026-09-29",
       "ended": null,
       "parent": "personal-projects",
-      "summary": "This private sandbox: branching temporal timeline UI +  sync stub.",
+      "summary": "This site: a chronological mycelium graph of personal projects.",
       "tags": ["web", "timeline", "stub"]
     },
     {
       "id": "agent-fleet",
-      "title": "Specialized Grok fleet",
+      "title": "Small experiments",
       "started": "2026-09",
       "ended": null,
       "parent": "personal-projects",
-      "summary": "Sample node: Maestro + domain bots (stubs only — not a notes dump).",
-      "tags": ["agents", "orchestration", "stub"]
+      "summary": "Sample node for small personal experiments.",
+      "tags": ["experiments", "stub"]
     },
     {
       "id": "loom-graph-v1",
@@ -44,17 +44,17 @@
       "started": "2026-09-29",
       "ended": null,
       "parent": "temporal-loom-site",
-      "summary": "Loki-style spine with parent→child forks and node focus.",
+      "summary": "Chronological spine with parent-to-child forks and node focus.",
       "tags": ["web", "ui", "stub"]
     },
     {
       "id": "loom-agent-tooling",
-      "title": "Agent node tooling",
+      "title": "Node tooling",
       "started": "2026-10-02",
       "ended": null,
       "parent": "temporal-loom-site",
-      "summary": "Schema + add-node.py so bots append stubs safely.",
-      "tags": ["process", "agents", "stub"]
+      "summary": "Schema and add-node.py so a pull request can append one stub.",
+      "tags": ["process", "stub"]
     }
   ]
 }

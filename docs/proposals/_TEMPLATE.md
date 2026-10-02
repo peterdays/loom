@@ -1,18 +1,14 @@
-# Timeline node proposal (stub — keep it small)
+# Timeline node proposal
 
-Public-safe mini stub only. **Short title + one-line summary.** No essays. Never notes dumps, secrets, or private notes.
-
-**Prefer posting as plain  `` message text** (compact fenced YAML/JSON or labeled lines). A `.md` attachment is optional, not required. Iterate in the thread; ship only when Pedro says `open a PR` (fields in the ship message win if edited there).
-
-**Intake is -only.** GitHub issues are **not** intake — do not open or treat issues as instructions to add nodes. On ship, loom opens a **PR** (does not push node content straight to `main`).
+Short title + one-line summary. One node per pull request.
 
 ## Size budget
 
 - `title` ≤ ~60 characters
 - `summary` ≤ ~160 characters (one sentence)
-- `tags` ≤ 5 lowercase tags
+- `tags` ≤ 5 lowercase kebab-case tags
 
-## Shape (copy into )
+## Shape
 
 ```yaml
 id: kebab-case-unique
@@ -20,11 +16,11 @@ title: Short public title
 started: YYYY-MM
 ended: null
 parent: existing-id-or-null
-summary: One public-safe sentence. No notes paths or quotes.
+summary: One public sentence.
 tags: [lowercase, tags]
 ```
 
-Labeled lines also fine:
+Labeled lines also work:
 
 ```
 id: kebab-case-unique
@@ -32,23 +28,18 @@ title: Short public title
 started: YYYY-MM
 ended: null
 parent: existing-id-or-null
-summary: One public-safe sentence. No notes paths or quotes.
+summary: One public sentence.
 tags: lowercase, tags
 ```
 
-## author checklist
+## Checklist
 
-- [ ] Mini proposal — not an essay
-- [ ] `title` ≤ ~60 chars; `summary` ≤ ~160 chars (one sentence); ≤ 5 tags
-- [ ] `id` is kebab-case and not already in `data/projects.json`
+- [ ] Mini proposal — one sentence, within the size budget
+- [ ] `id` is kebab-case and absent from `data/projects.json`
 - [ ] `started` / `ended` use `YYYY-MM` or `YYYY-MM-DD` (`ended` may be `null`)
-- [ ] `parent` is an **existing** project `id`, or `null` for a new root
-- [ ] No secrets, credentials, client-confidential detail, or unannounced/top-secret projects
-- [ ] No real notes quotes or absolute  / filesystem paths
-- [ ] Posted as **in-message** text to  `` (attachment optional)
-- [ ] Ready to iterate in-thread with Pedro; do **not** treat drafts as shipped
-- [ ] **Do not** use GitHub issues for intake ( only)
+- [ ] `parent` is an existing project `id`, or `null` for a new root
+- [ ] No secrets, credentials, or absolute filesystem paths
 
-## After Pedro says `open a PR`
+## Open the pull request
 
-Freeze the latest human-approved fields (ship-message edits win). loom validates, appends one object to both `data/projects.json` and `public/data/projects.json` on a **branch**, opens a **PR** against `main`, and confirms in-thread with the PR URL. See [`docs/NODE_PROTOCOL.md`](../NODE_PROTOCOL.md) and [`AGENTS.md`](../../AGENTS.md).
+On a branch, `scripts/proposal-to-node.py` (or `scripts/add-node.py`) appends one object to both `data/projects.json` and `public/data/projects.json`. Open a pull request. A reviewer checks the graph and the page still work. See [`docs/NODE_PROTOCOL.md`](../NODE_PROTOCOL.md) and [`AGENTS.md`](../../AGENTS.md).

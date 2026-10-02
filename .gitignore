@@ -1,7 +1,23 @@
 .DS_Store
 node_modules/
 .env
+.env.*
+!.env.example
 *.log
 .preview/
 __pycache__/
 *.pyc
+
+# Local credential files stay untracked.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+secrets.json
+**/credentials.json
+**/credentials.yml
+*.secret

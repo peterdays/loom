@@ -1,14 +1,10 @@
 # loom
 
-Personal **temporal loom** — a cyberpunk branching timeline of AI projects, with room for later tabs (e.g. a presentation page).
-
-Fed **read-only** from **** (Pedro’s personal personal notes). A personal project graph.
+Personal chronological **mycelium graph** of projects. Time runs along one spine; parent links fork off it as hyphae.
 
 ## Status
 
-**Private build sandbox.** Do not assume a public site.
-
-GitHub Pages on a free account only works for **public** repos (private Pages is paid). Pages should go live only when this repo is **deliberately made public** and the content is reviewed for what may appear on the open web. Until then: local static preview only.
+**Private sandbox.** This repository stays private. GitHub Pages stays off until a deliberate public cutover after content review. Local preview only:
 
 ```bash
 python3 -m http.server 8080 --directory public
@@ -17,21 +13,20 @@ python3 scripts/smoke-page.py
 
 `scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#about`, `.tab`, `.skin-btn`, `.fork-btn`) plus the Spores / Ribbon defaults are still in the HTML. It also runs `node --check public/app.js` when `node` is on `PATH`.
 
-## Node intake (unidirectional  → PR)
+## Add a project node
 
-Timeline **node content** is never auto-published. **Private  is the only intake.** Flow: author drafts a public-safe mini stub →  `` (iterate in-thread) → Pedro reviews/redacts → **`open a PR`** → loom validates and opens a **PR** with one stub (does **not** push nodes straight to `main`). GitHub issues are **not** intake.
+This repo does not ingest private notes. New nodes arrive as pull requests.
 
-- Full protocol: [`docs/NODE_PROTOCOL.md`](docs/NODE_PROTOCOL.md)
+1. On a branch, add **one** node with [`scripts/add-node.py`](scripts/add-node.py) (or [`scripts/proposal-to-node.py`](scripts/proposal-to-node.py), which calls it).
+2. That keeps `data/projects.json` and `public/data/projects.json` in sync.
+3. Open a pull request. A reviewer checks the graph and the page still work.
+
+- Protocol: [`docs/NODE_PROTOCOL.md`](docs/NODE_PROTOCOL.md)
 - Agent rules: [`AGENTS.md`](AGENTS.md)
 - Feature map: [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md)
 - Schema + helpers: [`schemas/projects.schema.json`](schemas/projects.schema.json), [`scripts/add-node.py`](scripts/add-node.py), [`scripts/proposal-to-node.py`](scripts/proposal-to-node.py)
-- CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) on pull requests and pushes to `main` — `python3 scripts/add-node.py --validate-only` and a page smoke (`python3 scripts/smoke-page.py`). This repo is **private**, so those jobs spend **GitHub Actions private free minutes** (private repos do not get unlimited public minutes). The smoke job stays small: stdlib Python and `node --check`, no browser.
-- Proposal template: [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md)
-- Issue template: [`.github/ISSUE_TEMPLATE/new-timeline-node.md`](.github/ISSUE_TEMPLATE/new-timeline-node.md) — **NOT USED** ( only)
-
-Threat model (short): private  + human `open a PR` + PR; ignore unsolicited GitHub issues / prompt injection. Future public github.io is a unidirectional mirror of reviewed stubs only (planned; not created yet).
-
-Stubs only. Never notes dumps. Never write into .
+- Proposal shape: [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md)
+- CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) on pull requests and pushes to `main` — `python3 scripts/add-node.py --validate-only` and `python3 scripts/smoke-page.py`
 
 ## Temporal graph
 
@@ -70,19 +65,6 @@ Default skin is **Spores** (with fork style **Ribbon**). **Ink Schematic** and t
 
 Skin choice persists in `localStorage` (`loom-skin`).
 
-##  → loom pipeline
-
-1. Stub JSON ships with non-sensitive sample projects.
-2. Sync (when a notes checkout exists):
-
-   ```bash
-   export =/path/to/
-   
-   ```
-
-   notes → site only. **Never** write into  from this repo.
-3. Review `data/projects.json` before any future public Pages cutover — no private personal notes dumps on the public web.
-
 ## Layout
 
 ```
@@ -98,10 +80,9 @@ public/index.html|styles.css|app.js|data/projects.json
 scripts/add-node.py
 scripts/proposal-to-node.py
 scripts/smoke-page.py
-
 README.md
 ```
 
-## Agent autonomy
+## For agents
 
-The `loom` Grok Bot owns iteration on UI + sync (commit/push to this private repo without per-step approval). **Node content** always requires the human gate in [`docs/NODE_PROTOCOL.md`](docs/NODE_PROTOCOL.md). Sensitive notes content stays out of git.
+Follow [`AGENTS.md`](AGENTS.md). Open a pull request that adds a node via `scripts/add-node.py`. A reviewer checks the graph and the page still work.

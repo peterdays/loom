@@ -9,11 +9,11 @@
   "properties": {
     "source": {
       "type": "string",
-      "description": "Provenance label (stubs only — never notes dumps)."
+      "description": "Short public label for this file. Sample graphs use a placeholder."
     },
     "synced_at": {
       "type": ["string", "null"],
-      "description": "ISO timestamp of last sync, or null for stub data."
+      "description": "Reserved timestamp, or null for stub data."
     },
     "projects": {
       "type": "array",
