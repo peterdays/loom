@@ -38,11 +38,8 @@ GitHub issue template [`.github/ISSUE_TEMPLATE/new-timeline-node.md`](.github/IS
 When Pedro (or clear human go from Pedro in that `#loom` thread) says `@loom ship it`:
 
 1. **Freeze** the latest human-approved fields from the thread (prior drafts + Pedro redacts). Prefer plain in-message text over attachments. **If Pedro puts field edits in the ship message itself, those override** earlier thread versions.
-2. **Validate** against the projects schema + size budget (below). Refuse and say why in-thread if validation fails, size is over budget, or personal/secret/vault-looking content remains.
-3. **Append** exactly **one** project object to **both** (on a new branch, not directly on `main`):
-   - `data/projects.json`
-   - `public/data/projects.json`  
-   Keep those two files in sync (same `projects` array content for the new node).
+2. **Validate** against `schemas/projects.schema.json` + size budget (below), preferably via `scripts/add-node.py --dry-run …`. Refuse and say why in-thread if validation fails, size is over budget, or personal/secret/vault-looking content remains.
+3. **Append** exactly **one** project object to **both** (on a new branch, not directly on `main`) using **`scripts/add-node.py`** (preferred) so `data/projects.json` and `public/data/projects.json` stay in sync:
 4. **Open a PR** against `main` (durable review artifact). Do **not** push node content straight to `origin/main`. Confirm briefly in the Slack thread (id + title + PR URL).
 5. After human merge of that PR, UI/git hygiene continues as usual; node content itself stayed gated by Slack go + PR.
 
@@ -71,6 +68,25 @@ Each node object must match existing `projects.json` entries:
 | `tags` | lowercase strings, **≤ 5** tags |
 
 Discourage long essays. Title + one-line summary is enough.
+
+### Preferred tooling (bots)
+
+Do **not** hand-edit the dual JSON unless you must. On a branch:
+
+1. Validate / append with **`scripts/add-node.py`** (stdlib checks matching this table; keeps both files in sync).
+2. Shape reference: **`schemas/projects.schema.json`**.
+3. One-page map: **[`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md)**.
+
+```bash
+python3 scripts/add-node.py --dry-run \
+  --id example-stub --title "Example stub" --started 2026-10-02 \
+  --parent temporal-loom-site \
+  --summary "One public-safe sentence." --tag stub
+
+python3 scripts/add-node.py --validate-only
+```
+
+Still open a **PR** after Slack go — the script only edits files locally.
 
 ### Refuse if
 
