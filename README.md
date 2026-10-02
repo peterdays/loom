@@ -12,7 +12,10 @@ GitHub Pages on a free account only works for **public** repos (private Pages is
 
 ```bash
 python3 -m http.server 8080 --directory public
+python3 scripts/smoke-page.py
 ```
+
+`scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#about`, `.tab`, `.skin-btn`, `.fork-btn`) plus the Spores / Ribbon defaults are still in the HTML. It also runs `node --check public/app.js` when `node` is on `PATH`.
 
 ## Node intake (unidirectional Slack → PR)
 
@@ -22,7 +25,7 @@ Timeline **node content** is never auto-published. **Private Slack is the only i
 - Agent rules: [`AGENTS.md`](AGENTS.md)
 - Feature map: [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md)
 - Schema + helpers: [`schemas/projects.schema.json`](schemas/projects.schema.json), [`scripts/add-node.py`](scripts/add-node.py), [`scripts/proposal-to-node.py`](scripts/proposal-to-node.py)
-- CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) runs `python3 scripts/add-node.py --validate-only` on pull requests and pushes to `main`
+- CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) on pull requests and pushes to `main` — `python3 scripts/add-node.py --validate-only` and a page smoke (`python3 scripts/smoke-page.py`). This repo is **private**, so those jobs spend **GitHub Actions private free minutes** (private repos do not get unlimited public minutes). The smoke job stays small: stdlib Python and `node --check`, no browser.
 - Proposal template: [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md)
 - Issue template: [`.github/ISSUE_TEMPLATE/new-timeline-node.md`](.github/ISSUE_TEMPLATE/new-timeline-node.md) — **NOT USED** (Slack only)
 
@@ -94,6 +97,7 @@ data/projects.json
 public/index.html|styles.css|app.js|data/projects.json
 scripts/add-node.py
 scripts/proposal-to-node.py
+scripts/smoke-page.py
 scripts/sync-from-mnemoteca.sh
 README.md
 ```
