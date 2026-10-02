@@ -21,7 +21,8 @@ Timeline **node content** is never auto-published. **Private Slack is the only i
 - Full protocol: [`docs/NODE_PROTOCOL.md`](docs/NODE_PROTOCOL.md)
 - Agent rules: [`AGENTS.md`](AGENTS.md)
 - Feature map: [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md)
-- Schema + helper: [`schemas/projects.schema.json`](schemas/projects.schema.json), [`scripts/add-node.py`](scripts/add-node.py)
+- Schema + helpers: [`schemas/projects.schema.json`](schemas/projects.schema.json), [`scripts/add-node.py`](scripts/add-node.py), [`scripts/proposal-to-node.py`](scripts/proposal-to-node.py)
+- CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) runs `python3 scripts/add-node.py --validate-only` on pull requests and pushes to `main`
 - Proposal template: [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md)
 - Issue template: [`.github/ISSUE_TEMPLATE/new-timeline-node.md`](.github/ISSUE_TEMPLATE/new-timeline-node.md) — **NOT USED** (Slack only)
 
@@ -87,10 +88,12 @@ docs/NODE_PROTOCOL.md
 docs/FEATURE_MAP.md
 docs/proposals/_TEMPLATE.md
 schemas/projects.schema.json
+.github/workflows/validate-projects.yml
 .github/ISSUE_TEMPLATE/new-timeline-node.md
 data/projects.json
 public/index.html|styles.css|app.js|data/projects.json
 scripts/add-node.py
+scripts/proposal-to-node.py
 scripts/sync-from-mnemoteca.sh
 README.md
 ```

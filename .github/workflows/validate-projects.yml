@@ -1,0 +1,16 @@
+# Field rules + offline JSON Schema check. Stdlib only — no extra packages.
+name: validate-projects
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate dual projects.json
+        run: python3 scripts/add-node.py --validate-only
