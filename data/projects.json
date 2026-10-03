@@ -59,7 +59,7 @@
     {
       "id": "jarvas",
       "title": "Jarvas",
-      "started": "2026-07-28",
+      "started": "2026-07-24",
       "ended": null,
       "parent": "personal-projects",
       "summary": "A privacy-first personal AI assistant for turning sources, reminders, conversations, and agent workflows into project memory and next actions.",
