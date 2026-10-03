@@ -19,6 +19,15 @@
       "parent": "jarvas",
       "summary": "A living LLM wiki where sources, notes, decisions, and WIP gravity wells preserve continuity: https://gist.github.com/peterdays/54a8fd9f8a01355ec27a43ac3c49650a",
       "tags": ["second-brain", "llm-wiki", "knowledge-systems", "wip"]
+    },
+    {
+      "id": "jarvas-youtube-ingestion",
+      "title": "YouTube transcript ingestion",
+      "started": "2026-07-28",
+      "ended": null,
+      "parent": "jarvas",
+      "summary": "A curated playlist feeds transcripts into Jarvas so useful talks can become durable Mnemoteca context.",
+      "tags": ["youtube", "transcripts", "ingestion", "second-brain"]
     }
   ]
 }
