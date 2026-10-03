@@ -55,6 +55,15 @@
       "parent": "temporal-loom-site",
       "summary": "Schema and add-node.py so a pull request can append one stub.",
       "tags": ["process", "stub"]
+    },
+    {
+      "id": "jarvas",
+      "title": "Jarvas",
+      "started": "2026-10",
+      "ended": null,
+      "parent": "personal-projects",
+      "summary": "A privacy-first personal AI assistant for turning sources, reminders, conversations, and agent workflows into project memory and next actions.",
+      "tags": ["personal-ai", "second-brain", "agent-workflows", "knowledge-systems", "productivity"]
     }
   ]
 }
