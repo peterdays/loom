@@ -22,6 +22,7 @@ const FORK_STYLES = {
 
 let projectsCache = [];
 let activeId = null;
+let showAllCards = false;
 let orientMode = "horizontal";
 
 function escapeHtml(s) {
@@ -778,23 +779,43 @@ function renderGraph(projects) {
       }
     });
   });
-  if (activeId) applyActive(activeId, false);
+  syncCards(false);
 }
 
-function applyActive(id, scroll) {
+/** Cards stay hidden until a node is chosen, or until every card is shown. */
+function syncCards(scroll) {
+  const toggle = document.getElementById("cards-toggle");
+  if (toggle) {
+    toggle.textContent = showAllCards ? "Hide node cards" : "Show all node cards";
+    toggle.setAttribute("aria-pressed", showAllCards ? "true" : "false");
+  }
   document.querySelectorAll(".node").forEach((n) => {
-    n.classList.toggle("active", n.getAttribute("data-id") === id);
+    n.classList.toggle("active", activeId != null && n.getAttribute("data-id") === activeId);
   });
+  let scrolled = false;
   document.querySelectorAll(".card").forEach((c) => {
-    const on = c.id === `card-${id}`;
-    c.classList.toggle("active", on);
-    if (on && scroll) c.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const id = c.getAttribute("data-id");
+    const selected = activeId != null && id === activeId;
+    const visible = showAllCards || selected;
+    c.classList.toggle("active", selected);
+    c.hidden = !visible;
+    if (visible && selected && scroll && !scrolled) {
+      c.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      scrolled = true;
+    }
   });
 }
 
 function selectNode(id) {
+  if (!id) return;
   activeId = id;
-  applyActive(id, true);
+  syncCards(true);
+}
+
+function toggleAllCards() {
+  showAllCards = !showAllCards;
+  if (!showAllCards) activeId = null;
+  syncCards(false);
 }
 
 function renderCards(projects) {
@@ -810,7 +831,9 @@ function renderCards(projects) {
     const fork = parentTitle
       ? `<div class="fork">fork of ${escapeHtml(parentTitle)}</div>`
       : `<div class="fork">on the spine</div>`;
-    return `<article class="card" id="card-${escapeHtml(p.id || "")}" data-id="${escapeHtml(p.id || "")}">
+    const selected = activeId != null && p.id === activeId;
+    const visible = showAllCards || selected;
+    return `<article class="card${selected ? " active" : ""}" id="card-${escapeHtml(p.id || "")}" data-id="${escapeHtml(p.id || "")}"${visible ? "" : " hidden"}>
       <div class="meta">${escapeHtml(when)}</div>
       ${fork}
       <h2>${escapeHtml(p.title || "Untitled")}</h2>
@@ -821,7 +844,7 @@ function renderCards(projects) {
   root.querySelectorAll(".card").forEach((c) => {
     c.addEventListener("click", () => selectNode(c.getAttribute("data-id")));
   });
-  if (activeId) applyActive(activeId, false);
+  syncCards(false);
 }
 
 function lockLook() {
@@ -851,14 +874,17 @@ document.querySelectorAll(".tab").forEach((btn) => {
     const about = document.getElementById("about");
     const graph = document.getElementById("graph");
     const cards = document.getElementById("cards");
+    const cardsToggle = document.getElementById("cards-toggle");
     if (btn.dataset.tab === "about") {
       about.classList.remove("hidden");
       graph.classList.add("hidden");
       cards.classList.add("hidden");
+      cardsToggle.classList.add("hidden");
     } else {
       about.classList.add("hidden");
       graph.classList.remove("hidden");
       cards.classList.remove("hidden");
+      cardsToggle.classList.remove("hidden");
     }
   });
 });
@@ -867,6 +893,8 @@ window.addEventListener("resize", () => {
   const next = preferredOrient();
   if (next !== orientMode && projectsCache.length) renderGraph(projectsCache);
 });
+
+document.getElementById("cards-toggle").addEventListener("click", toggleAllCards);
 
 lockLook();
 load();
