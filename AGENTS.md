@@ -51,9 +51,9 @@ Hand-edit the dual JSON only when you must. On a branch:
 
 ```bash
 python3 scripts/add-node.py --dry-run \
-  --id example-stub --title "Example stub" --started 2026-10-02 \
-  --parent temporal-loom-site \
-  --summary "One public sentence." --tag stub
+ --id example-project --title "Example project" --started 2026-10-02 \
+ --parent null \
+ --summary "One public sentence." --tag process
 
 python3 scripts/add-node.py --validate-only
 
@@ -74,4 +74,4 @@ The scripts only edit files locally. Open a pull request for the node.
 - Default skin **Spores**. Default fork **Ribbon**.
 - Chronological spine: time left→right, top→bottom on narrow viewports.
 - CI: `add-node.py --validate-only` and `scripts/smoke-page.py`.
-- Stub data lives under `data/` and `public/data/`.
+- Project data lives under `data/` and `public/data/`.

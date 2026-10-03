@@ -10,6 +10,8 @@ Proves the page is wired, not merely that projects.json matches the schema:
   - html data-skin / data-fork-style match DEFAULT_SKIN / DEFAULT_FORK_STYLE
   - node --check public/app.js when node is on PATH
 
+The page has one look (Spores / Ribbon). There is no skin or fork switcher.
+
 Usage (from the repo root):
 
   python3 scripts/smoke-page.py
@@ -150,27 +152,8 @@ def check_dom(js: str, page: PageParser, errors: list[str]) -> None:
             errors,
             f'<html data-fork-style> is {page.html_attrs.get("data-fork-style")!r}, app default is {fork!r}',
         )
-
-    skin_btn = [
-        el
-        for el in page.elements
-        if "skin-btn" in el["classes"]
-        and "fork-btn" not in el["classes"]
-        and el["attrs"].get("data-skin") == skin
-    ]
-    fork_btn = [
-        el
-        for el in page.elements
-        if "fork-btn" in el["classes"] and el["attrs"].get("data-fork") == fork
-    ]
-    if not skin_btn:
-        fail(errors, f'no .skin-btn[data-skin="{skin}"]')
-    elif "active" not in skin_btn[0]["classes"]:
-        fail(errors, f'default skin button {skin!r} is missing class "active"')
-    if not fork_btn:
-        fail(errors, f'no .fork-btn[data-fork="{fork}"]')
-    elif "active" not in fork_btn[0]["classes"]:
-        fail(errors, f'default fork button {fork!r} is missing class "active"')
+    if any("skin-btn" in el["classes"] or "fork-btn" in el["classes"] for el in page.elements):
+        fail(errors, "skin/fork switcher buttons are still in index.html")
 
 
 def check_node(errors: list[str]) -> str:

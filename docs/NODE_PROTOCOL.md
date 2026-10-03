@@ -32,20 +32,20 @@ One node per pull request. Leave `main` for the merge.
 ## Example
 
 ```yaml
-id: example-stub
-title: Example stub
+id: example-project
+title: Example project
 started: 2026-10-02
 ended: null
-parent: temporal-loom-site
+parent: null
 summary: One public sentence about a personal project.
-tags: [stub]
+tags: [process]
 ```
 
 ```bash
 python3 scripts/add-node.py --dry-run \
-  --id example-stub --title "Example stub" --started 2026-10-02 \
-  --parent temporal-loom-site \
-  --summary "One public sentence about a personal project." --tag stub
+  --id example-project --title "Example project" --started 2026-10-02 \
+  --parent null \
+  --summary "One public sentence about a personal project." --tag process
 ```
 
 Agent rules: [`AGENTS.md`](../AGENTS.md). Map: [`FEATURE_MAP.md`](FEATURE_MAP.md).

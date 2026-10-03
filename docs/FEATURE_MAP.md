@@ -5,8 +5,7 @@ One-page map for adding a timeline node or touching the UI.
 | Feature | What it is | Where |
 |---------|------------|--------|
 | **Spine UI** | Chronological project spine + node cards | `public/index.html`, `public/app.js`, `public/styles.css` |
-| **Skins** | CSS themes (default **Spores**); `localStorage` key `loom-skin` | `public/styles.css`, skin switcher in `public/app.js` |
-| **Forks** | Parent→child hypha stroke styles (default **Ribbon**); key `loom-fork-style` | `public/app.js`, Forks control |
+| **Look** | Fixed skin **Spores** and fork style **Ribbon**. No switcher | `public/index.html`, `public/styles.css`, `public/app.js` |
 | **Node data (dual path)** | Same `projects` array in two files — keep in sync | `data/projects.json`, `public/data/projects.json` |
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
 | **add-node helper** | Append **one** validated stub on a branch. `--validate-only` checks field rules and the schema (stdlib) | `scripts/add-node.py` |
@@ -21,19 +20,19 @@ One-page map for adding a timeline node or touching the UI.
 ```bash
 # on a feature branch — open a pull request for the node
 python3 scripts/add-node.py \
-  --id my-stub-id \
+  --id my-project-id \
   --title "Short public title" \
   --started 2026-10-02 \
-  --parent temporal-loom-site \
-  --summary "One public sentence about the stub." \
-  --tag stub --tag process
+  --parent null \
+  --summary "One public sentence about the project." \
+  --tag process
 
 python3 scripts/add-node.py --validate-only
 python3 scripts/add-node.py --dry-run …
 python3 scripts/smoke-page.py
 ```
 
-`scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#about`, `.tab`, `.skin-btn`, `.fork-btn`, default skin **Spores** / fork **Ribbon**). `node --check public/app.js` runs when `node` is on `PATH`. The same checks are the `page-smoke` job in CI.
+`scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#about`, `.tab`, default skin **Spores** / fork **Ribbon** on `<html>`). `node --check public/app.js` runs when `node` is on `PATH`. The same checks are the `page-smoke` job in CI.
 
 ## Proposal → node
 
@@ -41,19 +40,17 @@ python3 scripts/smoke-page.py
 
 ```bash
 python3 scripts/proposal-to-node.py --print-argv <<'EOF'
-id: example-stub
-title: Example stub
+id: example-project
+title: Example project
 started: 2026-10-02
 ended: null
-parent: temporal-loom-site
+parent: null
 summary: One public sentence.
-tags: [stub]
+tags: [process]
 EOF
 
 python3 scripts/proposal-to-node.py docs/proposals/some-filled-proposal.md --apply
 ```
-
-`docs/proposals/loom-agent-tooling.md` is the filled proposal already applied for the tooling stub. Running it again is refused (duplicate id).
 
 Then open a pull request against `main`. A reviewer checks the graph and the page still work.
 
@@ -62,4 +59,4 @@ Then open a pull request against `main`. A reviewer checks the graph and the pag
 - Default skin **Spores**, default fork **Ribbon**
 - Chronological spine
 - Dual JSON `projects` arrays stay identical
-- Sample nodes only — this repo does not ingest private notes
+- Public nodes only — this repo does not ingest private notes

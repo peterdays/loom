@@ -1,38 +1,11 @@
-const SKIN_KEY = "loom-skin";
 const DEFAULT_SKIN = "spores";
 const SKINS = {
-  neon: { edges: "mold", nodes: "circle", glow: true, dashed: false },
-  circuit: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
-  blueprint: { edges: "ortho", nodes: "circle", glow: false, dashed: true },
-  obsidian: { edges: "ortho", nodes: "rect", glow: false, dashed: false },
-  ink: { edges: "mold", nodes: "diamond", glow: false, dashed: false },
-  "ink-ortho": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
-  "ink-schematic": { edges: "mold", nodes: "rect", glow: false, dashed: false, stamp: true },
-  "ink-brutal": { edges: "ortho", nodes: "rect", glow: false, dashed: false },
-  "ink-sepia": { edges: "ortho", nodes: "diamond", glow: false, dashed: false },
-  /* Bio / mycelium family — organic nodes + mold hyphae; Ink family unchanged */
-  "mycelium-night": { edges: "mold", nodes: "glow-dot", glow: true, dashed: false },
-  "agar-plate": { edges: "mold", nodes: "nodule", glow: false, dashed: false },
-  fluorescence: { edges: "mold", nodes: "glow-dot", glow: true, dashed: false },
   spores: { edges: "mold", nodes: "hyphal-tip", glow: true, dashed: false },
 };
 
-const FORK_STYLE_KEY = "loom-fork-style";
 const DEFAULT_FORK_STYLE = "ribbon";
-/** Fork stroke variations (mold skins only). Independent of loom-skin. */
+/** Ribbon hyphae: soft tapered stroke, gentle S-curves. */
 const FORK_STYLES = {
-  calm: {
-    ampScale: 0.52,
-    midScale: 0.42,
-    peelScale: 0.88,
-    microScale: 0.35,
-    sheath: "thin",
-    midLayer: false,
-    maxWhiskers: 0,
-    whiskerTiny: false,
-    anastomoses: false,
-    jitter: 0,
-  },
   ribbon: {
     ampScale: 0.32,
     midScale: 0.28,
@@ -42,30 +15,6 @@ const FORK_STYLES = {
     midLayer: true,
     maxWhiskers: 0,
     whiskerTiny: false,
-    anastomoses: false,
-    jitter: 0,
-  },
-  "ink-etched": {
-    ampScale: 0.22,
-    midScale: 0.55,
-    peelScale: 0.62,
-    microScale: 0.08,
-    sheath: "none",
-    midLayer: false,
-    maxWhiskers: 0,
-    whiskerTiny: false,
-    anastomoses: false,
-    jitter: 1.15,
-  },
-  "sparse-mycelium": {
-    ampScale: 0.68,
-    midScale: 0.62,
-    peelScale: 0.92,
-    microScale: 0.55,
-    sheath: "thin",
-    midLayer: false,
-    maxWhiskers: 2,
-    whiskerTiny: true,
     anastomoses: false,
     jitter: 0,
   },
@@ -464,7 +413,7 @@ function moldHyphaPoints(p, c, vertical, rnd, style) {
     const tt = Math.min(0.94, Math.max(prevT + 0.05, t + jitter));
     prevT = tt;
     const taper = Math.sin(Math.PI * tt);
-    // Ribbon/calm: gentle S-curve (mostly alternate). Sparse keeps occasional doubles.
+    // Ribbon uses a low midScale, so the meander stays a gentle S-curve.
     const flipChance = midScale > 0.55 ? 0.18 : 0.06;
     const side = (i % 2 === 0 ? 1 : -1) * (rnd() < flipChance ? -1 : 1);
     const gain = midScale > 0.55 ? (0.35 + rnd() * 0.9) : (0.45 + rnd() * 0.45);
@@ -584,9 +533,7 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
 }
 
 /**
- * Organic fork from parent → child. Geometry + decoration level follow the
- * selected fork style (calm / ribbon / ink-etched / sparse-mycelium).
- * All deterministic from child project id.
+ * Organic fork from parent → child. Ribbon geometry, seeded from the child id.
  */
 function moldForkBundle(p, c, vertical) {
   const style = forkOpts();
@@ -776,8 +723,7 @@ function renderGraph(projects) {
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
       const d = bundle.main;
-      // Layers depend on fork style: calm/sparse thin sheath; ribbon soft taper;
-      // ink-etched is a single core stroke. Whiskers only for sparse-mycelium.
+      // Ribbon: soft sheath and a quieter mid taper. No whiskers.
       let layers = "";
       if (bundle.sheath === "soft") {
         layers += `<path class="edge mold-sheath" d="${d}" pathLength="100" stroke-dasharray="40 64"/>`;
@@ -878,50 +824,9 @@ function renderCards(projects) {
   if (activeId) applyActive(activeId, false);
 }
 
-function applySkin(name, { persist = true } = {}) {
-  if (!SKINS[name]) name = DEFAULT_SKIN;
-  document.documentElement.setAttribute("data-skin", name);
-  document.querySelectorAll(".skin-btn:not(.fork-btn)").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.skin === name);
-  });
-  if (persist) {
-    try { localStorage.setItem(SKIN_KEY, name); } catch (_) { /* ignore */ }
-  }
-  if (projectsCache.length) renderGraph(projectsCache);
-}
-
-function initSkinSwitcher() {
-  let saved = DEFAULT_SKIN;
-  try { saved = localStorage.getItem(SKIN_KEY) || DEFAULT_SKIN; } catch (_) { /* ignore */ }
-  if (!SKINS[saved]) saved = DEFAULT_SKIN;
-  applySkin(saved, { persist: false });
-
-  document.querySelectorAll(".skin-btn:not(.fork-btn)").forEach((btn) => {
-    btn.addEventListener("click", () => applySkin(btn.dataset.skin));
-  });
-}
-
-function applyForkStyle(name, { persist = true } = {}) {
-  if (!FORK_STYLES[name]) name = DEFAULT_FORK_STYLE;
-  document.documentElement.setAttribute("data-fork-style", name);
-  document.querySelectorAll(".fork-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.fork === name);
-  });
-  if (persist) {
-    try { localStorage.setItem(FORK_STYLE_KEY, name); } catch (_) { /* ignore */ }
-  }
-  if (projectsCache.length) renderGraph(projectsCache);
-}
-
-function initForkSwitcher() {
-  let saved = DEFAULT_FORK_STYLE;
-  try { saved = localStorage.getItem(FORK_STYLE_KEY) || DEFAULT_FORK_STYLE; } catch (_) { /* ignore */ }
-  if (!FORK_STYLES[saved]) saved = DEFAULT_FORK_STYLE;
-  applyForkStyle(saved, { persist: false });
-
-  document.querySelectorAll(".fork-btn").forEach((btn) => {
-    btn.addEventListener("click", () => applyForkStyle(btn.dataset.fork));
-  });
+function lockLook() {
+  document.documentElement.setAttribute("data-skin", DEFAULT_SKIN);
+  document.documentElement.setAttribute("data-fork-style", DEFAULT_FORK_STYLE);
 }
 
 async function load() {
@@ -963,6 +868,5 @@ window.addEventListener("resize", () => {
   if (next !== orientMode && projectsCache.length) renderGraph(projectsCache);
 });
 
-initSkinSwitcher();
-initForkSwitcher();
+lockLook();
 load();

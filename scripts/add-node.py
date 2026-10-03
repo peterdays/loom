@@ -7,10 +7,10 @@ Always run on a branch; open a PR — never push node content straight to main.
 
 Examples:
   python3 scripts/add-node.py --dry-run \\
-    --id example-stub --title "Example stub" \\
-    --started 2026-10-02 --parent temporal-loom-site \\
+    --id example-project --title "Example project" \\
+    --started 2026-10-02 --parent null \\
     --summary "One public-safe sentence." \\
-    --tag stub
+    --tag process
 
   python3 scripts/add-node.py --validate-only
 """

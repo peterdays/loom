@@ -1,67 +1,13 @@
 {
-  "source": "stubs",
+  "source": "projects",
   "synced_at": null,
   "projects": [
-    {
-      "id": "personal-projects",
-      "title": "Personal projects",
-      "started": "2026-09",
-      "ended": null,
-      "parent": null,
-      "summary": "A lane for personal experiments and side projects.",
-      "tags": ["personal", "projects"]
-    },
-    {
-      "id": "project-notes",
-      "title": "Project notes",
-      "started": "2026-09",
-      "ended": null,
-      "parent": "personal-projects",
-      "summary": "Short public lines kept with each personal project.",
-      "tags": ["notes", "process"]
-    },
-    {
-      "id": "temporal-loom-site",
-      "title": "loom site itself",
-      "started": "2026-09-29",
-      "ended": null,
-      "parent": "personal-projects",
-      "summary": "This site: a chronological mycelium graph of personal projects.",
-      "tags": ["web", "timeline", "stub"]
-    },
-    {
-      "id": "agent-fleet",
-      "title": "Small experiments",
-      "started": "2026-09",
-      "ended": null,
-      "parent": "personal-projects",
-      "summary": "Sample node for small personal experiments.",
-      "tags": ["experiments", "stub"]
-    },
-    {
-      "id": "loom-graph-v1",
-      "title": "Branching graph v1",
-      "started": "2026-09-29",
-      "ended": null,
-      "parent": "temporal-loom-site",
-      "summary": "Chronological spine with parent-to-child forks and node focus.",
-      "tags": ["web", "ui", "stub"]
-    },
-    {
-      "id": "loom-agent-tooling",
-      "title": "Node tooling",
-      "started": "2026-10-02",
-      "ended": null,
-      "parent": "temporal-loom-site",
-      "summary": "Schema and add-node.py so a pull request can append one stub.",
-      "tags": ["process", "stub"]
-    },
     {
       "id": "jarvas",
       "title": "Jarvas",
       "started": "2026-07-24",
       "ended": null,
-      "parent": "personal-projects",
+      "parent": null,
       "summary": "A privacy-first personal AI assistant for turning sources, reminders, conversations, and agent workflows into project memory and next actions.",
       "tags": ["personal-ai", "second-brain", "agent-workflows", "knowledge-systems", "productivity"]
     }
