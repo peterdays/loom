@@ -9,11 +9,11 @@
   "properties": {
     "source": {
       "type": "string",
-      "description": "Short public label for this file. Sample graphs use a placeholder."
+      "description": "Short public label for this file."
     },
     "synced_at": {
       "type": ["string", "null"],
-      "description": "Reserved timestamp, or null for stub data."
+      "description": "Reserved timestamp, or null."
     },
     "projects": {
       "type": "array",

@@ -9,17 +9,17 @@ Default is a dry-run (no writes). Pass --apply to append one node on the
 current branch. Still open a PR; do not push node content straight to main.
 
 Examples:
-  python3 scripts/proposal-to-node.py docs/proposals/loom-agent-tooling.md
+  python3 scripts/proposal-to-node.py docs/proposals/some-filled-proposal.md
   python3 scripts/proposal-to-node.py --print-argv <<'EOF'
-  id: example-stub
-  title: Example stub
+  id: example-project
+  title: Example project
   started: 2026-10-02
   ended: null
-  parent: temporal-loom-site
+  parent: null
   summary: One public-safe sentence.
-  tags: [stub]
+  tags: [process]
   EOF
-  python3 scripts/proposal-to-node.py docs/proposals/loom-agent-tooling.md --apply
+  python3 scripts/proposal-to-node.py docs/proposals/some-filled-proposal.md --apply
 """
 from __future__ import annotations
 
