@@ -14,10 +14,10 @@
     {
       "id": "jarvas-mnemoteca",
       "title": "Jarvas Mnemoteca",
-      "started": "2026-07-25",
+      "started": "2026-07-31",
       "ended": null,
       "parent": "jarvas",
-      "summary": "A living LLM wiki where sources, notes, decisions, and WIP gravity wells preserve project continuity.",
+      "summary": "A living LLM wiki where sources, notes, decisions, and WIP gravity wells preserve continuity: https://gist.github.com/peterdays/54a8fd9f8a01355ec27a43ac3c49650a",
       "tags": ["second-brain", "llm-wiki", "knowledge-systems", "wip"]
     }
   ]
