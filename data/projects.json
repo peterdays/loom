@@ -10,6 +10,15 @@
       "parent": null,
       "summary": "A privacy-first personal AI assistant for turning sources, reminders, conversations, and agent workflows into project memory and next actions.",
       "tags": ["personal-ai", "second-brain", "agent-workflows", "knowledge-systems", "productivity"]
+    },
+    {
+      "id": "jarvas-mnemoteca",
+      "title": "Jarvas Mnemoteca",
+      "started": "2026-07-25",
+      "ended": null,
+      "parent": "jarvas",
+      "summary": "A living LLM wiki where sources, notes, decisions, and WIP gravity wells preserve project continuity.",
+      "tags": ["second-brain", "llm-wiki", "knowledge-systems", "wip"]
     }
   ]
 }
