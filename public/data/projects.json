@@ -5,11 +5,20 @@
     {
       "id": "jarvas",
       "title": "Jarvas",
-      "started": "2026-07-28",
+      "started": "2026-05-12",
       "ended": null,
       "parent": null,
       "summary": "A privacy-first personal AI assistant for turning sources, reminders, conversations, and agent workflows into project memory and next actions.",
       "tags": ["personal-ai", "second-brain", "agent-workflows", "knowledge-systems", "productivity"]
+    },
+    {
+      "id": "jarvas-mnemoteca",
+      "title": "Jarvas Mnemoteca",
+      "started": "2026-06-14",
+      "ended": null,
+      "parent": "jarvas",
+      "summary": "A living LLM wiki where sources, notes, decisions, and WIP gravity wells preserve continuity: https://gist.github.com/peterdays/54a8fd9f8a01355ec27a43ac3c49650a",
+      "tags": ["second-brain", "llm-wiki", "knowledge-systems", "wip"]
     }
   ]
 }
