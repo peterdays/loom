@@ -4,7 +4,7 @@ One-page map for adding a timeline node or touching the UI.
 
 | Feature | What it is | Where |
 |---------|------------|--------|
-| **Spine UI** | Chronological project spine + node cards | `public/index.html`, `public/app.js`, `public/styles.css` |
+| **Spine UI** | Chronological project spine. Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/index.html`, `public/app.js`, `public/styles.css` |
 | **Look** | Fixed skin **Spores** and fork style **Ribbon**. No switcher | `public/index.html`, `public/styles.css`, `public/app.js` |
 | **Node data (dual path)** | Same `projects` array in two files — keep in sync | `data/projects.json`, `public/data/projects.json` |
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
@@ -32,7 +32,7 @@ python3 scripts/add-node.py --dry-run …
 python3 scripts/smoke-page.py
 ```
 
-`scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#about`, `.tab`, default skin **Spores** / fork **Ribbon** on `<html>`). `node --check public/app.js` runs when `node` is on `PATH`. The same checks are the `page-smoke` job in CI.
+`scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#cards-toggle`, `#about`, `.tab`, default skin **Spores** / fork **Ribbon** on `<html>`). The show-all control starts labeled **Show all node cards**, and `index.html` does not include a node card. `node --check public/app.js` runs when `node` is on `PATH`. The same checks are the `page-smoke` job in CI.
 
 ## Proposal → node
 

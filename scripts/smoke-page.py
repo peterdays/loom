@@ -8,9 +8,11 @@ Proves the page is wired, not merely that projects.json matches the schema:
   - the projects JSON URL app.js fetches returns JSON with a projects array
   - startup DOM hooks app.js queries still exist in index.html
   - html data-skin / data-fork-style match DEFAULT_SKIN / DEFAULT_FORK_STYLE
+  - node cards are not in the first paint; #cards-toggle starts as "Show all node cards"
   - node --check public/app.js when node is on PATH
 
 The page has one look (Spores / Ribbon). There is no skin or fork switcher.
+Node cards stay hidden until a node is chosen, or until the show-all control is used.
 
 Usage (from the repo root):
 
@@ -156,6 +158,26 @@ def check_dom(js: str, page: PageParser, errors: list[str]) -> None:
         fail(errors, "skin/fork switcher buttons are still in index.html")
 
 
+def check_cards_start_closed(html: str, js: str, errors: list[str]) -> None:
+    """First paint has the graph and a closed show-all control, not a node card."""
+    toggle = re.search(
+        r'<button\b[^>]*\bid="cards-toggle"[^>]*>(.*?)</button>',
+        html,
+        re.DOTALL,
+    )
+    label = toggle.group(1).strip() if toggle else ""
+    if label != "Show all node cards":
+        fail(errors, f'#cards-toggle must start as "Show all node cards" (got {label!r})')
+    if re.search(r"<article\b[^>]*\bcard\b", html):
+        fail(errors, "index.html includes a node card; cards stay hidden until chosen")
+    if not re.search(r"let\s+showAllCards\s*=\s*false\s*;", js):
+        fail(errors, "app.js must start with node cards hidden (showAllCards = false)")
+    if re.search(r"let\s+activeId\s*=\s*[\"']", js):
+        fail(errors, "app.js must not preselect a node on load")
+    if "Hide node cards" not in js or "Show all node cards" not in js:
+        fail(errors, "app.js missing Show all node cards / Hide node cards labels")
+
+
 def check_node(errors: list[str]) -> str:
     node = shutil.which("node")
     if not node:
@@ -184,12 +206,14 @@ def main() -> int:
 
     try:
         status, body = fetch(base, "/")
+        html = ""
         if status != 200:
             fail(errors, f"GET / returned {status}, expected 200")
             page = PageParser()
         else:
+            html = body.decode("utf-8", errors="replace")
             page = PageParser()
-            page.feed(body.decode("utf-8", errors="replace"))
+            page.feed(html)
 
         js = APP_JS.read_text(encoding="utf-8")
         if status == 200:
@@ -224,6 +248,7 @@ def main() -> int:
                     project_count = len(projects)
 
             check_dom(js, page, errors)
+            check_cards_start_closed(html, js, errors)
 
         node_note = check_node(errors)
     finally:

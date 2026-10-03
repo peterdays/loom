@@ -138,7 +138,25 @@ h1 {
   max-height: none;
   max-width: 100%;
 }
+.cards-toggle {
+  margin-top: 0.85rem;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--tab-border);
+  border-radius: var(--tag-radius);
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.cards-toggle:hover { color: var(--text); border-color: var(--accent); }
+.cards-toggle[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .cards { display: grid; gap: 0.75rem; margin-top: 0.5rem; }
+.card[hidden] { display: none; }
 
 .card {
   background: var(--panel);
