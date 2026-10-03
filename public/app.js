@@ -770,7 +770,14 @@ function renderGraph(projects) {
   svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + branches + dots;
   svg.querySelectorAll(".node").forEach((el) => {
     const id = el.getAttribute("data-id");
-    const focus = () => selectNode(id);
+    const focus = () => {
+      if (activeId === id) {
+        activeId = null;
+        syncCards(false);
+        return;
+      }
+      selectNode(id);
+    };
     el.addEventListener("click", focus);
     el.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -782,7 +789,8 @@ function renderGraph(projects) {
   syncCards(false);
 }
 
-/** Cards stay hidden until a node is chosen, or until every card is shown. */
+/** Cards stay hidden until a node is chosen, or until every card is shown.
+ * Choosing the active node again clears the selection and hides its card. */
 function syncCards(scroll) {
   const toggle = document.getElementById("cards-toggle");
   if (toggle) {
