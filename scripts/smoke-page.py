@@ -8,10 +8,12 @@ Proves the page is wired, not merely that projects.json matches the schema:
   - the projects JSON URL app.js fetches returns JSON with a projects array
   - startup DOM hooks app.js queries still exist in index.html
   - html data-skin / data-fork-style match DEFAULT_SKIN / DEFAULT_FORK_STYLE
+  - html data-look defaults to current; #look-toggle is one White mode switch, off
   - node cards are not in the first paint; #cards-toggle starts as "Show all node cards"
   - node --check public/app.js when node is on PATH
 
-The page has one look (Spores / Ribbon). There is no skin or fork switcher.
+The page loads in Spores / Ribbon. One toggle can switch to white mode.
+There is no skin or fork picker.
 Node cards stay hidden until a node is chosen, or until the show-all control is used.
 
 Usage (from the repo root):
@@ -156,6 +158,38 @@ def check_dom(js: str, page: PageParser, errors: list[str]) -> None:
         )
     if any("skin-btn" in el["classes"] or "fork-btn" in el["classes"] for el in page.elements):
         fail(errors, "skin/fork switcher buttons are still in index.html")
+    look = const_string(js, "DEFAULT_LOOK")
+    if look != "current":
+        fail(errors, f"DEFAULT_LOOK must stay 'current' (got {look!r})")
+    if page.html_attrs.get("data-look") != "current":
+        fail(
+            errors,
+            f'<html data-look> is {page.html_attrs.get("data-look")!r}, expected "current"',
+        )
+
+
+def check_look_toggle(html: str, js: str, errors: list[str]) -> None:
+    """One White mode switch. First paint stays on the current look."""
+    match = re.search(
+        r'<button\b[^>]*\bid="look-toggle"[^>]*>.*?</button>',
+        html,
+        re.DOTALL,
+    )
+    if not match:
+        fail(errors, "missing #look-toggle")
+        return
+    tag = match.group(0)
+    if 'aria-pressed="false"' not in tag:
+        fail(errors, '#look-toggle must start with aria-pressed="false"')
+    if "White mode" not in tag:
+        fail(errors, '#look-toggle must be the White mode control')
+    if "loom-look" not in html or "loom-look" not in js:
+        fail(errors, "look choice must persist under localStorage key loom-look")
+    if not re.search(
+        r'localStorage\.getItem\(\s*LOOK_STORAGE_KEY\s*\)\s*===\s*"white"',
+        js,
+    ):
+        fail(errors, "saved look must stay current unless storage is white")
 
 
 def check_cards_start_closed(html: str, js: str, errors: list[str]) -> None:
@@ -248,6 +282,7 @@ def main() -> int:
                     project_count = len(projects)
 
             check_dom(js, page, errors)
+            check_look_toggle(html, js, errors)
             check_cards_start_closed(html, js, errors)
 
         node_note = check_node(errors)

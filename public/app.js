@@ -3,6 +3,9 @@ const SKINS = {
   spores: { edges: "mold", nodes: "hyphal-tip", glow: true, dashed: false },
 };
 
+const DEFAULT_LOOK = "current";
+const LOOK_STORAGE_KEY = "loom-look";
+
 const DEFAULT_FORK_STYLE = "ribbon";
 /** Ribbon hyphae: soft tapered stroke, gentle S-curves. */
 const FORK_STYLES = {
@@ -855,9 +858,36 @@ function renderCards(projects) {
   syncCards(false);
 }
 
-function lockLook() {
+function savedLook() {
+  try {
+    return localStorage.getItem(LOOK_STORAGE_KEY) === "white" ? "white" : DEFAULT_LOOK;
+  } catch (err) {
+    return DEFAULT_LOOK;
+  }
+}
+
+function applyLook(look) {
+  const next = look === "white" ? "white" : DEFAULT_LOOK;
   document.documentElement.setAttribute("data-skin", DEFAULT_SKIN);
   document.documentElement.setAttribute("data-fork-style", DEFAULT_FORK_STYLE);
+  document.documentElement.setAttribute("data-look", next);
+  const toggle = document.getElementById("look-toggle");
+  if (!toggle) return;
+  toggle.setAttribute("aria-pressed", next === "white" ? "true" : "false");
+}
+
+function toggleLook() {
+  const next = document.documentElement.getAttribute("data-look") === "white" ? DEFAULT_LOOK : "white";
+  try {
+    localStorage.setItem(LOOK_STORAGE_KEY, next);
+  } catch (err) {
+    /* storage unavailable — the look still changes for this view */
+  }
+  applyLook(next);
+}
+
+function lockLook() {
+  applyLook(savedLook());
 }
 
 async function load() {
@@ -903,6 +933,7 @@ window.addEventListener("resize", () => {
 });
 
 document.getElementById("cards-toggle").addEventListener("click", toggleAllCards);
+document.getElementById("look-toggle").addEventListener("click", toggleLook);
 
 lockLook();
 load();
