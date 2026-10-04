@@ -28,6 +28,15 @@
       "parent": "jarvas",
       "summary": "A curated playlist feeds transcripts into Jarvas so useful talks can become durable Mnemoteca context.",
       "tags": ["youtube", "transcripts", "ingestion", "second-brain"]
+    },
+    {
+      "id": "jarvas-inbox-ranking",
+      "title": "Jarvas inbox ranking",
+      "started": "2026-07-20",
+      "ended": null,
+      "parent": "jarvas",
+      "summary": "Jarvas ranks read-it-later links by relevance and novelty before Pedro spends attention.",
+      "tags": ["inbox", "ranking", "triage", "personal-ai"]
     }
   ]
 }
