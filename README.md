@@ -11,7 +11,7 @@ python3 -m http.server 8080 --directory public
 python3 scripts/smoke-page.py
 ```
 
-`scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#cards-toggle`, `#about`, `.tab`) plus the Spores / Ribbon defaults on `<html>` are still in the HTML. The show-all control starts as "Show all node cards". It also runs `node --check public/app.js` when `node` is on `PATH`.
+`scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#cards-toggle`, `#look-toggle`, `#about`, `.tab`) plus the Spores / Ribbon / current-look defaults on `<html>` are still in the HTML. The show-all control starts as "Show all node cards". The White mode switch starts off. It also runs `node --check public/app.js` when `node` is on `PATH`.
 
 The site is served from `public/` via [`.github/workflows/pages.yml`](.github/workflows/pages.yml); the project URL will be https://peterdays.github.io/loom once Pages is turned on.
 
@@ -34,7 +34,7 @@ This repo does not ingest private notes. New nodes arrive as pull requests.
 
 `public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). `parent` forks are **mold hyphae** — organic strokes that leave the straight TIME spine. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Node cards stay hidden on load. Click a node to show its card; click that same node again to hide it. **Show all node cards** reveals every card; the same control hides them again. Project data lives in `data/projects.json` and `public/data/projects.json`.
 
-The page has one look. Skin **Spores** (deep blue + lime capillary hyphae, hyphal-tip nodes) and fork style **Ribbon** (soft tapered stroke, gentle S-curves). There is no skin or fork switcher.
+The page loads in skin **Spores** (deep blue + lime capillary hyphae, hyphal-tip nodes) and fork style **Ribbon** (soft tapered stroke, gentle S-curves). A **White mode** control switches to a white ground with readable text and the same strokes, layout, and behavior. The choice is saved in the browser; a first visit stays on Spores. There is no skin or fork picker.
 
 ## Layout
 
