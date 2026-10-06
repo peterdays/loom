@@ -597,6 +597,53 @@ function moldFork(p, c, vertical) {
   return moldForkBundle(p, c, vertical).main;
 }
 
+/** Closed smooth outline. Same tension as the hypha curves. */
+function closedBlob(pts) {
+  const n = pts.length;
+  if (n < 3) return "";
+  const d = [`M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`];
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const p3 = pts[(i + 2) % n];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${fmt(c1x)} ${fmt(c1y)} ${fmt(c2x)} ${fmt(c2y)} ${fmt(p2.x)} ${fmt(p2.y)}`);
+  }
+  d.push("Z");
+  return d.join(" ");
+}
+
+/**
+ * Near-circular organic outline. Seeded from the node id so it stays put.
+ * Low harmonics plus one soft lobe — irregular, not a perfect circle.
+ */
+function organicBlob(cx, cy, radius, seed) {
+  const rnd = mulberry32(hashSeed(String(seed || "blob")));
+  const count = 12;
+  const amp1 = 0.1 + rnd() * 0.06;
+  const amp2 = 0.045 + rnd() * 0.035;
+  const f1 = 2 + Math.floor(rnd() * 2);
+  const f2 = 3 + Math.floor(rnd() * 2);
+  const ph1 = rnd() * Math.PI * 2;
+  const ph2 = rnd() * Math.PI * 2;
+  const bulgeAt = rnd() * Math.PI * 2;
+  const bulge = 0.14 + rnd() * 0.1;
+  const pts = [];
+  for (let i = 0; i < count; i++) {
+    const t = (i / count) * Math.PI * 2;
+    let k = 1 + amp1 * Math.sin(f1 * t + ph1) + amp2 * Math.sin(f2 * t + ph2);
+    const dAng = Math.atan2(Math.sin(t - bulgeAt), Math.cos(t - bulgeAt));
+    k += bulge * Math.exp(-(dAng * dAng) / 0.28);
+    const rr = Math.max(radius * 0.72, radius * k);
+    pts.push({ x: cx + Math.cos(t) * rr, y: cy + Math.sin(t) * rr });
+  }
+  return closedBlob(pts);
+}
+
 function nodeShape(n, kind) {
   const r = 8;
   const glow = skinOpts().glow ? ' filter="url(#glow)"' : "";
@@ -629,27 +676,18 @@ function nodeShape(n, kind) {
     return `<ellipse class="orb" cx="${n.x}" cy="${n.y}" rx="${fmt(rx)}" ry="${fmt(ry)}" transform="rotate(${rot} ${n.x} ${n.y})"/>` +
       `<circle class="orb orb-lobe" cx="${fmt(lx)}" cy="${fmt(ly)}" r="${fmt(lobeR)}"/>`;
   }
-  /* Spores hyphal tip. Roots (parent null) are larger hubs; leaves stay small. */
+  /* Spores nodes: irregular near-circles. Roots stay larger than leaves. */
   if (kind === "hyphal-tip") {
-    const rnd = mulberry32(hashSeed(String(n.id || "")));
+    const rnd = mulberry32(hashSeed(String(n.id || "") + ":size"));
     const hub = (n.depth || 0) === 0;
-    const core = hub ? 12.4 + rnd() * 1.1 : 4.3 + rnd() * 1.1;
-    const ang = rnd() * Math.PI * 2;
-    const tipLen = (hub ? 10 : 6.5) + rnd() * 3;
-    const tx = n.x + Math.cos(ang) * tipLen;
-    const ty = n.y + Math.sin(ang) * tipLen;
-    const midX = n.x + Math.cos(ang) * tipLen * 0.55 + Math.cos(ang + 1.2) * (hub ? 1.6 : 1.2);
-    const midY = n.y + Math.sin(ang) * tipLen * 0.55 + Math.sin(ang + 1.2) * (hub ? 1.6 : 1.2);
-    const tip = `<path class="orb orb-tip" d="M ${fmt(n.x)} ${fmt(n.y)} Q ${fmt(midX)} ${fmt(midY)} ${fmt(tx)} ${fmt(ty)}"${glow}/>`;
-    if (!hub) {
-      return `<circle class="orb" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(core)}"${glow}/>` + tip;
-    }
-    const mid = core * 1.42;
-    const halo = core * 1.95;
-    return `<circle class="orb orb-halo" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(halo)}"${glow}/>` +
-      `<circle class="orb orb-mid" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(mid)}"${glow}/>` +
-      `<circle class="orb" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(core)}"${glow}/>` +
-      tip;
+    const core = hub ? 12.6 + rnd() * 0.8 : 5.2 + rnd() * 0.6;
+    const body = `<path class="orb orb-blob" d="${organicBlob(n.x, n.y, core, String(n.id || "") + ":core")}"/>`;
+    if (!hub) return body;
+    const halo = core * 1.92;
+    const mid = core * 1.38;
+    return `<path class="orb orb-halo" d="${organicBlob(n.x, n.y, halo, String(n.id || "") + ":halo")}"${glow}/>` +
+      `<path class="orb orb-mid" d="${organicBlob(n.x, n.y, mid, String(n.id || "") + ":mid")}"/>` +
+      body;
   }
   return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${r}"${glow}/>`;
 }

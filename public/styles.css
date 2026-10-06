@@ -424,7 +424,7 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid {
 }
 
 /* SVG theming via CSS variables */
-.graph .orb { fill: var(--node); stroke: var(--text); stroke-width: 1.5; }
+.graph .orb { fill: var(--node); stroke: var(--text); stroke-width: 1.5; stroke-linejoin: round; }
 .graph .anchor { fill: var(--spine); }
 .graph .edge { stroke: var(--branch); stroke-width: var(--edge-width); }
 .graph .node text { fill: var(--text); font-family: inherit; font-size: 11px; }
