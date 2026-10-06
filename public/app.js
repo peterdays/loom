@@ -588,7 +588,7 @@ function taperRibbon(pts, t0, t1, widthAt) {
 /** Center-to-periphery: deeper forks start thinner and end thinner. */
 function forkTaperWidths(parentDepth) {
   const depth = Math.max(0, parentDepth || 0);
-  const start = Math.max(2.2, 9.4 * Math.pow(0.58, depth));
+  const start = Math.max(2.2, 8.6 * Math.pow(0.58, depth));
   const end = Math.max(0.7, 1.35 * Math.pow(0.7, depth));
   return { start, end };
 }
@@ -623,15 +623,15 @@ function closedBlob(pts) {
  */
 function organicBlob(cx, cy, radius, seed) {
   const rnd = mulberry32(hashSeed(String(seed || "blob")));
-  const count = 12;
-  const amp1 = 0.1 + rnd() * 0.06;
-  const amp2 = 0.045 + rnd() * 0.035;
+  const count = 10;
+  const amp1 = 0.12 + rnd() * 0.07;
+  const amp2 = 0.055 + rnd() * 0.04;
   const f1 = 2 + Math.floor(rnd() * 2);
   const f2 = 3 + Math.floor(rnd() * 2);
   const ph1 = rnd() * Math.PI * 2;
   const ph2 = rnd() * Math.PI * 2;
   const bulgeAt = rnd() * Math.PI * 2;
-  const bulge = 0.14 + rnd() * 0.1;
+  const bulge = 0.17 + rnd() * 0.11;
   const pts = [];
   for (let i = 0; i < count; i++) {
     const t = (i / count) * Math.PI * 2;
@@ -642,6 +642,12 @@ function organicBlob(cx, cy, radius, seed) {
     pts.push({ x: cx + Math.cos(t) * rr, y: cy + Math.sin(t) * rr });
   }
   return closedBlob(pts);
+}
+
+/** The same deterministic radius is used by both the blob and its hyphae. */
+function nodeRadius(n) {
+  const rnd = mulberry32(hashSeed(String(n.id || "") + ":size"));
+  return (n.depth || 0) === 0 ? 16.2 + rnd() * 1.8 : 7.4 + rnd() * 1.1;
 }
 
 function nodeShape(n, kind) {
@@ -678,13 +684,12 @@ function nodeShape(n, kind) {
   }
   /* Spores nodes: irregular near-circles. Roots stay larger than leaves. */
   if (kind === "hyphal-tip") {
-    const rnd = mulberry32(hashSeed(String(n.id || "") + ":size"));
     const hub = (n.depth || 0) === 0;
-    const core = hub ? 12.6 + rnd() * 0.8 : 5.2 + rnd() * 0.6;
+    const core = nodeRadius(n);
     const body = `<path class="orb orb-blob" d="${organicBlob(n.x, n.y, core, String(n.id || "") + ":core")}"/>`;
     if (!hub) return body;
-    const halo = core * 1.92;
-    const mid = core * 1.38;
+    const halo = core * 1.7;
+    const mid = core * 1.28;
     return `<path class="orb orb-halo" d="${organicBlob(n.x, n.y, halo, String(n.id || "") + ":halo")}"${glow}/>` +
       `<path class="orb orb-mid" d="${organicBlob(n.x, n.y, mid, String(n.id || "") + ":mid")}"/>` +
       body;
@@ -817,8 +822,8 @@ function renderGraph(projects) {
         len += Math.hypot(bundle.pts[i].x - bundle.pts[i - 1].x, bundle.pts[i].y - bundle.pts[i - 1].y);
       }
       len = Math.max(1, len);
-      const parentR = ((parent.depth || 0) === 0 ? (parent.r || 16) : (parent.r || 6));
-      const childR = n.r || 5.5;
+      const parentR = nodeRadius(parent);
+      const childR = nodeRadius(n);
       const t0 = Math.min(0.42, parentR / len);
       const t1 = Math.max(t0 + 0.2, 1 - childR / len);
       const ease = (u) => {
