@@ -16,9 +16,9 @@ const FORK_STYLES = {
     microScale: 0.12,
     sheath: "soft",
     midLayer: true,
-    maxWhiskers: 0,
+    maxWhiskers: 3,
     whiskerTiny: false,
-    anastomoses: false,
+    anastomoses: true,
     jitter: 0,
   },
 };
@@ -31,6 +31,13 @@ let orientMode = "horizontal";
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+/** Safely preserve public links embedded in otherwise plain-text summaries. */
+function linkifyPublicUrls(s) {
+  return escapeHtml(s).replace(/https?:\/\/[^\s<]+/g, (url) =>
+    `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
   );
 }
 
@@ -178,15 +185,17 @@ function layout(projects, orient) {
     else maxUp = Math.max(maxUp, (item.depth || 0) === 0 ? 104 : 64);
   }
 
-  // On a narrow viewport, keep the date column outside the root hub.
-  const spine = vertical ? 74 : Math.round(maxUp + 16);
-  const h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + maxDown + 26);
+  // Horizontal chronology lives in its own band below the entire hyphal field.
+  // On narrow screens, the date column stays outside the root hub instead.
+  const nodeBase = Math.round(maxUp + 16);
+  const spine = vertical ? 74 : Math.round(nodeBase + maxDown + 44);
+  const h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + 94);
   const width = vertical ? Math.round(spine + maxRight) : w;
 
   const nodes = items.map((item, i) => {
     const off = crossOf(item.side);
     const x = vertical ? spine + off : mains[i];
-    const y = vertical ? mains[i] : spine + off;
+    const y = vertical ? mains[i] : nodeBase + off;
     return { ...item, x, y, main: mains[i], spine, vertical };
   });
 
@@ -424,7 +433,7 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
     const ny = (a.tx + b.tx) * 0.5;
     const nlen = Math.hypot(nx, ny) || 1;
     const side = rnd() < 0.5 ? 1 : -1;
-    const bulge = (0.55 + rnd() * 0.85) * Math.min(amp * 0.95, 22);
+    const bulge = (0.55 + rnd() * 0.85) * Math.min(Math.max(8, amp * 1.3), 16);
     const midT = 0.35 + rnd() * 0.3;
     const midBase = moldLerpPt(
       { x: a.x, y: a.y },
@@ -452,6 +461,50 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   return out;
 }
 
+/** Dim companion filaments that leave and rejoin a real hypha. */
+function moldFieldFilaments(pts, rnd, nested) {
+  const out = [];
+  const count = nested ? 1 : 2 + (rnd() < 0.4 ? 1 : 0);
+  for (let i = 0; i < count; i++) {
+    const t0 = 0.06 + rnd() * 0.22;
+    const t1 = Math.min(0.94, t0 + 0.28 + rnd() * 0.24);
+    const a = moldSample(pts, t0);
+    const b = moldSample(pts, t1);
+    const nx = -(a.ty + b.ty) * 0.5;
+    const ny = (a.tx + b.tx) * 0.5;
+    const nlen = Math.hypot(nx, ny) || 1;
+    const side = rnd() < 0.5 ? -1 : 1;
+    const offset = 8 + rnd() * (nested ? 8 : 15);
+    out.push(moldSmooth([
+      { x: a.x, y: a.y },
+      { x: a.x + (nx / nlen) * side * offset * 0.7 + a.tx * 12, y: a.y + (ny / nlen) * side * offset * 0.7 + a.ty * 12 },
+      { x: b.x + (nx / nlen) * side * offset - b.tx * 10, y: b.y + (ny / nlen) * side * offset - b.ty * 10 },
+      { x: b.x, y: b.y },
+    ]));
+  }
+  return out;
+}
+
+/**
+ * Faint particles live near real hyphae, not as standalone graph nodes.
+ * They are seeded from the branch id and deliberately cannot receive input.
+ */
+function moldSpores(pts, rnd, nested) {
+  const out = [];
+  const count = (nested ? 8 : 15) + Math.floor(rnd() * (nested ? 6 : 10));
+  for (let i = 0; i < count; i++) {
+    const s = moldSample(pts, 0.08 + rnd() * 0.84);
+    const nx = -s.ty;
+    const ny = s.tx;
+    const sign = rnd() < 0.5 ? -1 : 1;
+    const spread = 5 + rnd() * (nested ? 15 : 28);
+    const drift = (rnd() * 2 - 1) * 7;
+    const r = 0.45 + rnd() * 0.85;
+    out.push(`<circle class="field-spore" cx="${fmt(s.x + nx * sign * spread + s.tx * drift)}" cy="${fmt(s.y + ny * sign * spread + s.ty * drift)}" r="${fmt(r)}"/>`);
+  }
+  return out;
+}
+
 /**
  * Organic fork from parent → child. Ribbon geometry, seeded from the child id.
  */
@@ -462,12 +515,16 @@ function moldForkBundle(p, c, vertical) {
   const main = moldSmooth(pts);
   const whiskers = moldWhiskers(pts, rnd, nested, amp, style);
   const anastomoses = moldAnastomoses(pts, rnd, nested, amp, style);
+  const filaments = moldFieldFilaments(pts, rnd, nested);
+  const spores = moldSpores(pts, rnd, nested);
   return {
     main,
     pts,
     el,
     whiskers,
     anastomoses,
+    filaments,
+    spores,
     nested,
     sheath: style.sheath || "none",
     midLayer: !!style.midLayer,
@@ -684,25 +741,8 @@ function renderGraph(projects) {
   const glowFilter = opts.glow
     ? `<filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
     : "";
-
-  const defs = `<defs>
-    <linearGradient id="spineGrad" x1="${vertical ? 0 : 0}" y1="${vertical ? 0 : 0}" x2="${vertical ? 0 : 1}" y2="${vertical ? 1 : 0}">
-      <stop offset="0%" stop-color="var(--spine)" stop-opacity="0.35"/>
-      <stop offset="18%" stop-color="var(--spine)"/>
-      <stop offset="100%" stop-color="var(--spine)"/>
-    </linearGradient>
-    <radialGradient id="hubBlobGradient" cx="31%" cy="26%" r="76%">
-      <stop offset="0%" stop-color="#f7fee7" stop-opacity="0.98"/>
-      <stop offset="42%" stop-color="var(--node)" stop-opacity="0.98"/>
-      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.94"/>
-    </radialGradient>
-    <radialGradient id="tipBlobGradient" cx="30%" cy="24%" r="78%">
-      <stop offset="0%" stop-color="#ecfccb" stop-opacity="0.98"/>
-      <stop offset="55%" stop-color="var(--node)" stop-opacity="0.98"/>
-      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
-    </radialGradient>
-    ${glowFilter}
-  </defs>`;
+  const branchGradients = [];
+  let defs = "";
 
   const cap = opts.edges === "ortho" ? "square" : "round";
   const spineLine = `<line class="spine-line" x1="${spineStart.x}" y1="${spineStart.y}" x2="${spineEnd.x}" y2="${spineEnd.y}"
@@ -748,17 +788,55 @@ function renderGraph(projects) {
         return t * t * (3 - 2 * t);
       };
       const ribbon = taperRibbon(bundle.pts, 0, 1, (u) => start + (end - start) * ease(u));
+      const firstPt = bundle.pts[0];
+      const lastPt = bundle.pts[bundle.pts.length - 1];
+      const gradientId = `hyphaGradient-${escapeHtml(n.id)}`;
+      branchGradients.push(`<linearGradient id="${gradientId}" gradientUnits="userSpaceOnUse" x1="${fmt(firstPt.x)}" y1="${fmt(firstPt.y)}" x2="${fmt(lastPt.x)}" y2="${fmt(lastPt.y)}">
+        <stop offset="0%" stop-color="#f7fee7" stop-opacity="0.98"/>
+        <stop offset="20%" stop-color="var(--node)" stop-opacity="0.98"/>
+        <stop offset="68%" stop-color="var(--branch)" stop-opacity="0.96"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.82"/>
+      </linearGradient>`);
       const loops = bundle.anastomoses.map((ad) =>
         `<path class="edge mold-anas" d="${ad}"/>`
+      ).join("");
+      const filaments = bundle.filaments.map((fd) =>
+        `<path class="edge mold-field" d="${fd}"/>`
       ).join("");
       const whisk = bundle.whiskers.map((wd) =>
         `<path class="edge mold-whisker" d="${wd}"/>`
       ).join("");
-      return loops + `<path class="edge mold-taper mold-taper-inner" d="${ribbon}"/>` + whisk;
+      const spores = bundle.spores.join("");
+      return loops + filaments + whisk + spores + `<path class="edge mold-taper mold-taper-inner" style="fill: url(#${gradientId})" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
     }
     const d = edgePath(parent, n, opts.edges, vertical);
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
   }).join("");
+
+  defs = `<defs>
+    <linearGradient id="spineGrad" x1="${vertical ? 0 : 0}" y1="${vertical ? 0 : 0}" x2="${vertical ? 0 : 1}" y2="${vertical ? 1 : 0}">
+      <stop offset="0%" stop-color="var(--spine)" stop-opacity="0.35"/>
+      <stop offset="18%" stop-color="var(--spine)"/>
+      <stop offset="100%" stop-color="var(--spine)"/>
+    </linearGradient>
+    <radialGradient id="hubBlobGradient" cx="31%" cy="26%" r="76%">
+      <stop offset="0%" stop-color="#f7fee7" stop-opacity="0.98"/>
+      <stop offset="42%" stop-color="var(--node)" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.94"/>
+    </radialGradient>
+    <radialGradient id="tipBlobGradient" cx="30%" cy="24%" r="78%">
+      <stop offset="0%" stop-color="#ecfccb" stop-opacity="0.98"/>
+      <stop offset="55%" stop-color="var(--node)" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
+    </radialGradient>
+    <filter id="hyphaTexture" x="-8%" y="-12%" width="116%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.12 0.42" numOctaves="2" seed="7" result="noise"/>
+      <feComposite in="noise" in2="SourceGraphic" operator="in" result="grain"/>
+      <feBlend in="SourceGraphic" in2="grain" mode="soft-light"/>
+    </filter>
+    ${branchGradients.join("")}
+    ${glowFilter}
+  </defs>`;
 
   const dots = nodes.map((n) => {
     const hard = opts.edges === "ortho";
@@ -859,7 +937,7 @@ function renderCards(projects) {
       <div class="meta">${escapeHtml(when)}</div>
       ${fork}
       <h2>${escapeHtml(p.title || "Untitled")}</h2>
-      <p>${escapeHtml(p.summary || "")}</p>
+      <p>${linkifyPublicUrls(p.summary || "")}</p>
       <div class="tags">${tags}</div>
     </article>`;
   }).join("");
