@@ -1,6 +1,6 @@
 # loom
 
-Personal chronological **mycelium graph** of projects. Time runs along one spine; parent links fork off it as hyphae.
+Personal chronological **mycelium graph** of projects. Root projects are large hubs; thinner hyphae radiate out to smaller nodes.
 
 ## Status
 
@@ -13,7 +13,9 @@ python3 scripts/smoke-page.py
 
 `scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#cards-toggle`, `#look-toggle`, `#about`, `.tab`) plus the Spores / Ribbon / current-look defaults on `<html>` are still in the HTML. The show-all control starts as "Show all node cards". The White mode switch starts off. It also runs `node --check public/app.js` when `node` is on `PATH`.
 
-The site is served from `public/` via [`.github/workflows/pages.yml`](.github/workflows/pages.yml); the project URL will be https://peterdays.github.io/loom once Pages is turned on.
+The site is served from `public/` via [`.github/workflows/pages.yml`](.github/workflows/pages.yml) at https://peterdays.github.io/loom/.
+
+The bare user root `https://peterdays.github.io/` is a different Pages site. GitHub only serves that URL from a repository named `peterdays.github.io`, which this project repo cannot replace. [`docs/user-site/index.html`](docs/user-site/index.html) is the redirect page for that repository (meta refresh, `location.replace`, and a canonical link to `/loom/`). Unknown paths under `/loom/` use [`public/404.html`](public/404.html), which sends visitors to the project home.
 
 ## Add a project node
 
@@ -32,7 +34,7 @@ This repo does not ingest private notes. New nodes arrive as pull requests.
 
 ## Temporal graph
 
-`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). `parent` forks are **mold hyphae** — organic strokes that leave the straight TIME spine. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Node cards stay hidden on load. Click a node to show its card; click that same node again to hide it. **Show all node cards** reveals every card; the same control hides them again. Project data lives in `data/projects.json` and `public/data/projects.json`.
+`public/` draws a **radial mycelium**. Projects with `parent: null` are large glowing hubs. Child nodes are smaller, and organic hyphae radiate outward from each hub (a gentle Ribbon S-curve, seeded from the child id). When there is more than one hub, earlier hubs sit to the left of later ones (top to bottom on a narrow screen). Each node carries its start date. Node cards stay hidden on load. Click a node to show its card; click that same node again to hide it. **Show all node cards** reveals every card; the same control hides them again. Project data lives in `data/projects.json` and `public/data/projects.json`.
 
 The page loads in skin **Spores** (deep blue + lime capillary hyphae, hyphal-tip nodes) and fork style **Ribbon** (soft tapered stroke, gentle S-curves). A **White mode** control switches to a white ground with readable text and the same strokes, layout, and behavior. The choice is saved in the browser; a first visit stays on Spores. There is no skin or fork picker.
 

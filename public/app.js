@@ -61,30 +61,146 @@ function preferredOrient() {
   return window.matchMedia("(max-width: 720px)").matches ? "vertical" : "horizontal";
 }
 
-/** Position along the time axis. Same dates stay ordered; real gaps get extra room. */
-function timePositions(times, start, end) {
-  const n = times.length;
-  if (n <= 1) return [(start + end) / 2];
-  const usable = Math.max(1, end - start);
-  const even = () => Array.from({ length: n }, (_, i) => start + (i * usable) / (n - 1));
-  const deltas = [];
-  for (let i = 1; i < n; i++) {
-    const a = times[i - 1];
-    const b = times[i];
-    deltas.push(Number.isFinite(a) && Number.isFinite(b) ? Math.max(0, b - a) : 0);
-  }
-  const maxD = Math.max(0, ...deltas);
-  const minGap = Math.min(164, usable / (n - 1));
-  const minTotal = minGap * (n - 1);
-  if (maxD === 0 || minTotal >= usable - 0.5) return even();
-  const extra = usable - minTotal;
-  const weights = deltas.map((d) => d / maxD);
-  const sum = weights.reduce((a, b) => a + b, 0) || 1;
-  const pos = [start];
-  for (let i = 0; i < n - 1; i++) pos.push(pos[i] + minGap + extra * (weights[i] / sum));
-  return pos;
+/** Visible core size. Roots (parent null) are the large hubs; leaves stay small. */
+function nodeCoreRadius(depth, hasKids) {
+  if (depth <= 0) return 14;
+  if (hasKids) return 7.2;
+  return 4.6;
 }
 
+/**
+ * Full-circle fan with a gap centered up so the hub title has a quiet wedge.
+ * n === 1 sits just east of the hub (later work reads forward).
+ */
+function radialChildAngles(n) {
+  if (n <= 0) return [];
+  if (n === 1) return [-0.18];
+  const step = (Math.PI * 2) / n;
+  const start = -Math.PI / 2 + step / 2;
+  return Array.from({ length: n }, (_, i) => start + i * step);
+}
+
+/** Nested siblings stay in a narrow cone along the parent's outward ray. */
+function coneAngles(base, n) {
+  if (n <= 1) return [Number.isFinite(base) ? base : 0];
+  const spread = Math.min(1.2, 0.38 * n + 0.2);
+  return Array.from({ length: n }, (_, i) => base + ((i / (n - 1)) - 0.5) * spread);
+}
+
+function orbitRadius(depth, count, vertical) {
+  const crowd = Math.max(0, count - 3) * (vertical ? 12 : 16);
+  if (vertical) return (depth === 0 ? 168 : 118) + crowd;
+  return (depth === 0 ? 248 : 156) + crowd;
+}
+
+/**
+ * Place one hub and its descendants in local coordinates.
+ * Children radiate outward; a seeded jitter keeps the fan from looking stamped.
+ */
+function layoutCluster(root, children, byId, vertical) {
+  const local = {};
+  const kidCount = (children[root.id] || []).length;
+  local[root.id] = {
+    x: 0,
+    y: 0,
+    ang: -Math.PI / 2,
+    depth: 0,
+    r: nodeCoreRadius(0, kidCount > 0),
+    childCount: kidCount,
+    tipAng: 0.7,
+  };
+
+  function place(parentId, depth) {
+    const kids = children[parentId] || [];
+    const parent = local[parentId];
+    const n = kids.length;
+    if (!n) return;
+    const rad = orbitRadius(depth, n, vertical);
+    const angles = depth === 0 ? radialChildAngles(n) : coneAngles(parent.ang, n);
+    kids.forEach((kid, i) => {
+      const rnd = mulberry32(hashSeed(String(kid.id) + ":orbit"));
+      const jitter = n <= 1 ? (rnd() - 0.5) * 0.06 : (rnd() - 0.5) * 0.12;
+      const ang = angles[i] + jitter;
+      const dist = rad * (0.94 + rnd() * 0.12);
+      const d = depth + 1;
+      const grand = (children[kid.id] || []).length;
+      local[kid.id] = {
+        x: parent.x + Math.cos(ang) * dist,
+        y: parent.y + Math.sin(ang) * dist,
+        ang,
+        depth: d,
+        r: nodeCoreRadius(d, grand > 0),
+        childCount: grand,
+        tipAng: ang,
+      };
+      place(kid.id, d);
+    });
+    if (depth === 0 && kids[0] && local[kids[0].id]) parent.tipAng = local[kids[0].id].ang;
+  }
+  place(root.id, 0);
+
+  const ids = Object.keys(local);
+  for (let pass = 0; pass < 7; pass++) {
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const a = local[ids[i]];
+        const b = local[ids[j]];
+        const minD = a.r + b.r + (Math.min(a.depth, b.depth) === 0 ? 156 : 112);
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy) || 0.01;
+        if (dist >= minD) continue;
+        const push = (minD - dist) * 0.5;
+        const ux = dx / dist;
+        const uy = dy / dist;
+        if (a.depth !== 0) {
+          a.x -= ux * push;
+          a.y -= uy * push;
+        }
+        if (b.depth !== 0) {
+          b.x += ux * push;
+          b.y += uy * push;
+        }
+      }
+    }
+  }
+  for (const id of ids) {
+    const parentId = byId[id] && byId[id].parent;
+    if (!parentId || !local[parentId]) continue;
+    const par = local[parentId];
+    local[id].ang = Math.atan2(local[id].y - par.y, local[id].x - par.x);
+    if (local[id].depth > 0) local[id].tipAng = local[id].ang;
+  }
+  return local;
+}
+
+function shiftTree(local, dx, dy) {
+  for (const id of Object.keys(local)) {
+    local[id].x += dx;
+    local[id].y += dy;
+  }
+}
+
+/** Extent of a cluster along the chronological axis, including label width. */
+function clusterSpan(local, byId, vertical) {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const id of Object.keys(local)) {
+    const n = local[id];
+    const title = (byId[id] && byId[id].title) || "";
+    const pad = n.r + (n.depth === 0 ? 36 : 28) + Math.min(210, title.length * 3.4);
+    const main = vertical ? n.y : n.x;
+    lo = Math.min(lo, main - pad);
+    hi = Math.max(hi, main + pad);
+  }
+  if (!Number.isFinite(lo)) return { lo: 0, hi: 0 };
+  return { lo, hi };
+}
+
+/**
+ * Radial mycelium. Root hubs sit in time order (left→right, or top→bottom
+ * when narrow). Hyphae leave each hub in every direction toward its children.
+ */
 function layout(projects, orient) {
   const vertical = orient === "vertical";
   const byId = Object.fromEntries(projects.map((p) => [p.id, p]));
@@ -99,95 +215,106 @@ function layout(projects, orient) {
       || String(a.id).localeCompare(String(b.id)));
   }
 
-  const depthOf = (id, guard = 0) => {
-    if (guard > 16) return 0;
-    const p = byId[id];
-    if (!p || !p.parent || !byId[p.parent]) return 0;
-    return 1 + depthOf(p.parent, guard + 1);
-  };
-  const side = {};
-  const depth = {};
-  for (const p of projects) depth[p.id] = depthOf(p.id);
-  for (const p of projects) if (!depth[p.id]) side[p.id] = 0;
-  // Horizontal: alternate above/below spine. Vertical: stack short forks to the right.
+  const roots = [...(children[null] || [])].sort((a, b) =>
+    String(a.started || "9999").localeCompare(String(b.started || "9999"))
+    || String(a.id).localeCompare(String(b.id)));
+
+  const clusters = roots.map((root) => layoutCluster(root, children, byId, vertical));
+  let cursor = 0;
+  const gap = vertical ? 88 : 96;
+  clusters.forEach((local) => {
+    const span = clusterSpan(local, byId, vertical);
+    const shift = cursor - span.lo;
+    if (vertical) shiftTree(local, 0, shift);
+    else shiftTree(local, shift, 0);
+    const placed = clusterSpan(local, byId, vertical);
+    cursor = placed.hi + gap;
+  });
+
+  const pos = {};
+  clusters.forEach((local) => {
+    for (const id of Object.keys(local)) pos[id] = local[id];
+  });
   for (const p of projects) {
-    (children[p.id] || []).forEach((kid, idx) => {
-      if (vertical) {
-        // Prefer a short fork: share lane 1; collision pass bumps if too close in time.
-        if (!depth[p.id]) side[kid.id] = 1;
-        else side[kid.id] = (side[p.id] || 1) + 1;
-      } else if (!depth[p.id]) {
-        side[kid.id] = idx % 2 === 0 ? -1 : 1;
-      } else {
-        const ps = side[p.id] || -1;
-        const dir = Math.sign(ps) || -1;
-        side[kid.id] = dir * (Math.abs(ps) + 1);
-      }
-    });
+    if (pos[p.id]) continue;
+    const depth = 0;
+    pos[p.id] = {
+      x: cursor,
+      y: vertical ? cursor : 0,
+      ang: -Math.PI / 2,
+      depth,
+      r: nodeCoreRadius(depth, false),
+      childCount: 0,
+      tipAng: 0.7,
+    };
+    cursor += 180;
   }
 
-  const items = projects.map((p) => ({
-    ...p,
-    t: parseTime(p.started),
-    depth: depth[p.id] || 0,
-    side: side[p.id] || 0,
-  }));
-  items.sort((a, b) => {
+  const nodes = projects.map((p) => {
+    const n = pos[p.id];
+    return {
+      ...p,
+      t: parseTime(p.started),
+      depth: n.depth,
+      r: n.r,
+      ang: n.ang,
+      tipAng: n.tipAng,
+      childCount: n.childCount,
+      x: n.x,
+      y: n.y,
+      vertical,
+      side: n.depth === 0 ? 0 : (Math.sin(n.ang) < 0 ? -1 : 1),
+    };
+  });
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const n of nodes) {
+    const halo = n.depth === 0 ? n.r * 2.5 + 8 : n.r + 10;
+    minX = Math.min(minX, n.x - halo);
+    maxX = Math.max(maxX, n.x + halo);
+    minY = Math.min(minY, n.y - halo);
+    maxY = Math.max(maxY, n.y + halo);
+    const box = labelBounds(n);
+    minX = Math.min(minX, box.left);
+    maxX = Math.max(maxX, box.right);
+    minY = Math.min(minY, box.top);
+    maxY = Math.max(maxY, box.bot);
+  }
+  if (!Number.isFinite(minX)) {
+    minX = 0;
+    minY = 0;
+    maxX = 640;
+    maxY = 480;
+  }
+
+  const margin = vertical ? 28 : 36;
+  const shiftX = margin - minX;
+  const shiftY = margin - minY;
+  for (const n of nodes) {
+    n.x += shiftX;
+    n.y += shiftY;
+  }
+  const width = Math.max(vertical ? 420 : 720, Math.round(maxX - minX + margin * 2));
+  const height = Math.max(vertical ? 520 : 460, Math.round(maxY - minY + margin * 2));
+
+  nodes.sort((a, b) => {
     const ta = a.t == null ? Infinity : a.t;
     const tb = b.t == null ? Infinity : b.t;
     return ta - tb || a.depth - b.depth || String(a.id).localeCompare(String(b.id));
   });
 
-  const n = items.length;
-  const w = vertical ? 560 : 1040;
-  const mainStart = vertical ? 58 : 128;
-  const mainEnd = vertical ? Math.max(mainStart + 80, 36 + Math.max(0, n - 1) * 122) : w - 86;
-  const mains = timePositions(items.map((it) => (it.t == null ? NaN : it.t)), mainStart, mainEnd);
-
-  const minSep = vertical ? 100 : 148;
-  for (let i = 0; i < items.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (items[j].side !== items[i].side) continue;
-      if (Math.abs(mains[j] - mains[i]) >= minSep) continue;
-      if (vertical) items[i].side = Math.abs(items[i].side) + 1;
-      else {
-        const dir = items[i].side === 0 ? -1 : Math.sign(items[i].side);
-        items[i].side = dir * (Math.abs(items[i].side) + 1);
-      }
-    }
-  }
-
-  const crossOf = (s) => {
-    if (!s) return 0;
-    const mag = Math.abs(s);
-    if (vertical) return mag * 118; // lanes always to the right of the spine
-    if (s < 0) return -(78 + (mag - 1) * 74);
-    return 96 + (mag - 1) * 76;
+  const rootNodes = nodes.filter((n) => n.depth === 0);
+  return {
+    w: width,
+    h: height,
+    vertical,
+    nodes,
+    rootNodes,
+    byId: Object.fromEntries(nodes.map((nd) => [nd.id, nd])),
   };
-
-  let maxUp = 64;
-  let maxDown = 64;
-  let maxRight = 210;
-  for (const item of items) {
-    const c = Math.abs(crossOf(item.side));
-    if (vertical) maxRight = Math.max(maxRight, crossOf(item.side) + 210);
-    else if (item.side < 0) maxUp = Math.max(maxUp, c + 46);
-    else if (item.side > 0) maxDown = Math.max(maxDown, c + 44);
-    else maxUp = Math.max(maxUp, 50);
-  }
-
-  const spine = vertical ? 40 : Math.round(maxUp + 16);
-  const h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + maxDown + 26);
-  const width = vertical ? Math.round(spine + maxRight) : w;
-
-  const nodes = items.map((item, i) => {
-    const off = crossOf(item.side);
-    const x = vertical ? spine + off : mains[i];
-    const y = vertical ? mains[i] : spine + off;
-    return { ...item, x, y, main: mains[i], spine, vertical };
-  });
-
-  return { w: width, h, spine, vertical, nodes, byId: Object.fromEntries(nodes.map((nd) => [nd.id, nd])) };
 }
 
 function orthoFork(p, c, vertical) {
@@ -318,125 +445,50 @@ function moldSample(pts, t) {
 }
 
 /**
- * Build the main hypha point chain: peel off the straight time spine, then
- * meander. Amplitude / sample density / jitter come from fork style.
- * Seeded from child project id. Nested sibling lanes stay quieter.
+ * Organic hypha from parent hub to child. Leaves the parent rim and arrives
+ * at the child rim. Ribbon stays a gentle S-curve; nested links stay quieter.
+ * Seeded from the child project id.
  */
 function moldHyphaPoints(p, c, vertical, rnd, style) {
   const st = style || FORK_STYLES[DEFAULT_FORK_STYLE];
-  const nested = (p.side || 0) !== 0;
-  const spine = p.spine ?? (vertical ? p.x : p.y);
+  const nested = (p.depth || 0) > 0;
   const dx = c.x - p.x;
   const dy = c.y - p.y;
   const dist = Math.hypot(dx, dy) || 1;
-  const ampScale = st.ampScale ?? 1;
-  const midScale = st.midScale ?? 1;
-  const peelScale = st.peelScale ?? 1;
-  const microScale = st.microScale ?? 1;
-  const pointJitter = st.jitter ?? 0;
-
-  let outX = 0;
-  let outY = 0;
-  if (vertical) outX = Math.sign(c.x - spine) || 1;
-  else outY = Math.sign(c.y - spine) || Math.sign(c.side) || -1;
-
-  // Peel off the spine before wandering. Downward forks clear the date labels.
-  let peel = 0;
-  if (!nested) peel = vertical ? 28 : (outY > 0 ? 46 : 26);
-  peel = Math.min(peel * peelScale, dist * 0.4);
-  const ampBase = nested
-    ? Math.min(10, 4.5 + dist * 0.032)
-    : Math.min(30, 13 + dist * 0.032);
-  const amp = ampBase * ampScale;
-
-  const pts = [{ x: p.x, y: p.y }];
-  const latX = vertical ? 0 : 1;
-  const latY = vertical ? 1 : 0;
-  if (peel > 6) {
-    // Calm/ribbon: fewer peel waypoints → smoother organic leave.
-    const peelSteps = midScale < 0.4 ? 2 : midScale < 0.55 ? 3 : 4;
-    const j1 = (rnd() * 2 - 1) * Math.min(9, amp * 0.48);
-    const j2 = (rnd() * 2 - 1) * Math.min(7, amp * 0.32);
-    if (peelSteps <= 2) {
-      pts.push({
-        x: p.x + outX * peel * 0.45 + latX * j1 * 0.5,
-        y: p.y + outY * peel * 0.45 + latY * j1 * 0.5,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.35,
-        y: p.y + outY * peel + latY * j2 * 0.35,
-      });
-    } else if (peelSteps === 3) {
-      pts.push({
-        x: p.x + outX * peel * 0.35 + latX * j1,
-        y: p.y + outY * peel * 0.35 + latY * j1,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.72 + latX * j2 * 0.45,
-        y: p.y + outY * peel * 0.72 + latY * j2 * 0.45,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.4,
-        y: p.y + outY * peel + latY * j2 * 0.4,
-      });
-    } else {
-      pts.push({
-        x: p.x + outX * peel * 0.32 + latX * j1,
-        y: p.y + outY * peel * 0.32 + latY * j1,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.62 + latX * j2 * 0.4,
-        y: p.y + outY * peel * 0.62 + latY * j2 * 0.4,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.88 + latX * j2,
-        y: p.y + outY * peel * 0.88 + latY * j2,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.55,
-        y: p.y + outY * peel + latY * j2 * 0.55,
-      });
-    }
-  }
-
-  const ax = pts[pts.length - 1].x;
-  const ay = pts[pts.length - 1].y;
-  const ex = c.x - ax;
-  const ey = c.y - ay;
+  const ux = dx / dist;
+  const uy = dy / dist;
+  const parentR = Math.min((p.r || 8) + (nested ? 1.5 : 5), dist * 0.34);
+  const childR = Math.min((c.r || 5) + 2, dist * 0.22);
+  const start = { x: p.x + ux * parentR, y: p.y + uy * parentR };
+  const end = { x: c.x - ux * childR, y: c.y - uy * childR };
+  const ex = end.x - start.x;
+  const ey = end.y - start.y;
   const el = Math.hypot(ex, ey) || 1;
   const pxn = -ey / el;
   const pyn = ex / el;
-  const ox = vertical ? outX : 0;
-  const oy = vertical ? 0 : outY;
-  const denseMid = el < 70 ? 3 : el < 140 ? 5 : el < 240 ? 7 : el < 380 ? 9 : 11;
-  const nMid = Math.max(2, Math.round(denseMid * midScale));
-  let prevT = 0.04;
+  const ampScale = st.ampScale ?? 0.32;
+  const midScale = st.midScale ?? 0.28;
+  const microScale = st.microScale ?? 0.12;
+  const pointJitter = st.jitter ?? 0;
+  // Gentle radial S. Ribbon's low ampScale keeps it from becoming a dense mesh.
+  const amp = (nested ? 9 : 26) * (0.7 + ampScale);
+  const denseMid = el < 110 ? 3 : el < 220 ? 4 : 5;
+  const nMid = Math.max(2, Math.round(denseMid * (0.75 + midScale)));
+  const pts = [{ x: start.x, y: start.y }];
   for (let i = 1; i <= nMid; i++) {
     const t = i / (nMid + 1);
-    const jitter = (rnd() - 0.5) * (0.06 + 0.04 * midScale);
-    const tt = Math.min(0.94, Math.max(prevT + 0.05, t + jitter));
-    prevT = tt;
-    const taper = Math.sin(Math.PI * tt);
-    // Ribbon uses a low midScale, so the meander stays a gentle S-curve.
-    const flipChance = midScale > 0.55 ? 0.18 : 0.06;
-    const side = (i % 2 === 0 ? 1 : -1) * (rnd() < flipChance ? -1 : 1);
-    const gain = midScale > 0.55 ? (0.35 + rnd() * 0.9) : (0.45 + rnd() * 0.45);
-    const micro = (rnd() * 2 - 1) * amp * 0.22 * taper * microScale;
+    const taper = Math.sin(Math.PI * t);
+    const side = (i % 2 === 0 ? 1 : -1);
+    const gain = 0.55 + rnd() * 0.4;
+    const micro = (rnd() * 2 - 1) * amp * 0.16 * taper * microScale;
     const w = side * gain * amp * taper + micro;
-    const outwardBoost = (0.1 + rnd() * 0.42) * amp * taper * (nested ? 0.18 : 1) * Math.min(1, ampScale + 0.2);
-    let x = ax + ex * tt + pxn * w + ox * outwardBoost;
-    let y = ay + ey * tt + pyn * w + oy * outwardBoost;
-    if (!nested && !vertical) {
-      if (outY < 0) y = Math.min(y, spine - 7);
-      else y = Math.max(y, spine + 44);
-    } else if (!nested && vertical) {
-      x = Math.max(x, spine + 10);
-    }
-    pts.push({ x, y });
+    pts.push({
+      x: start.x + ex * t + pxn * w,
+      y: start.y + ey * t + pyn * w,
+    });
   }
-  pts.push({ x: c.x, y: c.y });
+  pts.push({ x: end.x, y: end.y });
 
-  // Paper-pen jitter for ink-etched (skip endpoints so nodes stay clean).
   if (pointJitter > 0 && pts.length > 2) {
     for (let i = 1; i < pts.length - 1; i++) {
       pts[i] = {
@@ -445,7 +497,7 @@ function moldHyphaPoints(p, c, vertical, rnd, style) {
       };
     }
   }
-  return { pts, nested, amp, el, outX, outY, spine };
+  return { pts, nested, amp, el, outX: ux, outY: uy, spine: vertical ? p.x : p.y };
 }
 
 /**
@@ -592,70 +644,101 @@ function nodeShape(n, kind) {
     return `<ellipse class="orb" cx="${n.x}" cy="${n.y}" rx="${fmt(rx)}" ry="${fmt(ry)}" transform="rotate(${rot} ${n.x} ${n.y})"/>` +
       `<circle class="orb orb-lobe" cx="${fmt(lx)}" cy="${fmt(ly)}" r="${fmt(lobeR)}"/>`;
   }
-  /* Small hyphal tip — spores (soft core + tapered tip) */
+  /* Spores hyphal tip. Roots are large glowing hubs; leaves stay small tips. */
   if (kind === "hyphal-tip") {
     const rnd = mulberry32(hashSeed(String(n.id || "")));
-    const core = 4.6 + rnd() * 1.4;
-    const ang = rnd() * Math.PI * 2;
-    const tipLen = 7 + rnd() * 4;
+    const hub = (n.depth || 0) === 0;
+    const core = n.r || (hub ? 14 : 4.6);
+    const ang = Number.isFinite(n.tipAng) ? n.tipAng : rnd() * Math.PI * 2;
+    if (hub) {
+      const mid = core * 1.62;
+      const halo = core * 2.45 + rnd() * 1.4;
+      const tipLen = core * 0.85 + rnd() * 3;
+      const tx = n.x + Math.cos(ang) * (core + tipLen);
+      const ty = n.y + Math.sin(ang) * (core + tipLen);
+      const midX = n.x + Math.cos(ang) * (core + tipLen * 0.45);
+      const midY = n.y + Math.sin(ang) * (core + tipLen * 0.45);
+      const hubGlow = skinOpts().glow ? ' filter="url(#hubglow)"' : "";
+      return `<circle class="orb orb-halo" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(halo)}"${hubGlow}/>` +
+        `<circle class="orb orb-mid" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(mid)}"${hubGlow}/>` +
+        `<circle class="orb" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(core)}"${hubGlow}/>` +
+        `<path class="orb orb-tip hub-tip" d="M ${fmt(n.x + Math.cos(ang) * core * 0.55)} ${fmt(n.y + Math.sin(ang) * core * 0.55)} Q ${fmt(midX)} ${fmt(midY)} ${fmt(tx)} ${fmt(ty)}"${hubGlow}/>`;
+    }
+    const tipLen = 7 + rnd() * 3.2;
     const tx = n.x + Math.cos(ang) * tipLen;
     const ty = n.y + Math.sin(ang) * tipLen;
-    const midX = n.x + Math.cos(ang) * tipLen * 0.55 + Math.cos(ang + 1.2) * 1.4;
-    const midY = n.y + Math.sin(ang) * tipLen * 0.55 + Math.sin(ang + 1.2) * 1.4;
-    return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${fmt(core)}"${glow}/>` +
+    const midX = n.x + Math.cos(ang) * tipLen * 0.55 + Math.cos(ang + 1.2) * 1.2;
+    const midY = n.y + Math.sin(ang) * tipLen * 0.55 + Math.sin(ang + 1.2) * 1.2;
+    return `<circle class="orb" cx="${fmt(n.x)}" cy="${fmt(n.y)}" r="${fmt(core)}"${glow}/>` +
       `<path class="orb orb-tip" d="M ${fmt(n.x)} ${fmt(n.y)} Q ${fmt(midX)} ${fmt(midY)} ${fmt(tx)} ${fmt(ty)}"${glow}/>`;
   }
   return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${r}"${glow}/>`;
 }
 
-function nodeLabel(n, opts) {
+/** Title sits in the quiet wedge (hubs) or outward along the hypha (children). */
+function labelAnchor(n) {
+  const title = n.title || "";
+  if ((n.depth || 0) === 0) {
+    const halfW = Math.max(24, title.length * 3.8);
+    const kids = n.childCount || 0;
+    const halfGap = kids > 1 ? Math.PI / kids : Math.PI / 2;
+    const sinG = Math.sin(Math.min(halfGap, 1.15));
+    const halo = (n.r || 14) * 2.55;
+    const rLabel = Math.max(halo + 22, (halfW + 16) / Math.max(0.45, sinG));
+    return { x: n.x, y: n.y - rLabel, anchor: "middle", dateDy: -16 };
+  }
+  const ang = Number.isFinite(n.ang) ? n.ang : 0;
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+  const gap = (n.r || 5) + 14;
+  if (c > 0.42) return { x: n.x + gap, y: n.y + 3, anchor: "start", dateDy: 12 };
+  if (c < -0.42) return { x: n.x - gap, y: n.y + 3, anchor: "end", dateDy: 12 };
+  if (s < 0) return { x: n.x, y: n.y - gap - 2, anchor: "middle", dateDy: -12 };
+  return { x: n.x, y: n.y + gap + 11, anchor: "middle", dateDy: 12 };
+}
+
+function labelBounds(n) {
+  const place = labelAnchor(n);
+  const hub = (n.depth || 0) === 0;
+  const titleW = Math.max(28, (n.title || "").length * (hub ? 7.6 : 6.6));
+  const dateW = Math.max(28, String(n.started || "—").length * 5.5);
+  const w = Math.max(titleW, dateW);
+  let left;
+  let right;
+  if (place.anchor === "start") {
+    left = place.x;
+    right = place.x + w;
+  } else if (place.anchor === "end") {
+    left = place.x - w;
+    right = place.x;
+  } else {
+    left = place.x - w / 2;
+    right = place.x + w / 2;
+  }
+  const ys = [place.y, place.y + place.dateDy];
+  return {
+    left,
+    right,
+    top: Math.min(...ys) - (hub ? 14 : 12),
+    bot: Math.max(...ys) + 6,
+  };
+}
+
+function nodeLabel(n) {
+  const place = labelAnchor(n);
   const label = escapeHtml(n.title || "");
-  const vertical = n.vertical;
-  if (vertical) {
-    const tx = n.x + 16;
-    if (opts.stamp) {
-      const tw = Math.min(188, Math.max(36, (n.title || "").length * 6.15 + 10));
-      const th = 14;
-      const ty = n.y - th / 2 - 7;
-      return `<g class="stamp-label">
-        <rect class="stamp" x="${tx}" y="${ty}" width="${tw}" height="${th}"/>
-        <text x="${tx + 5}" y="${ty + 10.5}" text-anchor="start">${label}</text>
-      </g>`;
-    }
-    return `<text x="${tx}" y="${n.y - 2}" text-anchor="start">${label}</text>`;
-  }
-  const outward = n.side === 0 ? -1 : Math.sign(n.side);
-  if (opts.stamp) {
-    const tw = Math.max(36, (n.title || "").length * 6.15 + 10);
-    const th = 14;
-    const tx = n.x - tw / 2;
-    const tyBox = outward < 0 ? n.y - (n.side === 0 ? 36 : 28) : n.y + 14;
-    return `<g class="stamp-label">
-      <rect class="stamp" x="${tx}" y="${tyBox}" width="${tw}" height="${th}"/>
-      <text x="${n.x}" y="${tyBox + 10.5}" text-anchor="middle">${label}</text>
-    </g>`;
-  }
-  const ty = outward < 0 ? n.y - (n.side === 0 ? 18 : 16) : n.y + 22;
-  return `<text x="${n.x}" y="${ty}" text-anchor="middle">${label}</text>`;
+  const date = escapeHtml(n.started || "—");
+  const hub = (n.depth || 0) === 0 ? " hub-label" : "";
+  return `<text class="node-title${hub}" x="${fmt(place.x)}" y="${fmt(place.y)}" text-anchor="${place.anchor}">${label}</text>` +
+    `<text class="date-label" x="${fmt(place.x)}" y="${fmt(place.y + place.dateDy)}" text-anchor="${place.anchor}">${date}</text>`;
 }
 
-
-function arrowPoints(spine, vertical, x1, y1, x2, y2) {
-  if (!vertical) {
-    const x = x2;
-    const y = spine;
-    return `${x},${y} ${x - 11},${y - 4.5} ${x - 11},${y + 4.5}`;
-  }
-  const x = spine;
-  const y = y2;
-  return `${x},${y} ${x - 4.5},${y - 11} ${x + 4.5},${y - 11}`;
-}
 
 function renderGraph(projects) {
   const svg = document.getElementById("graph");
   if (!svg) return;
   orientMode = preferredOrient();
-  const { w, h, spine, vertical, nodes, byId } = layout(projects, orientMode);
+  const { w, h, vertical, nodes, rootNodes, byId } = layout(projects, orientMode);
   const opts = skinOpts();
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.setAttribute("width", String(w));
@@ -665,79 +748,55 @@ function renderGraph(projects) {
   svg.setAttribute("data-orient", vertical ? "vertical" : "horizontal");
   svg.setAttribute("data-fork-style", currentForkStyle());
 
-  const first = nodes[0];
-  const last = nodes[nodes.length - 1];
-  const spineStart = vertical
-    ? { x: spine, y: (first ? first.main : 40) - 28 }
-    : { x: (first ? first.main : 80) - 78, y: spine };
-  const spineEnd = vertical
-    ? { x: spine, y: (last ? last.main : h - 30) + 26 }
-    : { x: (last ? last.main : w - 40) + 34, y: spine };
-
   const dash = opts.dashed ? ' stroke-dasharray="6 4"' : "";
   const glowFilter = opts.glow
-    ? `<filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
+    ? `<filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` +
+      `<filter id="hubglow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
     : "";
 
-  const defs = `<defs>
-    <linearGradient id="spineGrad" x1="${vertical ? 0 : 0}" y1="${vertical ? 0 : 0}" x2="${vertical ? 0 : 1}" y2="${vertical ? 1 : 0}">
-      <stop offset="0%" stop-color="var(--spine)" stop-opacity="0.35"/>
-      <stop offset="18%" stop-color="var(--spine)"/>
-      <stop offset="100%" stop-color="var(--spine)"/>
-    </linearGradient>
-    ${glowFilter}
-  </defs>`;
+  const defs = `<defs>${glowFilter}</defs>`;
 
-  const cap = opts.edges === "ortho" ? "square" : "round";
-  const spineLine = `<line class="spine-line" x1="${spineStart.x}" y1="${spineStart.y}" x2="${spineEnd.x}" y2="${spineEnd.y}"
-    stroke="url(#spineGrad)" stroke-linecap="${cap}"${dash}/>`;
-  const arrow = `<polygon class="spine-arrow" points="${arrowPoints(spine, vertical, spineStart.x, spineStart.y, spineEnd.x, spineEnd.y)}"/>`;
-
-  const caption = vertical
-    ? `<text class="axis-caption" x="${spine}" y="${Math.max(14, spineStart.y - 8)}" text-anchor="middle">TIME</text>`
-    : `<text class="axis-caption" x="${Math.max(8, spineStart.x)}" y="${spine - 12}" text-anchor="start">TIME</text>`;
-
-  // One tick + date label per distinct started value (chronology, not per node).
-  const chronos = [];
-  const seenDate = new Set();
-  for (const n of nodes) {
-    const key = n.started || "—";
-    if (seenDate.has(key)) continue;
-    seenDate.add(key);
-    chronos.push(n);
+  // Faint chronological link between root hubs when more than one exists.
+  // A single hub stays radial, with dates on the nodes instead of a spine of dots.
+  const orderedRoots = [...(rootNodes || [])].sort((a, b) => {
+    const ta = a.t == null ? Infinity : a.t;
+    const tb = b.t == null ? Infinity : b.t;
+    return ta - tb || String(a.id).localeCompare(String(b.id));
+  });
+  let timeGuide = "";
+  if (orderedRoots.length >= 2) {
+    const pts = orderedRoots.map((n) => `${fmt(n.x)},${fmt(n.y)}`).join(" ");
+    timeGuide = `<polyline class="time-guide" points="${pts}" />`;
+    const first = orderedRoots[0];
+    const last = orderedRoots[orderedRoots.length - 1];
+    const earlier = vertical
+      ? `<text class="axis-caption" x="${fmt(first.x)}" y="${fmt(Math.max(14, first.y - first.r - 36))}" text-anchor="middle">EARLIER</text>`
+      : `<text class="axis-caption" x="${fmt(Math.max(8, first.x - 8))}" y="${fmt(Math.max(14, first.y - first.r - 28))}" text-anchor="end">EARLIER</text>`;
+    const later = vertical
+      ? `<text class="axis-caption" x="${fmt(last.x)}" y="${fmt(last.y + last.r + 28)}" text-anchor="middle">LATER</text>`
+      : `<text class="axis-caption" x="${fmt(last.x + 8)}" y="${fmt(Math.max(14, last.y - last.r - 28))}" text-anchor="start">LATER</text>`;
+    timeGuide += earlier + later;
   }
-  const ticks = chronos.map((n) => {
-    if (vertical) {
-      return `<line class="tick" x1="${spine - 4}" y1="${n.main}" x2="${spine + 4}" y2="${n.main}"/>`;
-    }
-    return `<line class="tick" x1="${n.main}" y1="${spine - 4}" x2="${n.main}" y2="${spine + 4}"/>`;
-  }).join("");
-
-  const dates = chronos.map((n) => {
-    const date = escapeHtml(n.started || "—");
-    if (vertical) {
-      return `<text class="tick-label" x="${spine - 8}" y="${n.main + 3}" text-anchor="end">${date}</text>`;
-    }
-    return `<text class="tick-label" x="${n.main}" y="${spine + 30}" text-anchor="middle">${date}</text>`;
-  }).join("");
 
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
     const parent = byId[n.parent];
+    const fromHub = (parent.depth || 0) === 0;
+    const reach = fromHub ? "from-hub" : "nested";
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
       const d = bundle.main;
-      // Ribbon: soft sheath and a quieter mid taper. No whiskers.
+      // Ribbon: soft sheath near the hub, thin core the rest of the way. No whiskers.
       let layers = "";
       if (bundle.sheath === "soft") {
-        layers += `<path class="edge mold-sheath" d="${d}" pathLength="100" stroke-dasharray="40 64"/>`;
+        layers += `<path class="edge mold-sheath ${reach}" d="${d}" pathLength="100" stroke-dasharray="42 62"/>`;
         if (bundle.midLayer) {
-          layers += `<path class="edge mold-mid" d="${d}" pathLength="100" stroke-dasharray="68 36"/>`;
+          layers += `<path class="edge mold-mid ${reach}" d="${d}" pathLength="100" stroke-dasharray="74 30"/>`;
         }
       } else if (bundle.sheath === "thin") {
-        layers += `<path class="edge mold-sheath mold-sheath-thin" d="${d}" pathLength="100" stroke-dasharray="36 70"/>`;
+        layers += `<path class="edge mold-sheath mold-sheath-thin ${reach}" d="${d}" pathLength="100" stroke-dasharray="30 74"/>`;
       }
-      const core = `<path class="edge mold-core" d="${d}"${dash}${filt}/>`;
+      const core = `<path class="edge mold-core ${reach}" d="${d}"${dash}${filt}/>`;
       const loops = bundle.anastomoses.map((ad) =>
         `<path class="edge mold-anas" d="${ad}"/>`
       ).join("");
@@ -747,30 +806,19 @@ function renderGraph(projects) {
       return loops + layers + core + whisk;
     }
     const d = edgePath(parent, n, opts.edges, vertical);
-    return `<path class="edge" d="${d}"${dash}${filt}/>`;
+    return `<path class="edge ${reach}" d="${d}"${dash}${filt}/>`;
   }).join("");
 
   const dots = nodes.map((n) => {
-    const hard = opts.edges === "ortho";
-    // Mold forks already leave the spine; a time-peg under the node would read as an ortho stub.
-    const anchor = opts.edges === "mold" || n.side === 0
-      ? ""
-      : (vertical
-        ? (hard
-          ? `<rect class="anchor" x="${spine - 2.5}" y="${n.y - 2.5}" width="5" height="5"/>`
-          : `<circle class="anchor" cx="${spine}" cy="${n.y}" r="3"/>`)
-        : (hard
-          ? `<rect class="anchor" x="${n.x - 2.5}" y="${spine - 2.5}" width="5" height="5"/>`
-          : `<circle class="anchor" cx="${n.x}" cy="${spine}" r="3"/>`));
-    return `<g class="node" tabindex="0" role="button" data-id="${escapeHtml(n.id)}">
+    const hub = (n.depth || 0) === 0;
+    return `<g class="node${hub ? " hub" : ""}" tabindex="0" role="button" data-id="${escapeHtml(n.id)}" data-depth="${n.depth || 0}">
       <title>${escapeHtml(n.title || "")} · ${escapeHtml(n.started || "undated")}</title>
-      ${anchor}
       ${nodeShape(n, opts.nodes)}
-      ${nodeLabel(n, opts)}
+      ${nodeLabel(n)}
     </g>`;
   }).join("");
 
-  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + branches + dots;
+  svg.innerHTML = defs + timeGuide + branches + dots;
   svg.querySelectorAll(".node").forEach((el) => {
     const id = el.getAttribute("data-id");
     const focus = () => {
