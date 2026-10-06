@@ -437,6 +437,8 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid {
 .graph .anchor { fill: var(--spine); }
 .graph .edge { stroke: var(--branch); stroke-width: var(--edge-width); }
 .graph .node text { fill: var(--text); font-family: inherit; font-size: 11px; }
+.graph .node text.node-label-child { font-size: 12.5px; font-weight: 500; }
+.graph .node text.node-label-root { font-size: 16px; font-weight: 650; letter-spacing: 0.01em; }
 .graph .node:hover .orb,
 .graph .node.active .orb { fill: var(--accent); }
 .graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }

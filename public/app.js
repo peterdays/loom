@@ -168,7 +168,7 @@ function layout(projects, orient) {
   // Leave deliberate breathing room above and below the horizontal spine:
   // hub halos, titles, and chronology labels should never compete.
   let maxUp = 104;
-  let maxDown = 82;
+  let maxDown = 108;
   let maxRight = 210;
   for (const item of items) {
     const c = Math.abs(crossOf(item.side));
@@ -321,134 +321,47 @@ function moldSample(pts, t) {
 }
 
 /**
- * Build the main hypha point chain: peel off the straight time spine, then
- * meander. Amplitude / sample density / jitter come from fork style.
- * Seeded from child project id. Nested sibling lanes stay quieter.
+ * One cubic centerline per hypha. It starts and ends on the actual node rims,
+ * so sibling forks fan out naturally without a stack of center-originating
+ * strokes. Sampling this single curve later gives its closed tapered outline.
  */
-function moldHyphaPoints(p, c, vertical, rnd, style) {
-  const st = style || FORK_STYLES[DEFAULT_FORK_STYLE];
+function moldHyphaPoints(p, c, vertical, rnd) {
   const nested = (p.side || 0) !== 0;
-  const spine = p.spine ?? (vertical ? p.x : p.y);
   const dx = c.x - p.x;
   const dy = c.y - p.y;
-  const dist = Math.hypot(dx, dy) || 1;
-  const ampScale = st.ampScale ?? 1;
-  const midScale = st.midScale ?? 1;
-  const peelScale = st.peelScale ?? 1;
-  const microScale = st.microScale ?? 1;
-  const pointJitter = st.jitter ?? 0;
-
-  let outX = 0;
-  let outY = 0;
-  if (vertical) outX = Math.sign(c.x - spine) || 1;
-  else outY = Math.sign(c.y - spine) || Math.sign(c.side) || -1;
-
-  // Peel off the spine before wandering. Downward forks clear the date labels.
-  let peel = 0;
-  if (!nested) peel = vertical ? 28 : (outY > 0 ? 46 : 26);
-  peel = Math.min(peel * peelScale, dist * 0.4);
-  const ampBase = nested
-    ? Math.min(10, 4.5 + dist * 0.032)
-    : Math.min(30, 13 + dist * 0.032);
-  const amp = ampBase * ampScale;
-
-  const pts = [{ x: p.x, y: p.y }];
-  const latX = vertical ? 0 : 1;
-  const latY = vertical ? 1 : 0;
-  if (peel > 6) {
-    // Calm/ribbon: fewer peel waypoints → smoother organic leave.
-    const peelSteps = midScale < 0.4 ? 2 : midScale < 0.55 ? 3 : 4;
-    const j1 = (rnd() * 2 - 1) * Math.min(9, amp * 0.48);
-    const j2 = (rnd() * 2 - 1) * Math.min(7, amp * 0.32);
-    if (peelSteps <= 2) {
-      pts.push({
-        x: p.x + outX * peel * 0.45 + latX * j1 * 0.5,
-        y: p.y + outY * peel * 0.45 + latY * j1 * 0.5,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.35,
-        y: p.y + outY * peel + latY * j2 * 0.35,
-      });
-    } else if (peelSteps === 3) {
-      pts.push({
-        x: p.x + outX * peel * 0.35 + latX * j1,
-        y: p.y + outY * peel * 0.35 + latY * j1,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.72 + latX * j2 * 0.45,
-        y: p.y + outY * peel * 0.72 + latY * j2 * 0.45,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.4,
-        y: p.y + outY * peel + latY * j2 * 0.4,
-      });
-    } else {
-      pts.push({
-        x: p.x + outX * peel * 0.32 + latX * j1,
-        y: p.y + outY * peel * 0.32 + latY * j1,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.62 + latX * j2 * 0.4,
-        y: p.y + outY * peel * 0.62 + latY * j2 * 0.4,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.88 + latX * j2,
-        y: p.y + outY * peel * 0.88 + latY * j2,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.55,
-        y: p.y + outY * peel + latY * j2 * 0.55,
-      });
-    }
+  const centerDist = Math.hypot(dx, dy) || 1;
+  const ux = dx / centerDist;
+  const uy = dy / centerDist;
+  const startR = nodeRadius(p) * 0.94;
+  const endR = nodeRadius(c) * 0.96;
+  const start = { x: p.x + ux * startR, y: p.y + uy * startR };
+  const end = { x: c.x - ux * endR, y: c.y - uy * endR };
+  const dist = Math.hypot(end.x - start.x, end.y - start.y) || 1;
+  const nx = -uy;
+  const ny = ux;
+  const signedSway = () => (rnd() < 0.5 ? -1 : 1) * (0.45 + rnd() * 0.55);
+  // Constrained, uneven drift: more like a growing hypha than a broad S-curve.
+  const bend = signedSway() * Math.min(nested ? 6 : 14, dist * 0.055);
+  const twistA = signedSway() * Math.min(nested ? 4 : 8, dist * 0.032);
+  const twistB = signedSway() * Math.min(nested ? 2 : 4, dist * 0.016);
+  const phaseA = rnd() * Math.PI * 2;
+  const phaseB = rnd() * Math.PI * 2;
+  const c1 = { x: start.x + ux * dist * 0.32 + nx * bend, y: start.y + uy * dist * 0.32 + ny * bend };
+  const c2 = { x: end.x - ux * dist * 0.25 + nx * bend * 0.45, y: end.y - uy * dist * 0.25 + ny * bend * 0.45 };
+  const pts = [];
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24;
+    const mt = 1 - t;
+    const sway = Math.sin(Math.PI * t) * (
+      twistA * Math.sin(Math.PI * 2 * t + phaseA) +
+      twistB * Math.sin(Math.PI * 4 * t + phaseB)
+    );
+    pts.push({
+      x: mt ** 3 * start.x + 3 * mt ** 2 * t * c1.x + 3 * mt * t ** 2 * c2.x + t ** 3 * end.x + nx * sway,
+      y: mt ** 3 * start.y + 3 * mt ** 2 * t * c1.y + 3 * mt * t ** 2 * c2.y + t ** 3 * end.y + ny * sway,
+    });
   }
-
-  const ax = pts[pts.length - 1].x;
-  const ay = pts[pts.length - 1].y;
-  const ex = c.x - ax;
-  const ey = c.y - ay;
-  const el = Math.hypot(ex, ey) || 1;
-  const pxn = -ey / el;
-  const pyn = ex / el;
-  const ox = vertical ? outX : 0;
-  const oy = vertical ? 0 : outY;
-  const denseMid = el < 70 ? 3 : el < 140 ? 5 : el < 240 ? 7 : el < 380 ? 9 : 11;
-  const nMid = Math.max(2, Math.round(denseMid * midScale));
-  let prevT = 0.04;
-  for (let i = 1; i <= nMid; i++) {
-    const t = i / (nMid + 1);
-    const jitter = (rnd() - 0.5) * (0.06 + 0.04 * midScale);
-    const tt = Math.min(0.94, Math.max(prevT + 0.05, t + jitter));
-    prevT = tt;
-    const taper = Math.sin(Math.PI * tt);
-    // Ribbon uses a low midScale, so the meander stays a gentle S-curve.
-    const flipChance = midScale > 0.55 ? 0.18 : 0.06;
-    const side = (i % 2 === 0 ? 1 : -1) * (rnd() < flipChance ? -1 : 1);
-    const gain = midScale > 0.55 ? (0.35 + rnd() * 0.9) : (0.45 + rnd() * 0.45);
-    const micro = (rnd() * 2 - 1) * amp * 0.22 * taper * microScale;
-    const w = side * gain * amp * taper + micro;
-    const outwardBoost = (0.1 + rnd() * 0.42) * amp * taper * (nested ? 0.18 : 1) * Math.min(1, ampScale + 0.2);
-    let x = ax + ex * tt + pxn * w + ox * outwardBoost;
-    let y = ay + ey * tt + pyn * w + oy * outwardBoost;
-    if (!nested && !vertical) {
-      if (outY < 0) y = Math.min(y, spine - 7);
-      else y = Math.max(y, spine + 44);
-    } else if (!nested && vertical) {
-      x = Math.max(x, spine + 10);
-    }
-    pts.push({ x, y });
-  }
-  pts.push({ x: c.x, y: c.y });
-
-  // Paper-pen jitter for ink-etched (skip endpoints so nodes stay clean).
-  if (pointJitter > 0 && pts.length > 2) {
-    for (let i = 1; i < pts.length - 1; i++) {
-      pts[i] = {
-        x: pts[i].x + (rnd() * 2 - 1) * pointJitter,
-        y: pts[i].y + (rnd() * 2 - 1) * pointJitter,
-      };
-    }
-  }
-  return { pts, nested, amp, el, outX, outY, spine };
+  return { pts, nested, amp: Math.abs(bend), el: dist, outX: ux, outY: uy, spine: p.spine };
 }
 
 /**
@@ -567,7 +480,7 @@ function moldForkBundle(p, c, vertical) {
  * keeps thinning instead of dropping to a constant stroke.
  */
 function taperRibbon(pts, t0, t1, widthAt) {
-  const steps = 20;
+  const steps = 32;
   const left = [];
   const right = [];
   const span = Math.max(0.08, t1 - t0);
@@ -626,22 +539,22 @@ function closedBlob(pts) {
  */
 function organicBlob(cx, cy, radius, seed) {
   const rnd = mulberry32(hashSeed(String(seed || "blob")));
-  const count = 10;
-  const amp1 = 0.12 + rnd() * 0.07;
-  const amp2 = 0.055 + rnd() * 0.04;
+  const count = 12;
+  const amp1 = 0.055 + rnd() * 0.035;
+  const amp2 = 0.022 + rnd() * 0.02;
   const f1 = 2 + Math.floor(rnd() * 2);
   const f2 = 3 + Math.floor(rnd() * 2);
   const ph1 = rnd() * Math.PI * 2;
   const ph2 = rnd() * Math.PI * 2;
   const bulgeAt = rnd() * Math.PI * 2;
-  const bulge = 0.17 + rnd() * 0.11;
+  const bulge = 0.08 + rnd() * 0.06;
   const pts = [];
   for (let i = 0; i < count; i++) {
     const t = (i / count) * Math.PI * 2;
     let k = 1 + amp1 * Math.sin(f1 * t + ph1) + amp2 * Math.sin(f2 * t + ph2);
     const dAng = Math.atan2(Math.sin(t - bulgeAt), Math.cos(t - bulgeAt));
     k += bulge * Math.exp(-(dAng * dAng) / 0.28);
-    const rr = Math.max(radius * 0.72, radius * k);
+    const rr = Math.max(radius * 0.86, radius * k);
     pts.push({ x: cx + Math.cos(t) * rr, y: cy + Math.sin(t) * rr });
   }
   return closedBlob(pts);
@@ -650,7 +563,7 @@ function organicBlob(cx, cy, radius, seed) {
 /** The same deterministic radius is used by both the blob and its hyphae. */
 function nodeRadius(n) {
   const rnd = mulberry32(hashSeed(String(n.id || "") + ":size"));
-  return (n.depth || 0) === 0 ? 13.4 + rnd() * 1.4 : 6.2 + rnd() * 0.9;
+  return (n.depth || 0) === 0 ? 10.8 + rnd() * 1.1 : 5.6 + rnd() * 0.7;
 }
 
 function nodeShape(n, kind) {
@@ -690,13 +603,11 @@ function nodeShape(n, kind) {
     const hub = (n.depth || 0) === 0;
     const core = nodeRadius(n);
     const fill = hub ? "hubBlobGradient" : "tipBlobGradient";
-    const body = `<path class="orb orb-blob" style="fill: url(#${fill})" d="${organicBlob(n.x, n.y, core, String(n.id || "") + ":core")}"/>`;
-    if (!hub) return body;
-    const halo = core * 1.7;
-    const mid = core * 1.28;
-    return `<path class="orb orb-halo" d="${organicBlob(n.x, n.y, halo, String(n.id || "") + ":halo")}"${glow}/>` +
-      `<path class="orb orb-mid" d="${organicBlob(n.x, n.y, mid, String(n.id || "") + ":mid")}"/>` +
-      body;
+    const body = `<path class="orb orb-blob${hub ? " hub-orb" : ""}" style="fill: url(#${fill})" d="${organicBlob(n.x, n.y, core, String(n.id || "") + ":shape")}"${hub ? glow : ""}/>`;
+    if (!hub) {
+      return body;
+    }
+    return body;
   }
   return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${r}"${glow}/>`;
 }
@@ -704,6 +615,7 @@ function nodeShape(n, kind) {
 function nodeLabel(n, opts) {
   const label = escapeHtml(n.title || "");
   const vertical = n.vertical;
+  const labelClass = (n.depth || 0) === 0 ? "node-label node-label-root" : "node-label node-label-child";
   if (vertical) {
     const tx = n.x + ((n.depth || 0) === 0 ? nodeRadius(n) * 1.7 + 12 : nodeRadius(n) + 10);
     if (opts.stamp) {
@@ -712,10 +624,10 @@ function nodeLabel(n, opts) {
       const ty = n.y - th / 2 - 7;
       return `<g class="stamp-label">
         <rect class="stamp" x="${tx}" y="${ty}" width="${tw}" height="${th}"/>
-        <text x="${tx + 5}" y="${ty + 10.5}" text-anchor="start">${label}</text>
+        <text class="${labelClass}" x="${tx + 5}" y="${ty + 10.5}" text-anchor="start">${label}</text>
       </g>`;
     }
-    return `<text x="${tx}" y="${n.y - 2}" text-anchor="start">${label}</text>`;
+    return `<text class="${labelClass}" x="${tx}" y="${n.y - 2}" text-anchor="start">${label}</text>`;
   }
   const outward = n.side === 0 ? -1 : Math.sign(n.side);
   if (opts.stamp) {
@@ -725,12 +637,12 @@ function nodeLabel(n, opts) {
     const tyBox = outward < 0 ? n.y - (n.side === 0 ? 36 : 28) : n.y + 14;
     return `<g class="stamp-label">
       <rect class="stamp" x="${tx}" y="${tyBox}" width="${tw}" height="${th}"/>
-      <text x="${n.x}" y="${tyBox + 10.5}" text-anchor="middle">${label}</text>
-    </g>`;
+      <text class="${labelClass}" x="${n.x}" y="${tyBox + 10.5}" text-anchor="middle">${label}</text>
+      </g>`;
   }
-  const lift = n.side === 0 ? ((n.depth || 0) === 0 ? 48 : 24) : nodeRadius(n) + 12;
+  const lift = n.side === 0 ? ((n.depth || 0) === 0 ? 40 : 22) : nodeRadius(n) + 12;
   const ty = outward < 0 ? n.y - lift : n.y + nodeRadius(n) + 15;
-  return `<text x="${n.x}" y="${ty}" text-anchor="middle">${label}</text>`;
+  return `<text class="${labelClass}" x="${n.x}" y="${ty}" text-anchor="middle">${label}</text>`;
 }
 
 
@@ -822,7 +734,7 @@ function renderGraph(projects) {
     if (vertical) {
       return `<text class="tick-label" x="${spine - 8}" y="${n.main + 3}" text-anchor="end">${date}</text>`;
     }
-    return `<text class="tick-label" x="${n.main}" y="${spine + 54}" text-anchor="middle">${date}</text>`;
+    return `<text class="tick-label" x="${n.main}" y="${spine + 72}" text-anchor="middle">${date}</text>`;
   }).join("");
 
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
@@ -831,31 +743,18 @@ function renderGraph(projects) {
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
       const { start, end } = forkTaperWidths(parent.depth || 0);
-      let len = 0;
-      for (let i = 1; i < bundle.pts.length; i++) {
-        len += Math.hypot(bundle.pts[i].x - bundle.pts[i - 1].x, bundle.pts[i].y - bundle.pts[i - 1].y);
-      }
-      len = Math.max(1, len);
-      const parentR = nodeRadius(parent);
-      const childR = nodeRadius(n);
-      const t0 = Math.min(0.42, parentR / len);
-      const t1 = Math.max(t0 + 0.2, 1 - childR / len);
       const ease = (u) => {
         const t = Math.max(0, Math.min(1, u));
         return t * t * (3 - 2 * t);
       };
-      const outer = taperRibbon(bundle.pts, t0, t1, (u) => start + (end * 1.45 - start) * ease(u));
-      const inner = taperRibbon(bundle.pts, t0, t1, (u) => start * 0.46 + (end - start * 0.46) * ease(u));
+      const ribbon = taperRibbon(bundle.pts, 0, 1, (u) => start + (end - start) * ease(u));
       const loops = bundle.anastomoses.map((ad) =>
         `<path class="edge mold-anas" d="${ad}"/>`
       ).join("");
       const whisk = bundle.whiskers.map((wd) =>
         `<path class="edge mold-whisker" d="${wd}"/>`
       ).join("");
-      return loops +
-        `<path class="edge mold-taper mold-taper-outer" d="${outer}"/>` +
-        `<path class="edge mold-taper mold-taper-inner" d="${inner}"/>` +
-        whisk;
+      return loops + `<path class="edge mold-taper mold-taper-inner" d="${ribbon}"/>` + whisk;
     }
     const d = edgePath(parent, n, opts.edges, vertical);
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
