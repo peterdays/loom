@@ -4,7 +4,7 @@ One-page map for adding a timeline node or touching the UI.
 
 | Feature | What it is | Where |
 |---------|------------|--------|
-| **Graph** | Radial mycelium. Root hubs (`parent` null) are larger; hyphae radiate to smaller nodes. Earlier hubs sit left of later ones (top→bottom on narrow viewports). Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/index.html`, `public/app.js`, `public/styles.css` |
+| **Spine UI** | Chronological project spine (earlier left of later; top→bottom on narrow viewports). Root nodes are larger than subnodes. Hyphae taper from the parent toward the child. Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/index.html`, `public/app.js`, `public/styles.css` |
 | **Look** | Default skin **Spores**, fork **Ribbon**, `data-look="current"`. One **White mode** toggle persists in the browser; a first visit stays on the current look. No skin or fork picker | `public/index.html`, `public/styles.css`, `public/app.js` |
 | **Node data (dual path)** | Same `projects` array in two files — keep in sync | `data/projects.json`, `public/data/projects.json` |
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
@@ -57,6 +57,6 @@ Then open a pull request against `main`. A reviewer checks the graph and the pag
 ## Do not regress
 
 - Default skin **Spores**, default fork **Ribbon**, default look **current** (White mode is one optional toggle)
-- Radial hubs with chronological order (earlier left of later; top→bottom when narrow)
+- Chronological spine
 - Dual JSON `projects` arrays stay identical
 - Public nodes only — this repo does not ingest private notes

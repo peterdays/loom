@@ -1,6 +1,6 @@
 # loom
 
-Personal chronological **mycelium graph** of projects. Root projects are large hubs; thinner hyphae radiate out to smaller nodes.
+Personal chronological **mycelium graph** of projects. Time runs along one spine; parent links fork off it as hyphae that taper toward the child. Root nodes are larger than subnodes.
 
 ## Status
 
@@ -34,7 +34,7 @@ This repo does not ingest private notes. New nodes arrive as pull requests.
 
 ## Temporal graph
 
-`public/` draws a **radial mycelium**. Projects with `parent: null` are large glowing hubs. Child nodes are smaller, and organic hyphae radiate outward from each hub (a gentle Ribbon S-curve, seeded from the child id). When there is more than one hub, earlier hubs sit to the left of later ones (top to bottom on a narrow screen). Each node carries its start date. Node cards stay hidden on load. Click a node to show its card; click that same node again to hide it. **Show all node cards** reveals every card; the same control hides them again. Project data lives in `data/projects.json` and `public/data/projects.json`.
+`public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). Projects with `parent: null` are larger nodes. `parent` forks are **mold hyphae** — quiet Ribbon curves that leave the TIME spine and taper from thick at the parent to thin at the child. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Node cards stay hidden on load. Click a node to show its card; click that same node again to hide it. **Show all node cards** reveals every card; the same control hides them again. Project data lives in `data/projects.json` and `public/data/projects.json`.
 
 The page loads in skin **Spores** (deep blue + lime capillary hyphae, hyphal-tip nodes) and fork style **Ribbon** (soft tapered stroke, gentle S-curves). A **White mode** control switches to a white ground with readable text and the same strokes, layout, and behavior. The choice is saved in the browser; a first visit stays on Spores. There is no skin or fork picker.
 

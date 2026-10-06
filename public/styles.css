@@ -89,7 +89,7 @@ body {
 
 .tabs, header, main, footer {
   position: relative;
-  max-width: 1120px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 1rem 1.25rem;
 }
@@ -188,7 +188,7 @@ h1 {
 .graph {
   width: 100%;
   height: auto;
-  max-height: min(820px, 82vh);
+  max-height: min(560px, 70vh);
   display: block;
   overflow: visible;
 }
@@ -254,21 +254,6 @@ footer { color: var(--muted); font-size: 0.78rem; padding-bottom: 2rem; }
 .graph .node.active .orb { fill: var(--accent); }
 .graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
 .graph .node text { fill: var(--text); font-family: inherit; }
-.graph .node .node-title.hub-label { font-size: 15px; font-weight: 600; }
-.graph .node .date-label {
-  fill: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.03em;
-}
-.graph .time-guide {
-  fill: none;
-  stroke: var(--spine);
-  stroke-width: 1.15;
-  stroke-opacity: 0.35;
-  stroke-dasharray: 2.5 7;
-  stroke-linecap: round;
-}
 .graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
 .graph .spine-line { stroke-width: 3; }
 .graph .spine-arrow { fill: var(--spine); stroke: none; }
@@ -410,34 +395,22 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid {
   stroke-width: 2.1;
   stroke-opacity: 0.42;
 }
-/* Filaments thin out away from a hub. Nested links stay quieter. */
-html[data-fork-style="ribbon"] .graph .edge.mold-core.from-hub { stroke-width: 1.75; }
-html[data-fork-style="ribbon"] .graph .edge.mold-sheath.from-hub {
-  stroke-width: 7;
-  stroke-opacity: 0.34;
-}
-html[data-fork-style="ribbon"] .graph .edge.mold-mid.from-hub {
-  stroke-width: 3.1;
-  stroke-opacity: 0.55;
-}
-html[data-fork-style="ribbon"] .graph .edge.mold-core.nested { stroke-width: 0.85; }
-html[data-fork-style="ribbon"] .graph .edge.mold-sheath.nested {
-  stroke-width: 2.6;
-  stroke-opacity: 0.16;
-}
-html[data-fork-style="ribbon"] .graph .edge.mold-mid.nested {
-  stroke-width: 1.4;
-  stroke-opacity: 0.28;
-}
 
-/* SVG theming via CSS variables */
-.graph .orb { fill: var(--node); stroke: var(--text); stroke-width: 1.5; }
-.graph .anchor { fill: var(--spine); }
-.graph .edge { stroke: var(--branch); stroke-width: var(--edge-width); }
-.graph .node text { fill: var(--text); font-family: inherit; font-size: 11px; }
-.graph .node.hub .node-title { font-size: 15px; font-weight: 600; }
+/* Continuous taper: wide at the parent, thin at the child. Not a uniform stroke. */
+.graph .edge.mold-taper {
+  stroke: none;
+  pointer-events: none;
+}
+.graph .edge.mold-taper-outer {
+  fill: var(--branch);
+  fill-opacity: 0.28;
+}
+.graph .edge.mold-taper-inner {
+  fill: var(--branch);
+  fill-opacity: 0.9;
+}
 .graph .orb-mid {
-  fill: color-mix(in srgb, var(--node) 62%, transparent);
+  fill: color-mix(in srgb, var(--node) 58%, transparent);
   stroke: none;
   pointer-events: none;
 }
@@ -449,16 +422,12 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid.nested {
 .graph .node:hover.hub .orb-mid {
   stroke: none;
 }
-.graph .node.hub .hub-tip {
-  stroke-width: 1.7;
-}
-html[data-look="current"] .graph .node.hub .node-title,
-html[data-look="current"] .graph .node.hub .date-label {
-  paint-order: stroke fill;
-  stroke: #020818;
-  stroke-width: 4px;
-  stroke-linejoin: round;
-}
+
+/* SVG theming via CSS variables */
+.graph .orb { fill: var(--node); stroke: var(--text); stroke-width: 1.5; }
+.graph .anchor { fill: var(--spine); }
+.graph .edge { stroke: var(--branch); stroke-width: var(--edge-width); }
+.graph .node text { fill: var(--text); font-family: inherit; font-size: 11px; }
 .graph .node:hover .orb,
 .graph .node.active .orb { fill: var(--accent); }
 .graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
@@ -514,6 +483,12 @@ html[data-look="white"] .graph .edge.mold-mid {
 html[data-look="white"] .graph .edge.mold-whisker,
 html[data-look="white"] .graph .edge.mold-anas {
   stroke-opacity: 0.7;
+}
+html[data-look="white"] .graph .edge.mold-taper-outer {
+  fill-opacity: 0.4;
+}
+html[data-look="white"] .graph .edge.mold-taper-inner {
+  fill-opacity: 0.95;
 }
 html[data-look="white"] .graph .orb-halo {
   fill: color-mix(in srgb, var(--node) 28%, transparent);
