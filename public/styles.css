@@ -372,6 +372,15 @@ html[data-skin="spores"] .graph .orb {
   stroke: color-mix(in srgb, var(--branch) 60%, transparent);
   stroke-width: 1.1;
 }
+/* Keep the hub's translucent support layers distinct from its gradient core. */
+html[data-skin="spores"] .graph .orb-halo {
+  fill: color-mix(in srgb, var(--node) 30%, transparent);
+  stroke: none;
+}
+html[data-skin="spores"] .graph .orb-mid {
+  fill: color-mix(in srgb, var(--node) 52%, transparent);
+  stroke: none;
+}
 html[data-skin="spores"] .graph .orb-tip {
   stroke: var(--node);
   stroke-width: 2;

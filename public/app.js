@@ -165,18 +165,21 @@ function layout(projects, orient) {
     return 96 + (mag - 1) * 76;
   };
 
-  let maxUp = 64;
-  let maxDown = 64;
+  // Leave deliberate breathing room above and below the horizontal spine:
+  // hub halos, titles, and chronology labels should never compete.
+  let maxUp = 104;
+  let maxDown = 82;
   let maxRight = 210;
   for (const item of items) {
     const c = Math.abs(crossOf(item.side));
     if (vertical) maxRight = Math.max(maxRight, crossOf(item.side) + 210);
     else if (item.side < 0) maxUp = Math.max(maxUp, c + 46);
     else if (item.side > 0) maxDown = Math.max(maxDown, c + 44);
-    else maxUp = Math.max(maxUp, (item.depth || 0) === 0 ? 68 : 50);
+    else maxUp = Math.max(maxUp, (item.depth || 0) === 0 ? 104 : 64);
   }
 
-  const spine = vertical ? 40 : Math.round(maxUp + 16);
+  // On a narrow viewport, keep the date column outside the root hub.
+  const spine = vertical ? 74 : Math.round(maxUp + 16);
   const h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + maxDown + 26);
   const width = vertical ? Math.round(spine + maxRight) : w;
 
@@ -647,7 +650,7 @@ function organicBlob(cx, cy, radius, seed) {
 /** The same deterministic radius is used by both the blob and its hyphae. */
 function nodeRadius(n) {
   const rnd = mulberry32(hashSeed(String(n.id || "") + ":size"));
-  return (n.depth || 0) === 0 ? 16.2 + rnd() * 1.8 : 7.4 + rnd() * 1.1;
+  return (n.depth || 0) === 0 ? 13.4 + rnd() * 1.4 : 6.2 + rnd() * 0.9;
 }
 
 function nodeShape(n, kind) {
@@ -686,7 +689,8 @@ function nodeShape(n, kind) {
   if (kind === "hyphal-tip") {
     const hub = (n.depth || 0) === 0;
     const core = nodeRadius(n);
-    const body = `<path class="orb orb-blob" d="${organicBlob(n.x, n.y, core, String(n.id || "") + ":core")}"/>`;
+    const fill = hub ? "hubBlobGradient" : "tipBlobGradient";
+    const body = `<path class="orb orb-blob" style="fill: url(#${fill})" d="${organicBlob(n.x, n.y, core, String(n.id || "") + ":core")}"/>`;
     if (!hub) return body;
     const halo = core * 1.7;
     const mid = core * 1.28;
@@ -701,7 +705,7 @@ function nodeLabel(n, opts) {
   const label = escapeHtml(n.title || "");
   const vertical = n.vertical;
   if (vertical) {
-    const tx = n.x + 16;
+    const tx = n.x + ((n.depth || 0) === 0 ? nodeRadius(n) * 1.7 + 12 : nodeRadius(n) + 10);
     if (opts.stamp) {
       const tw = Math.min(188, Math.max(36, (n.title || "").length * 6.15 + 10));
       const th = 14;
@@ -724,8 +728,8 @@ function nodeLabel(n, opts) {
       <text x="${n.x}" y="${tyBox + 10.5}" text-anchor="middle">${label}</text>
     </g>`;
   }
-  const lift = n.side === 0 ? ((n.depth || 0) === 0 ? 32 : 18) : 16;
-  const ty = outward < 0 ? n.y - lift : n.y + 22;
+  const lift = n.side === 0 ? ((n.depth || 0) === 0 ? 48 : 24) : nodeRadius(n) + 12;
+  const ty = outward < 0 ? n.y - lift : n.y + nodeRadius(n) + 15;
   return `<text x="${n.x}" y="${ty}" text-anchor="middle">${label}</text>`;
 }
 
@@ -775,6 +779,16 @@ function renderGraph(projects) {
       <stop offset="18%" stop-color="var(--spine)"/>
       <stop offset="100%" stop-color="var(--spine)"/>
     </linearGradient>
+    <radialGradient id="hubBlobGradient" cx="31%" cy="26%" r="76%">
+      <stop offset="0%" stop-color="#f7fee7" stop-opacity="0.98"/>
+      <stop offset="42%" stop-color="var(--node)" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.94"/>
+    </radialGradient>
+    <radialGradient id="tipBlobGradient" cx="30%" cy="24%" r="78%">
+      <stop offset="0%" stop-color="#ecfccb" stop-opacity="0.98"/>
+      <stop offset="55%" stop-color="var(--node)" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
+    </radialGradient>
     ${glowFilter}
   </defs>`;
 
@@ -808,7 +822,7 @@ function renderGraph(projects) {
     if (vertical) {
       return `<text class="tick-label" x="${spine - 8}" y="${n.main + 3}" text-anchor="end">${date}</text>`;
     }
-    return `<text class="tick-label" x="${n.main}" y="${spine + 30}" text-anchor="middle">${date}</text>`;
+    return `<text class="tick-label" x="${n.main}" y="${spine + 54}" text-anchor="middle">${date}</text>`;
   }).join("");
 
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
