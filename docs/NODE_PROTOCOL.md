@@ -41,6 +41,14 @@ summary: One public sentence about a personal project.
 tags: [process]
 ```
 
+For a copy-and-fill JSON equivalent, start from [`proposals/node-template.json`](proposals/node-template.json):
+
+```bash
+cp docs/proposals/node-template.json docs/proposals/my-project.json
+python3 scripts/proposal-to-node.py docs/proposals/my-project.json
+python3 scripts/proposal-to-node.py docs/proposals/my-project.json --apply
+```
+
 ```bash
 python3 scripts/add-node.py --dry-run \
   --id example-project --title "Example project" --started 2026-10-02 \

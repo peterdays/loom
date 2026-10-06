@@ -32,6 +32,20 @@ This repo does not ingest private notes. New nodes arrive as pull requests.
 - Proposal shape: [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md)
 - CI: [`.github/workflows/validate-projects.yml`](.github/workflows/validate-projects.yml) on pull requests and pushes to `main` — `python3 scripts/add-node.py --validate-only` and `python3 scripts/smoke-page.py`
 
+### Fast JSON path
+
+Copy [`docs/proposals/node-template.json`](docs/proposals/node-template.json), fill in its seven fields, then validate before applying it on your branch:
+
+```bash
+cp docs/proposals/node-template.json docs/proposals/my-project.json
+# Edit docs/proposals/my-project.json — use null for a root parent.
+python3 scripts/proposal-to-node.py docs/proposals/my-project.json
+python3 scripts/proposal-to-node.py docs/proposals/my-project.json --apply
+python3 scripts/add-node.py --validate-only
+```
+
+`--apply` updates both `data/projects.json` and `public/data/projects.json`. Commit only that one node and open a pull request.
+
 ## Temporal graph
 
 `public/` draws a **chronological spine**: projects sit on a time axis (left→right, or top→bottom on narrow viewports). Projects with `parent: null` are larger nodes. `parent` forks are **mold hyphae** — quiet Ribbon curves that leave the TIME spine and taper from thick at the parent to thin at the child. Meander geometry is seeded from the child project id (FNV-1a → mulberry32). Nested sibling lanes stay quieter. Node cards stay hidden on load. Click a node to show its card; click that same node again to hide it. **Show all node cards** reveals every card; the same control hides them again. Project data lives in `data/projects.json` and `public/data/projects.json`.
