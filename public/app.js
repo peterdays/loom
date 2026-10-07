@@ -624,8 +624,8 @@ function ribbonOutline(pts, t0, t1, widthAt) {
 
 /** Main-node links hold this width; parent-to-child forks deliberately taper. */
 const MAIN_HYPHA_WIDTH = 5.5;
-const ADHOC_END_WIDTH = 2.5;
-const ADHOC_MID_WIDTH = 0.55;
+const ADHOC_END_WIDTH = 1.9;
+const ADHOC_MID_WIDTH = 0.4;
 
 /** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
