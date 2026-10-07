@@ -39,6 +39,13 @@ Map: [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md).
 | `summary` | **one sentence**, public, **≤ ~160 characters** |
 | `tags` | lowercase kebab-case strings, **≤ 5** tags |
 
+### Copy style
+
+- Do not talk about Pedro in the third person in node copy.
+- State what the project or node is; avoid vague positioning against generic alternatives.
+- Keep copy concrete and first-person/owner-neutral where possible.
+- Keep public-safety limits: no hostnames, IPs, usernames, repo paths, credentials, or access instructions.
+
 ### Tooling
 
 Hand-edit the dual JSON only when you must. On a branch:
