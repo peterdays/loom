@@ -624,8 +624,8 @@ function ribbonOutline(pts, t0, t1, widthAt) {
 
 /** Main-node links hold this width; parent-to-child forks deliberately taper. */
 const MAIN_HYPHA_WIDTH = 5.5;
-const ADHOC_END_WIDTH = 3;
-const ADHOC_MID_WIDTH = 0.7;
+const ADHOC_END_WIDTH = 2.5;
+const ADHOC_MID_WIDTH = 0.55;
 
 /** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
@@ -872,7 +872,7 @@ function renderGraph(projects) {
       const ribbon = ribbonOutline(pts, 0, 1, (u) =>
         ADHOC_MID_WIDTH + (ADHOC_END_WIDTH - ADHOC_MID_WIDTH) * Math.pow(Math.abs(2 * u - 1), 0.58)
       );
-      return `<path class="edge adhoc-connection" d="${ribbon}"/>`;
+      return `<path class="edge adhoc-connection" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
     });
   }).join("");
 
