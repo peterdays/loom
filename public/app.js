@@ -925,7 +925,7 @@ function renderGraph(projects) {
       drawnAdHocLinks.add(key);
       const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
       const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
-      return `<path class="edge adhoc-connection" d="${crookedPolyline(pts)}"/>`;
+      return `<path class="edge adhoc-connection" d="${moldSmooth(pts)}"/>`;
     });
   }).join("");
 
