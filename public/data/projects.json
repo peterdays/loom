@@ -37,6 +37,15 @@
       "parent": "jarvas",
       "summary": "Jarvas ranks read-it-later links by relevance and novelty before Pedro spends attention.",
       "tags": ["inbox", "ranking", "triage", "personal-ai"]
+    },
+    {
+      "id": "oraxle",
+      "title": "OraXle",
+      "started": "2026-09-24",
+      "ended": null,
+      "parent": "jarvas",
+      "summary": "X-native oracle with its own LLM wiki for capturing and querying selected tweets, threads, X Articles, and native media; durable signals relay into Jarvas.",
+      "tags": ["x-native", "oracle", "llm-wiki", "agent"]
     }
   ]
 }
