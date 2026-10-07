@@ -260,6 +260,27 @@ h1 {
 .graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
 .graph .node text { fill: var(--text); font-family: inherit; }
 .graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
+.graph .edge.adhoc-connection {
+  fill: none;
+  stroke: var(--spine);
+  stroke-width: 0.8;
+  stroke-opacity: 0.62;
+  stroke-linecap: round;
+  stroke-dasharray: 1 4;
+  pointer-events: none;
+}
+.graph .edge.main-filament {
+  fill: none;
+  stroke: var(--branch);
+  stroke-width: 0.75;
+  stroke-opacity: 0.22;
+  pointer-events: none;
+}
+.graph .main-spore {
+  fill: var(--spine);
+  fill-opacity: 0.3;
+  pointer-events: none;
+}
 .graph .spine-line { stroke-width: 3; }
 .graph .spine-arrow { fill: var(--spine); stroke: none; }
 .graph .tick {
@@ -303,28 +324,28 @@ html[data-skin="spores"] .graph .edge.mold-core {
 }
 html[data-skin="spores"] .graph .edge.mold-whisker {
   stroke-width: 0.9;
-  stroke-opacity: 0.42;
+  stroke-opacity: 0.28;
   fill: none;
   stroke-linecap: round;
   pointer-events: none;
 }
 html[data-skin="spores"] .graph .edge.mold-anas {
   stroke-width: 1;
-  stroke-opacity: 0.34;
+  stroke-opacity: 0.22;
   fill: none;
   stroke-linecap: round;
   pointer-events: none;
 }
 html[data-skin="spores"] .graph .edge.mold-field {
   stroke-width: 1.05;
-  stroke-opacity: 0.46;
+  stroke-opacity: 0.22;
   fill: none;
   stroke-linecap: round;
   pointer-events: none;
 }
 .graph .field-spore {
   fill: var(--branch);
-  fill-opacity: 0.43;
+  fill-opacity: 0.3;
   pointer-events: none;
 }
 
@@ -464,6 +485,12 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid {
 .graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
 
 html[data-skin="spores"] .graph .edge { stroke: var(--branch); }
+
+.connection {
+  color: var(--branch);
+  font-size: 0.72rem;
+  margin: 0.15rem 0;
+}
 
 /* White mode — same Spores nodes and Ribbon forks on a white ground.
    Rules sit last so they win ties with the Spores / Ribbon stroke opacities. */

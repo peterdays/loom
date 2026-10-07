@@ -18,6 +18,8 @@ ended: null
 parent: existing-id-or-null
 summary: One public sentence.
 tags: [lowercase, tags]
+# Optional ad hoc links to existing ids, ≤ 5.
+connections: [existing-id]
 ```
 
 Labeled lines also work:
@@ -30,6 +32,8 @@ ended: null
 parent: existing-id-or-null
 summary: One public sentence.
 tags: lowercase, tags
+# Optional.
+connections: existing-id
 ```
 
 ## Checklist
@@ -38,6 +42,7 @@ tags: lowercase, tags
 - [ ] `id` is kebab-case and absent from `data/projects.json`
 - [ ] `started` / `ended` use `YYYY-MM` or `YYYY-MM-DD` (`ended` may be `null`)
 - [ ] `parent` is an existing project `id`, or `null` for a new root
+- [ ] Optional `connections` only name existing project ids and do not duplicate the node itself
 - [ ] No secrets, credentials, or absolute filesystem paths
 
 ## Open the pull request

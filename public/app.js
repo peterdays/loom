@@ -7,7 +7,7 @@ const DEFAULT_LOOK = "current";
 const LOOK_STORAGE_KEY = "loom-look";
 
 const DEFAULT_FORK_STYLE = "ribbon";
-/** Ribbon hyphae: a single-width, crooked organic strand. */
+/** Ribbon hyphae: a primary lineage strand with restrained surface detail. */
 const FORK_STYLES = {
   ribbon: {
     ampScale: 0.32,
@@ -16,8 +16,8 @@ const FORK_STYLES = {
     microScale: 0.12,
     sheath: "soft",
     midLayer: true,
-    maxWhiskers: 3,
-    whiskerTiny: false,
+    maxWhiskers: 1,
+    whiskerTiny: true,
     anastomoses: true,
     jitter: 0,
   },
@@ -374,6 +374,131 @@ function moldHyphaPoints(p, c, vertical, rnd) {
 }
 
 /**
+ * Cross-links take a visibly separate lane, so they do not appear to attach
+ * to an unrelated root that happens to sit between their two endpoints.
+ */
+function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
+  const bundle = moldHyphaPoints(source, target, vertical, rnd);
+  const preferredSide = Math.sign(target.side || source.side || (rnd() < 0.5 ? -1 : 1));
+  const offset = Math.min(62, bundle.el * 0.14) + 10;
+  const routeFor = (side, scale) => bundle.pts.map((pt, i) => {
+    const t = i / Math.max(1, bundle.pts.length - 1);
+    const bow = (1 - Math.abs(2 * t - 1)) * offset * side * scale;
+    return vertical ? { ...pt, x: pt.x + bow } : { ...pt, y: pt.y + bow };
+  });
+  const collisionCost = (pts) => pts.reduce((cost, pt) => cost + (nodes || []).reduce((nodeCost, node) => {
+    const label = labelBounds(node, vertical);
+    const labelDistance = rectDistance(pt, label);
+    const labelCost = Math.max(0, 10 - labelDistance) ** 2 * 2;
+    if (node.id === source.id || node.id === target.id) return nodeCost + labelCost;
+    const clearance = nodeRadius(node) + 42;
+    const distance = Math.hypot(pt.x - node.x, pt.y - node.y);
+    return nodeCost + Math.max(0, clearance - distance) ** 2 + labelCost;
+  }, 0), 0);
+  const routes = [
+    { pts: routeFor(preferredSide, 1), bend: 0 },
+    { pts: routeFor(-preferredSide, 1), bend: 0 },
+    { pts: routeFor(preferredSide, 1.5), bend: 6 },
+    { pts: routeFor(-preferredSide, 1.5), bend: 6 },
+    { pts: routeFor(preferredSide, 2), bend: 14 },
+    { pts: routeFor(-preferredSide, 2), bend: 14 },
+  ];
+  const chosen = routes.reduce((best, route) =>
+    collisionCost(route.pts) + route.bend < collisionCost(best.pts) + best.bend ? route : best
+  ).pts;
+  const knots = [0, 5, 11, 17, chosen.length - 1];
+  bundle.pts = knots.map((index, i) => {
+    const pt = chosen[index];
+    if (i === 0 || i === knots.length - 1) return pt;
+    const before = chosen[knots[i - 1]];
+    const after = chosen[knots[i + 1]];
+    const dx = after.x - before.x;
+    const dy = after.y - before.y;
+    const inv = 1 / (Math.hypot(dx, dy) || 1);
+    const wobble = (rnd() * 2 - 1) * 3.5;
+    return { x: pt.x - dy * inv * wobble, y: pt.y + dx * inv * wobble };
+  });
+  return bundle;
+}
+
+/** A calm chronological thread between root nodes, hidden beneath their rims. */
+function mainThreadPoints(parent, child, rnd) {
+  const dx = child.x - parent.x;
+  const dy = child.y - parent.y;
+  const distance = Math.hypot(dx, dy) || 1;
+  const ux = dx / distance;
+  const uy = dy / distance;
+  const nx = -uy;
+  const ny = ux;
+  const signedDrift = () => (rnd() < 0.5 ? -1 : 1) * (0.45 + rnd() * 0.55);
+  // Keep chronology legible, but let the root thread wander like a living vein.
+  const drift = Math.min(12, distance * 0.032);
+  const bendA = signedDrift() * drift;
+  const bendB = signedDrift() * drift * 0.82;
+  const bendC = signedDrift() * drift * 0.48;
+  return [
+    { x: parent.x + ux * (nodeRadius(parent) + 1.5), y: parent.y + uy * (nodeRadius(parent) + 1.5) },
+    { x: parent.x + ux * distance * 0.22 + nx * bendA, y: parent.y + uy * distance * 0.22 + ny * bendA },
+    { x: parent.x + ux * distance * 0.48 + nx * bendB, y: parent.y + uy * distance * 0.48 + ny * bendB },
+    { x: parent.x + ux * distance * 0.74 + nx * bendC, y: parent.y + uy * distance * 0.74 + ny * bendC },
+    { x: child.x - ux * (nodeRadius(child) + 1.5), y: child.y - uy * (nodeRadius(child) + 1.5) },
+  ];
+}
+
+/** Low-contrast dust and companion strands keep the root thread in a living field. */
+function mainThreadAtmosphere(pts, rnd) {
+  const spores = [];
+  for (let i = 0; i < 18; i++) {
+    const s = moldSample(pts, 0.06 + rnd() * 0.88);
+    const nx = -s.ty;
+    const ny = s.tx;
+    const side = rnd() < 0.5 ? -1 : 1;
+    const spread = 5 + rnd() * 23;
+    spores.push(`<circle class="main-spore" cx="${fmt(s.x + nx * side * spread)}" cy="${fmt(s.y + ny * side * spread)}" r="${fmt(0.3 + rnd() * 0.65)}"/>`);
+  }
+  const filaments = [-1, 1].map((side) => {
+    const a = moldSample(pts, 0.1 + rnd() * 0.08);
+    const b = moldSample(pts, 0.82 + rnd() * 0.1);
+    const middle = moldLerpPt(a, b, 0.5);
+    const nx = -(a.ty + b.ty) * 0.5;
+    const ny = (a.tx + b.tx) * 0.5;
+    const inv = 1 / (Math.hypot(nx, ny) || 1);
+    const distance = 7 + rnd() * 11;
+    const filament = moldSmooth([
+      { x: a.x + nx * inv * side * distance * 0.45, y: a.y + ny * inv * side * distance * 0.45 },
+      { x: middle.x + nx * inv * side * distance, y: middle.y + ny * inv * side * distance },
+      { x: b.x + nx * inv * side * distance * 0.55, y: b.y + ny * inv * side * distance * 0.55 },
+    ]);
+    return `<path class="edge main-filament" d="${filament}"/>`;
+  });
+  return `${filaments.join("")}${spores.join("")}`;
+}
+
+function crookedPolyline(pts) {
+  return pts.map((pt, i) => `${i ? "L" : "M"} ${fmt(pt.x)} ${fmt(pt.y)}`).join(" ");
+}
+
+/** Approximate the rendered label so cross-links route through clear space. */
+function labelBounds(node, vertical) {
+  const root = (node.depth || 0) === 0;
+  const width = Math.max(28, (node.title || "").length * (root ? 8.8 : 6.8) + 8);
+  if (vertical) {
+    const x = node.x + (root ? nodeRadius(node) * 1.7 + 12 : nodeRadius(node) + 10);
+    return { x: x - 3, y: node.y - 16, width, height: 18 };
+  }
+  const outward = node.side === 0 ? -1 : Math.sign(node.side);
+  const lift = node.side === 0 ? (root ? 40 : 22) : nodeRadius(node) + 12;
+  const baseline = outward < 0 ? node.y - lift : node.y + nodeRadius(node) + 15;
+  return { x: node.x - width / 2, y: baseline - 14, width, height: 18 };
+}
+
+function rectDistance(point, rect) {
+  const dx = Math.max(rect.x - point.x, 0, point.x - (rect.x + rect.width));
+  const dy = Math.max(rect.y - point.y, 0, point.y - (rect.y + rect.height));
+  return Math.hypot(dx, dy);
+}
+
+/**
  * Decorative side-whiskers: short secondary filaments that die out and never
  * land on a node (no fake terminals). Seeded from the same RNG stream.
  */
@@ -422,7 +547,7 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   const out = [];
   if (nested || pts.length < 5) return out;
   if (style && style.anastomoses === false) return out;
-  const n = rnd() < 0.72 ? 1 : (rnd() < 0.45 ? 2 : 0);
+  const n = rnd() < 0.38 ? 1 : 0;
   for (let i = 0; i < n; i++) {
     const t0 = 0.22 + rnd() * 0.28;
     const span = 0.14 + rnd() * 0.2;
@@ -461,10 +586,10 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   return out;
 }
 
-/** Dim companion filaments that leave and rejoin a real hypha. */
+/** Rare companion filaments add atmosphere without competing with lineage. */
 function moldFieldFilaments(pts, rnd, nested) {
   const out = [];
-  const count = nested ? 1 : 2 + (rnd() < 0.4 ? 1 : 0);
+  const count = !nested && rnd() < 0.35 ? 1 : 0;
   for (let i = 0; i < count; i++) {
     const t0 = 0.06 + rnd() * 0.22;
     const t1 = Math.min(0.94, t0 + 0.28 + rnd() * 0.24);
@@ -556,7 +681,6 @@ function ribbonOutline(pts, t0, t1, widthAt) {
 
 /** Main-node links hold this width; parent-to-child forks deliberately taper. */
 const MAIN_HYPHA_WIDTH = 5.5;
-
 /** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
   const depth = Math.max(0, parentDepth || 0);
@@ -779,13 +903,30 @@ function renderGraph(projects) {
   // Roots are the primary chronological thread. Connect them directly with
   // one crooked, steady-width strand; the nodes paint over its end overlap.
   const roots = nodes.filter((n) => (n.depth || 0) === 0);
+  const mainAtmosphere = [];
   const mainConnections = roots.slice(1).map((n, i) => {
     if (opts.edges !== "mold") return "";
     const parent = roots[i];
     const rnd = mulberry32(hashSeed(`${parent.id}->${n.id}:main`));
-    const { pts } = moldHyphaPoints(parent, n, vertical, rnd);
+    const pts = mainThreadPoints(parent, n, rnd);
+    mainAtmosphere.push(mainThreadAtmosphere(pts, rnd));
     const ribbon = ribbonOutline(pts, 0, 1, () => MAIN_HYPHA_WIDTH);
     return `<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
+  }).join("");
+
+  // Optional data links are not parentage: they can join any two nodes once.
+  const drawnAdHocLinks = new Set();
+  const adHocConnections = nodes.flatMap((source) => {
+    const targets = Array.isArray(source.connections) ? source.connections : [];
+    return targets.flatMap((targetId) => {
+      const target = byId[targetId];
+      const key = [source.id, targetId].sort().join("::");
+      if (!target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
+      drawnAdHocLinks.add(key);
+      const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
+      const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
+      return `<path class="edge adhoc-connection" d="${moldSmooth(pts)}"/>`;
+    });
   }).join("");
 
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
@@ -870,12 +1011,13 @@ function renderGraph(projects) {
     </g>`;
   }).join("");
 
-  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainConnections + branches + dots;
+  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainAtmosphere.join("") + mainConnections + branches + adHocConnections + dots;
   svg.querySelectorAll(".node").forEach((el) => {
     const id = el.getAttribute("data-id");
     const focus = () => {
       if (activeId === id) {
         activeId = null;
+        renderGraph(projectsCache);
         syncCards(false);
         return;
       }
@@ -920,12 +1062,16 @@ function syncCards(scroll) {
 function selectNode(id) {
   if (!id) return;
   activeId = id;
+  renderGraph(projectsCache);
   syncCards(true);
 }
 
 function toggleAllCards() {
   showAllCards = !showAllCards;
-  if (!showAllCards) activeId = null;
+  if (!showAllCards) {
+    activeId = null;
+    renderGraph(projectsCache);
+  }
   syncCards(false);
 }
 
@@ -942,11 +1088,18 @@ function renderCards(projects) {
     const fork = parentTitle
       ? `<div class="fork">fork of ${escapeHtml(parentTitle)}</div>`
       : `<div class="fork">on the spine</div>`;
+    const connections = (Array.isArray(p.connections) ? p.connections : [])
+      .map((id) => byId[id] && byId[id].title)
+      .filter(Boolean);
+    const links = connections.length
+      ? `<div class="connection">linked to ${connections.map((title) => escapeHtml(title)).join(", ")}</div>`
+      : "";
     const selected = activeId != null && p.id === activeId;
     const visible = showAllCards || selected;
     return `<article class="card${selected ? " active" : ""}" id="card-${escapeHtml(p.id || "")}" data-id="${escapeHtml(p.id || "")}"${visible ? "" : " hidden"}>
       <div class="meta">${escapeHtml(when)}</div>
       ${fork}
+      ${links}
       <h2>${escapeHtml(p.title || "Untitled")}</h2>
       <p>${linkifyPublicUrls(p.summary || "")}</p>
       <div class="tags">${tags}</div>

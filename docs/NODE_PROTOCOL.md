@@ -22,6 +22,9 @@ One node per pull request. Leave `main` for the merge.
 | `started` | `YYYY-MM` or `YYYY-MM-DD` |
 | `ended` | `null` or the same date format |
 | `parent` | an existing project `id`, or `null` |
+| `connections` | optional list of up to five existing project ids for ad hoc links |
+
+`parent` is the one primary lineage link: it determines whether the node is a root or a subnode. `connections` are optional secondary associations, rendered separately and never used to change hierarchy. Every connection must be a distinct existing id other than the node’s own id.
 
 ## Refuse
 
@@ -39,6 +42,7 @@ ended: null
 parent: null
 summary: One public sentence about a personal project.
 tags: [process]
+connections: [existing-project-id] # optional
 ```
 
 For a copy-and-fill JSON equivalent, start from [`proposals/node-template.json`](proposals/node-template.json):
@@ -54,6 +58,14 @@ python3 scripts/add-node.py --dry-run \
   --id example-project --title "Example project" --started 2026-10-02 \
   --parent null \
   --summary "One public sentence about a personal project." --tag process
+
+# Add a root or subnode plus a non-parentage link to an existing node.
+python3 scripts/add-node.py \
+  --id linked-project --title "Linked project" --started 2026-10-02 \
+  --parent null --connect-to existing-project-id \
+  --summary "One public sentence about a linked project." --tag process
 ```
+
+Repeat `--connect-to existing-project-id` to add up to five secondary associations. Omit it entirely when the project only needs its normal parent/root relationship.
 
 Agent rules: [`AGENTS.md`](../AGENTS.md). Map: [`FEATURE_MAP.md`](FEATURE_MAP.md).

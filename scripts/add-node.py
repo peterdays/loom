@@ -105,6 +105,15 @@ def validate_existing_file(data: dict[str, Any], path: Path) -> list[str]:
                 )
             elif parent == nid:
                 errs.append(f"{path.name} projects[{i}]: parent cannot equal id")
+        connections = node.get("connections", [])
+        if isinstance(connections, list):
+            for target in connections:
+                if not isinstance(target, str) or target not in ids:
+                    errs.append(
+                        f"{path.name} projects[{i}]: connection '{target}' does not exist"
+                    )
+                elif target == nid:
+                    errs.append(f"{path.name} projects[{i}]: connection cannot equal id")
     return errs
 
 
@@ -176,6 +185,26 @@ def validate_node_fields(
                     errs.append(f"tag '{t}' must be lowercase kebab-case")
                     break
 
+    connections = node.get("connections")
+    if connections is not None:
+        if not isinstance(connections, list):
+            errs.append("connections must be an array")
+        else:
+            if len(connections) > TAGS_MAX:
+                errs.append(f"connections over budget ({len(connections)} > {TAGS_MAX})")
+            if len(set(connections)) != len(connections):
+                errs.append("connections must not contain duplicates")
+            for target in connections:
+                if not isinstance(target, str) or not KEBAB.match(target):
+                    errs.append(f"connection '{target}' must be a kebab-case id")
+                    break
+                if target == nid:
+                    errs.append("connection cannot equal id")
+                    break
+                if check_parent and existing_ids is not None and target not in existing_ids:
+                    errs.append(f"connection '{target}' does not exist")
+                    break
+
     # Soft content refuse (new nodes only)
     if soft_content:
         blob = " ".join(
@@ -189,7 +218,7 @@ def validate_node_fields(
                 "title/summary/tags look like secrets, credentials, or absolute paths — redact"
             )
 
-    unknown = set(node) - set(required)
+    unknown = set(node) - (set(required) | {"connections"})
     if unknown:
         errs.append(f"unknown fields: {sorted(unknown)}")
 
@@ -380,7 +409,7 @@ def build_node(args: argparse.Namespace) -> dict[str, Any]:
     if parent is not None and str(parent).lower() in ("null", "none", ""):
         parent = None
     tags = list(args.tag or [])
-    return {
+    node = {
         "id": args.id,
         "title": args.title,
         "started": args.started,
@@ -389,6 +418,9 @@ def build_node(args: argparse.Namespace) -> dict[str, Any]:
         "summary": args.summary,
         "tags": tags,
     }
+    if args.connect_to:
+        node["connections"] = list(args.connect_to)
+    return node
 
 
 _TAG_BLOCK = re.compile(
@@ -437,6 +469,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         dest="tag",
         default=None,
         help="lowercase tag (repeat, ≤ 5 total)",
+    )
+    p.add_argument(
+        "--connect-to",
+        action="append",
+        dest="connect_to",
+        default=None,
+        help="existing project id for an optional ad hoc link (repeat, ≤ 5 total)",
     )
     p.add_argument(
         "--dry-run",

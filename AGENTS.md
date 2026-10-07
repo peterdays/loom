@@ -15,7 +15,7 @@ This repo does not ingest private notes. New nodes arrive as pull requests. A re
 
 ## Add one node
 
-1. On a branch, append one project with **`scripts/add-node.py`**. **`scripts/proposal-to-node.py`** reads a filled [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md) and calls `add-node.py`.
+1. On a branch, append one project with **`scripts/add-node.py`**. Add an optional secondary relationship with `--connect-to existing-id` (repeat it for up to five links). **`scripts/proposal-to-node.py`** reads a filled [`docs/proposals/_TEMPLATE.md`](docs/proposals/_TEMPLATE.md) and calls `add-node.py`.
 2. The helper writes both JSON files.
 3. Open a pull request. A reviewer checks the graph and the page still work:
 
@@ -36,8 +36,11 @@ Map: [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md).
 | `started` | `YYYY-MM` or `YYYY-MM-DD` |
 | `ended` | `null` or the same date format as `started` |
 | `parent` | existing project `id`, or `null` for a new root |
+| `connections` | optional, up to 5 existing project ids for secondary non-lineage links |
 | `summary` | **one sentence**, public, **≤ ~160 characters** |
 | `tags` | lowercase kebab-case strings, **≤ 5** tags |
+
+`parent` establishes the primary project lineage and layout. Use `connections` only for an intentional secondary relationship to an existing node; it does not make the target a parent or child. Each connection must name a distinct existing id and cannot name the node being added.
 
 ### Copy style
 
@@ -62,6 +65,12 @@ python3 scripts/add-node.py --dry-run \
  --parent null \
  --summary "One public sentence." --tag process
 
+# Optional: add one or more secondary links while appending the node.
+python3 scripts/add-node.py --dry-run \
+ --id linked-project --title "Linked project" --started 2026-10-02 \
+ --parent null --connect-to existing-project-id \
+ --summary "One public sentence." --tag process
+
 python3 scripts/add-node.py --validate-only
 
 python3 scripts/proposal-to-node.py path/to/proposal.md          # dry-run
@@ -72,7 +81,7 @@ The scripts only edit files locally. Open a pull request for the node.
 
 ### Refuse if
 
-- Fields are missing or invalid, `id` is already used, or `parent` does not exist (unless `null`).
+- Fields are missing or invalid, `id` is already used, `parent` does not exist (unless `null`), or a `connections` target is missing, duplicated, or self-referential.
 - Title, summary, or tags exceed the size budget, or the summary is more than one sentence.
 - Title, summary, or tags contain secrets, credentials, or absolute filesystem paths.
 

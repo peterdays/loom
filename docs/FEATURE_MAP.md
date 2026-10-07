@@ -6,9 +6,9 @@ One-page map for adding a timeline node or touching the UI.
 |---------|------------|--------|
 | **Spine UI** | Chronological project spine (earlier left of later; top→bottom on narrow viewports). Root nodes are larger than subnodes. Hyphae taper from the parent toward the child. Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/index.html`, `public/app.js`, `public/styles.css` |
 | **Look** | Default skin **Spores**, fork **Ribbon**, `data-look="current"`. One **White mode** toggle persists in the browser; a first visit stays on the current look. No skin or fork picker | `public/index.html`, `public/styles.css`, `public/app.js` |
-| **Node data (dual path)** | Same `projects` array in two files — keep in sync | `data/projects.json`, `public/data/projects.json` |
+| **Node data (dual path)** | Same `projects` array in two files — `parent` establishes lineage and optional `connections` add ad hoc links | `data/projects.json`, `public/data/projects.json` |
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
-| **add-node helper** | Append **one** validated stub on a branch. `--validate-only` checks field rules and the schema (stdlib) | `scripts/add-node.py` |
+| **add-node helper** | Append **one** validated stub on a branch; repeat `--connect-to` for optional links to existing nodes. `--validate-only` checks field rules and the schema (stdlib) | `scripts/add-node.py` |
 | **Proposal helper** | Filled `_TEMPLATE.md` shape (markdown file or stdin YAML/labeled lines) → `add-node.py` | `scripts/proposal-to-node.py` |
 | **CI** | Pull requests and pushes to `main`: `add-node.py --validate-only` and a page smoke | `.github/workflows/validate-projects.yml`, `scripts/smoke-page.py` |
 | **Node protocol** | Open a PR that adds a node via `add-node.py`. A reviewer checks the graph and the page | `docs/NODE_PROTOCOL.md`, `AGENTS.md` |
@@ -32,6 +32,8 @@ python3 scripts/add-node.py --dry-run …
 python3 scripts/smoke-page.py
 ```
 
+To add a secondary association while appending the node, include `--connect-to existing-project-id`; repeat it for up to five existing nodes. It is distinct from `--parent`: the parent sets lineage, while `--connect-to` adds a non-lineage relationship.
+
 `scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#cards-toggle`, `#look-toggle`, `#about`, `.tab`, default skin **Spores** / fork **Ribbon** / look **current** on `<html>`). The show-all control starts labeled **Show all node cards**, the White mode switch starts off, and `index.html` does not include a node card. `node --check public/app.js` runs when `node` is on `PATH`. The same checks are the `page-smoke` job in CI.
 
 ## Proposal → node
@@ -47,6 +49,7 @@ ended: null
 parent: null
 summary: One public sentence.
 tags: [process]
+connections: [existing-project-id] # optional
 EOF
 
 python3 scripts/proposal-to-node.py docs/proposals/some-filled-proposal.md --apply

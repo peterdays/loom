@@ -34,7 +34,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 ADD_NODE = Path(__file__).resolve().parent / "add-node.py"
-FIELDS = ("id", "title", "started", "ended", "parent", "summary", "tags")
+FIELDS = ("id", "title", "started", "ended", "parent", "summary", "tags", "connections")
 FENCE = re.compile(r"```([A-Za-z0-9_-]*)[^\n]*\n(.*?)```", re.DOTALL)
 LABELED = re.compile(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$")
 BLOCK_SCALAR = {"|", ">", "|-", ">-", "|+", ">+"}
@@ -92,6 +92,7 @@ def normalize(data: dict[str, Any]) -> dict[str, Any]:
         else:
             out[key] = None
     out["tags"] = parse_tags(data.get("tags"))
+    out["connections"] = parse_tags(data.get("connections"))
     return out
 
 
@@ -110,7 +111,7 @@ def parse_labeled(body: str) -> dict[str, Any]:
             i += 1
             continue
         if rest in BLOCK_SCALAR or rest == "":
-            if key == "tags" and rest == "":
+            if key in ("tags", "connections") and rest == "":
                 items: list[str] = []
                 j = i + 1
                 while j < len(lines):
@@ -120,7 +121,7 @@ def parse_labeled(body: str) -> dict[str, Any]:
                     items.append(unquote(item.group(1)))
                     j += 1
                 if not items:
-                    die("tags: expected a list on the same line or a '-' block")
+                    die(f"{key}: expected a list on the same line or a '-' block")
                 data[key] = items
                 i = j
                 continue
@@ -198,6 +199,8 @@ def build_add_node_args(fields: dict[str, Any]) -> list[str]:
     ]
     for tag in fields.get("tags") or []:
         args.extend(["--tag", str(tag)])
+    for target in fields.get("connections") or []:
+        args.extend(["--connect-to", str(target)])
     return args
 
 

@@ -27,7 +27,8 @@
       "ended": null,
       "parent": "jarvas",
       "summary": "A curated playlist feeds transcripts into Jarvas so useful talks can become durable Mnemoteca context.",
-      "tags": ["youtube", "transcripts", "ingestion", "second-brain"]
+      "tags": ["youtube", "transcripts", "ingestion", "second-brain"],
+      "connections": ["jarvas-mnemoteca"]
     },
     {
       "id": "jarvas-inbox-ranking",
@@ -43,7 +44,7 @@
       "title": "OraXle",
       "started": "2026-09-24",
       "ended": null,
-      "parent": "jarvas",
+      "parent": null,
       "summary": "X-native oracle with its own LLM wiki for capturing and querying selected tweets, threads, X Articles, and native media; durable signals relay into Jarvas.",
       "tags": ["x-native", "oracle", "llm-wiki", "agent"]
     },
@@ -54,7 +55,8 @@
       "ended": null,
       "parent": null,
       "summary": "Mycelium/neuron/universe-inspired project graph: a chronological spine where public-safe projects branch into features, agents, experiments; no private notes.",
-      "tags": ["portfolio", "timeline", "graph", "projects"]
+      "tags": ["portfolio", "timeline", "graph", "projects"],
+      "connections": ["jarvas-mnemoteca"]
     }
   ]
 }
