@@ -7,7 +7,7 @@ const DEFAULT_LOOK = "current";
 const LOOK_STORAGE_KEY = "loom-look";
 
 const DEFAULT_FORK_STYLE = "ribbon";
-/** Ribbon hyphae: a single-width, crooked organic strand. */
+/** Ribbon hyphae: a primary lineage strand with restrained surface detail. */
 const FORK_STYLES = {
   ribbon: {
     ampScale: 0.32,
@@ -16,8 +16,8 @@ const FORK_STYLES = {
     microScale: 0.12,
     sheath: "soft",
     midLayer: true,
-    maxWhiskers: 3,
-    whiskerTiny: false,
+    maxWhiskers: 1,
+    whiskerTiny: true,
     anastomoses: true,
     jitter: 0,
   },
@@ -421,6 +421,19 @@ function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
   return bundle;
 }
 
+/** A calm chronological thread between root nodes, hidden beneath their rims. */
+function mainThreadPoints(parent, child) {
+  const dx = child.x - parent.x;
+  const dy = child.y - parent.y;
+  const distance = Math.hypot(dx, dy) || 1;
+  const ux = dx / distance;
+  const uy = dy / distance;
+  return [
+    { x: parent.x + ux * (nodeRadius(parent) + 1.5), y: parent.y + uy * (nodeRadius(parent) + 1.5) },
+    { x: child.x - ux * (nodeRadius(child) + 1.5), y: child.y - uy * (nodeRadius(child) + 1.5) },
+  ];
+}
+
 /** Approximate the rendered label so cross-links route through clear space. */
 function labelBounds(node, vertical) {
   const root = (node.depth || 0) === 0;
@@ -490,7 +503,7 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   const out = [];
   if (nested || pts.length < 5) return out;
   if (style && style.anastomoses === false) return out;
-  const n = rnd() < 0.72 ? 1 : (rnd() < 0.45 ? 2 : 0);
+  const n = rnd() < 0.38 ? 1 : 0;
   for (let i = 0; i < n; i++) {
     const t0 = 0.22 + rnd() * 0.28;
     const span = 0.14 + rnd() * 0.2;
@@ -529,10 +542,10 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   return out;
 }
 
-/** Dim companion filaments that leave and rejoin a real hypha. */
+/** Rare companion filaments add atmosphere without competing with lineage. */
 function moldFieldFilaments(pts, rnd, nested) {
   const out = [];
-  const count = nested ? 1 : 2 + (rnd() < 0.4 ? 1 : 0);
+  const count = !nested && rnd() < 0.35 ? 1 : 0;
   for (let i = 0; i < count; i++) {
     const t0 = 0.06 + rnd() * 0.22;
     const t1 = Math.min(0.94, t0 + 0.28 + rnd() * 0.24);
@@ -624,8 +637,8 @@ function ribbonOutline(pts, t0, t1, widthAt) {
 
 /** Main-node links hold this width; parent-to-child forks deliberately taper. */
 const MAIN_HYPHA_WIDTH = 5.5;
-const ADHOC_END_WIDTH = 1.9;
-const ADHOC_MID_WIDTH = 0.4;
+const ADHOC_END_WIDTH = 1.6;
+const ADHOC_MID_WIDTH = 0.35;
 
 /** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
@@ -852,8 +865,7 @@ function renderGraph(projects) {
   const mainConnections = roots.slice(1).map((n, i) => {
     if (opts.edges !== "mold") return "";
     const parent = roots[i];
-    const rnd = mulberry32(hashSeed(`${parent.id}->${n.id}:main`));
-    const { pts } = moldHyphaPoints(parent, n, vertical, rnd);
+    const pts = mainThreadPoints(parent, n);
     const ribbon = ribbonOutline(pts, 0, 1, () => MAIN_HYPHA_WIDTH);
     return `<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
   }).join("");
@@ -865,14 +877,14 @@ function renderGraph(projects) {
     return targets.flatMap((targetId) => {
       const target = byId[targetId];
       const key = [source.id, targetId].sort().join("::");
-      if (!target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
+      if (!activeId || (source.id !== activeId && targetId !== activeId) || !target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
       drawnAdHocLinks.add(key);
       const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
       const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
-      const ribbon = ribbonOutline(pts, 0, 1, (u) =>
-        ADHOC_MID_WIDTH + (ADHOC_END_WIDTH - ADHOC_MID_WIDTH) * Math.pow(Math.abs(2 * u - 1), 0.58)
-      );
-      return `<path class="edge adhoc-connection" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
+      const widthAt = (t) => ADHOC_MID_WIDTH + (ADHOC_END_WIDTH - ADHOC_MID_WIDTH) * Math.pow(Math.abs(2 * t - 1), 0.58);
+      return [[0.08, 0.34], [0.42, 0.62], [0.7, 0.92]].map(([start, end]) =>
+        `<path class="edge adhoc-connection" filter="url(#hyphaTexture)" d="${ribbonOutline(pts, start, end, (u) => widthAt(start + (end - start) * u))}"/>`
+      ).join("");
     });
   }).join("");
 
@@ -964,6 +976,7 @@ function renderGraph(projects) {
     const focus = () => {
       if (activeId === id) {
         activeId = null;
+        renderGraph(projectsCache);
         syncCards(false);
         return;
       }
@@ -1008,12 +1021,16 @@ function syncCards(scroll) {
 function selectNode(id) {
   if (!id) return;
   activeId = id;
+  renderGraph(projectsCache);
   syncCards(true);
 }
 
 function toggleAllCards() {
   showAllCards = !showAllCards;
-  if (!showAllCards) activeId = null;
+  if (!showAllCards) {
+    activeId = null;
+    renderGraph(projectsCache);
+  }
   syncCards(false);
 }
 
