@@ -261,9 +261,9 @@ h1 {
 .graph .node text { fill: var(--text); font-family: inherit; }
 .graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
 .graph .edge.adhoc-connection {
-  stroke-width: 2.2;
-  stroke-opacity: 0.78;
-  stroke-linecap: round;
+  fill: var(--branch);
+  fill-opacity: 0.82;
+  stroke: none;
   pointer-events: none;
 }
 .graph .spine-line { stroke-width: 3; }

@@ -383,7 +383,7 @@ function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
   const offset = Math.min(62, bundle.el * 0.14) + 10;
   const routeFor = (side, scale) => bundle.pts.map((pt, i) => {
     const t = i / Math.max(1, bundle.pts.length - 1);
-    const bow = Math.sin(Math.PI * t) * offset * side * scale;
+    const bow = (1 - Math.abs(2 * t - 1)) * offset * side * scale;
     return vertical ? { ...pt, x: pt.x + bow } : { ...pt, y: pt.y + bow };
   });
   const collisionCost = (pts) => pts.reduce((cost, pt) => cost + (nodes || []).reduce((nodeCost, node) => {
@@ -398,9 +398,21 @@ function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
     { pts: routeFor(preferredSide, 1.5), bend: 6 },
     { pts: routeFor(-preferredSide, 1.5), bend: 6 },
   ];
-  bundle.pts = routes.reduce((best, route) =>
+  const chosen = routes.reduce((best, route) =>
     collisionCost(route.pts) + route.bend < collisionCost(best.pts) + best.bend ? route : best
   ).pts;
+  const knots = [0, 5, 11, 17, chosen.length - 1];
+  bundle.pts = knots.map((index, i) => {
+    const pt = chosen[index];
+    if (i === 0 || i === knots.length - 1) return pt;
+    const before = chosen[knots[i - 1]];
+    const after = chosen[knots[i + 1]];
+    const dx = after.x - before.x;
+    const dy = after.y - before.y;
+    const inv = 1 / (Math.hypot(dx, dy) || 1);
+    const wobble = (rnd() * 2 - 1) * 3.5;
+    return { x: pt.x - dy * inv * wobble, y: pt.y + dx * inv * wobble };
+  });
   return bundle;
 }
 
@@ -587,6 +599,8 @@ function ribbonOutline(pts, t0, t1, widthAt) {
 
 /** Main-node links hold this width; parent-to-child forks deliberately taper. */
 const MAIN_HYPHA_WIDTH = 5.5;
+const ADHOC_END_WIDTH = 4;
+const ADHOC_MID_WIDTH = 0.9;
 
 /** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
@@ -830,7 +844,10 @@ function renderGraph(projects) {
       drawnAdHocLinks.add(key);
       const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
       const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
-      return `<path class="edge adhoc-connection" d="${moldSmooth(pts)}"/>`;
+      const ribbon = ribbonOutline(pts, 0, 1, (u) =>
+        ADHOC_MID_WIDTH + (ADHOC_END_WIDTH - ADHOC_MID_WIDTH) * Math.pow(Math.abs(2 * u - 1), 0.58)
+      );
+      return `<path class="edge adhoc-connection" d="${ribbon}"/>`;
     });
   }).join("");
 
