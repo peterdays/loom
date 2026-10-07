@@ -387,16 +387,21 @@ function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
     return vertical ? { ...pt, x: pt.x + bow } : { ...pt, y: pt.y + bow };
   });
   const collisionCost = (pts) => pts.reduce((cost, pt) => cost + (nodes || []).reduce((nodeCost, node) => {
-    if (node.id === source.id || node.id === target.id) return nodeCost;
+    const label = labelBounds(node, vertical);
+    const labelDistance = rectDistance(pt, label);
+    const labelCost = Math.max(0, 10 - labelDistance) ** 2 * 2;
+    if (node.id === source.id || node.id === target.id) return nodeCost + labelCost;
     const clearance = nodeRadius(node) + 42;
     const distance = Math.hypot(pt.x - node.x, pt.y - node.y);
-    return nodeCost + Math.max(0, clearance - distance) ** 2;
+    return nodeCost + Math.max(0, clearance - distance) ** 2 + labelCost;
   }, 0), 0);
   const routes = [
     { pts: routeFor(preferredSide, 1), bend: 0 },
     { pts: routeFor(-preferredSide, 1), bend: 0 },
     { pts: routeFor(preferredSide, 1.5), bend: 6 },
     { pts: routeFor(-preferredSide, 1.5), bend: 6 },
+    { pts: routeFor(preferredSide, 2), bend: 14 },
+    { pts: routeFor(-preferredSide, 2), bend: 14 },
   ];
   const chosen = routes.reduce((best, route) =>
     collisionCost(route.pts) + route.bend < collisionCost(best.pts) + best.bend ? route : best
@@ -414,6 +419,26 @@ function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
     return { x: pt.x - dy * inv * wobble, y: pt.y + dx * inv * wobble };
   });
   return bundle;
+}
+
+/** Approximate the rendered label so cross-links route through clear space. */
+function labelBounds(node, vertical) {
+  const root = (node.depth || 0) === 0;
+  const width = Math.max(28, (node.title || "").length * (root ? 8.8 : 6.8) + 8);
+  if (vertical) {
+    const x = node.x + (root ? nodeRadius(node) * 1.7 + 12 : nodeRadius(node) + 10);
+    return { x: x - 3, y: node.y - 16, width, height: 18 };
+  }
+  const outward = node.side === 0 ? -1 : Math.sign(node.side);
+  const lift = node.side === 0 ? (root ? 40 : 22) : nodeRadius(node) + 12;
+  const baseline = outward < 0 ? node.y - lift : node.y + nodeRadius(node) + 15;
+  return { x: node.x - width / 2, y: baseline - 14, width, height: 18 };
+}
+
+function rectDistance(point, rect) {
+  const dx = Math.max(rect.x - point.x, 0, point.x - (rect.x + rect.width));
+  const dy = Math.max(rect.y - point.y, 0, point.y - (rect.y + rect.height));
+  return Math.hypot(dx, dy);
 }
 
 /**
@@ -599,8 +624,8 @@ function ribbonOutline(pts, t0, t1, widthAt) {
 
 /** Main-node links hold this width; parent-to-child forks deliberately taper. */
 const MAIN_HYPHA_WIDTH = 5.5;
-const ADHOC_END_WIDTH = 4;
-const ADHOC_MID_WIDTH = 0.9;
+const ADHOC_END_WIDTH = 3;
+const ADHOC_MID_WIDTH = 0.7;
 
 /** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
