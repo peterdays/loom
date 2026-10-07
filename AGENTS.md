@@ -75,3 +75,13 @@ The scripts only edit files locally. Open a pull request for the node.
 - Chronological spine: time left→right, top→bottom on narrow viewports. Root nodes are larger than subnodes; hyphae taper from the parent toward the child.
 - CI: `add-node.py --validate-only` and `scripts/smoke-page.py`.
 - Project data lives under `data/` and `public/data/`.
+
+## Ship gate (UI proof)
+
+**Rule (Pedro, 2026-10-06).** A pull request that changes the page needs a human-visible proof walk before merge. A pull request that does not change the page is not blocked by that walk.
+
+**Needs UI proof (do not merge until PASS):** changes to page HTML, CSS, or JS, skins, layout, `scripts/smoke-page.py` expectations, or anything that affects how the graph page looks or loads in a browser. Proof is `python3 scripts/smoke-page.py` green plus a short visual check (desktop and a narrow viewport) by LoomBot or Pedro. Attach or link shots when the change is visual.
+
+**Skip UI proof (merge when CI green):** one-node data pull requests that only touch `data/projects.json` and `public/data/projects.json` via `add-node.py`, docs-only, schema-only with no page change, and chores that cannot affect the rendered page. The pull request body must say `Ship gate: skip (reason: …)`. No walk and no screenshots on that pull request.
+
+**Never:** require a full voluqaui-style walk for a simple node-add pull request.
