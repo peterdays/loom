@@ -9,13 +9,7 @@
       "ended": null,
       "parent": null,
       "summary": "A privacy-first personal AI assistant for turning sources, reminders, conversations, and agent workflows into project memory and next actions.",
-      "tags": [
-        "personal-ai",
-        "second-brain",
-        "agent-workflows",
-        "knowledge-systems",
-        "productivity"
-      ]
+      "tags": ["personal-ai", "second-brain", "agent-workflows", "knowledge-systems", "productivity"]
     },
     {
       "id": "jarvas-mnemoteca",
@@ -24,12 +18,7 @@
       "ended": null,
       "parent": "jarvas",
       "summary": "A living LLM wiki where sources, notes, decisions, and WIP gravity wells preserve continuity: https://gist.github.com/peterdays/54a8fd9f8a01355ec27a43ac3c49650a",
-      "tags": [
-        "second-brain",
-        "llm-wiki",
-        "knowledge-systems",
-        "wip"
-      ]
+      "tags": ["second-brain", "llm-wiki", "knowledge-systems", "wip"]
     },
     {
       "id": "jarvas-youtube-ingestion",
@@ -38,12 +27,7 @@
       "ended": null,
       "parent": "jarvas",
       "summary": "A curated playlist feeds transcripts into Jarvas so useful talks can become durable Mnemoteca context.",
-      "tags": [
-        "youtube",
-        "transcripts",
-        "ingestion",
-        "second-brain"
-      ]
+      "tags": ["youtube", "transcripts", "ingestion", "second-brain"]
     },
     {
       "id": "jarvas-inbox-ranking",
@@ -52,12 +36,7 @@
       "ended": null,
       "parent": "jarvas",
       "summary": "Jarvas ranks read-it-later links by relevance and novelty before Pedro spends attention.",
-      "tags": [
-        "inbox",
-        "ranking",
-        "triage",
-        "personal-ai"
-      ]
+      "tags": ["inbox", "ranking", "triage", "personal-ai"]
     },
     {
       "id": "oraxle",
@@ -66,12 +45,7 @@
       "ended": null,
       "parent": "jarvas",
       "summary": "X-native oracle with its own LLM wiki for capturing and querying selected tweets, threads, X Articles, and native media; durable signals relay into Jarvas.",
-      "tags": [
-        "x-native",
-        "oracle",
-        "llm-wiki",
-        "agent"
-      ]
+      "tags": ["x-native", "oracle", "llm-wiki", "agent"]
     },
     {
       "id": "loom",
@@ -80,12 +54,7 @@
       "ended": null,
       "parent": null,
       "summary": "Personal project map: living timeline where projects grow like mycelium/neural/universe, linking agents, features, experiments, shipped work; no private notes.",
-      "tags": [
-        "portfolio",
-        "timeline",
-        "graph",
-        "projects"
-      ]
+      "tags": ["portfolio", "timeline", "graph", "projects"]
     }
   ]
 }
