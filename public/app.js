@@ -377,15 +377,30 @@ function moldHyphaPoints(p, c, vertical, rnd) {
  * Cross-links take a visibly separate lane, so they do not appear to attach
  * to an unrelated root that happens to sit between their two endpoints.
  */
-function adHocHyphaPoints(source, target, vertical, rnd) {
+function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
   const bundle = moldHyphaPoints(source, target, vertical, rnd);
-  const side = target.side || source.side || (rnd() < 0.5 ? -1 : 1);
-  const offset = Math.min(34, bundle.el * 0.09) + 8;
-  bundle.pts = bundle.pts.map((pt, i) => {
+  const preferredSide = Math.sign(target.side || source.side || (rnd() < 0.5 ? -1 : 1));
+  const offset = Math.min(62, bundle.el * 0.14) + 10;
+  const routeFor = (side, scale) => bundle.pts.map((pt, i) => {
     const t = i / Math.max(1, bundle.pts.length - 1);
-    const bow = Math.sin(Math.PI * t) * offset * Math.sign(side);
+    const bow = Math.sin(Math.PI * t) * offset * side * scale;
     return vertical ? { ...pt, x: pt.x + bow } : { ...pt, y: pt.y + bow };
   });
+  const collisionCost = (pts) => pts.reduce((cost, pt) => cost + (nodes || []).reduce((nodeCost, node) => {
+    if (node.id === source.id || node.id === target.id) return nodeCost;
+    const clearance = nodeRadius(node) + 42;
+    const distance = Math.hypot(pt.x - node.x, pt.y - node.y);
+    return nodeCost + Math.max(0, clearance - distance) ** 2;
+  }, 0), 0);
+  const routes = [
+    { pts: routeFor(preferredSide, 1), bend: 0 },
+    { pts: routeFor(-preferredSide, 1), bend: 0 },
+    { pts: routeFor(preferredSide, 1.5), bend: 6 },
+    { pts: routeFor(-preferredSide, 1.5), bend: 6 },
+  ];
+  bundle.pts = routes.reduce((best, route) =>
+    collisionCost(route.pts) + route.bend < collisionCost(best.pts) + best.bend ? route : best
+  ).pts;
   return bundle;
 }
 
@@ -814,7 +829,7 @@ function renderGraph(projects) {
       if (!target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
       drawnAdHocLinks.add(key);
       const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
-      const { pts } = adHocHyphaPoints(source, target, vertical, rnd);
+      const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
       return `<path class="edge adhoc-connection" d="${moldSmooth(pts)}"/>`;
     });
   }).join("");
