@@ -283,7 +283,7 @@ h1 {
 }
 
 /* Spores — deep blue substrate, lime capillary hyphae, hyphal-tip nodes.
-   Ribbon forks: soft sheath and a quieter mid taper. */
+   Ribbon forks: soft sheath and a quieter middle layer. */
 
 html[data-skin="spores"] .graph .edge.mold-sheath {
   stroke-width: 6.2;
@@ -425,16 +425,16 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid {
   stroke-opacity: 0.42;
 }
 
-/* Continuous taper: wide at the parent, thin at the child. Not a uniform stroke. */
-.graph .edge.mold-taper {
+/* Constant-width ribbon: the node overlays hide its small end overlap. */
+.graph .edge.mold-ribbon {
   stroke: none;
   pointer-events: none;
 }
-.graph .edge.mold-taper-outer {
+.graph .edge.mold-ribbon-outer {
   fill: var(--branch);
   fill-opacity: 0.28;
 }
-.graph .edge.mold-taper-inner {
+.graph .edge.mold-ribbon-inner {
   fill: var(--branch);
   fill-opacity: 0.9;
 }
@@ -515,10 +515,10 @@ html[data-look="white"] .graph .edge.mold-whisker,
 html[data-look="white"] .graph .edge.mold-anas {
   stroke-opacity: 0.7;
 }
-html[data-look="white"] .graph .edge.mold-taper-outer {
+html[data-look="white"] .graph .edge.mold-ribbon-outer {
   fill-opacity: 0.4;
 }
-html[data-look="white"] .graph .edge.mold-taper-inner {
+html[data-look="white"] .graph .edge.mold-ribbon-inner {
   fill-opacity: 0.95;
 }
 html[data-look="white"] .graph .orb-halo {

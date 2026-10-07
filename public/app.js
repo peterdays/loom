@@ -7,7 +7,7 @@ const DEFAULT_LOOK = "current";
 const LOOK_STORAGE_KEY = "loom-look";
 
 const DEFAULT_FORK_STYLE = "ribbon";
-/** Ribbon hyphae: soft tapered stroke, gentle S-curves. */
+/** Ribbon hyphae: a single-width, crooked organic strand. */
 const FORK_STYLES = {
   ribbon: {
     ampScale: 0.32,
@@ -332,7 +332,7 @@ function moldSample(pts, t) {
 /**
  * One cubic centerline per hypha. It starts and ends on the actual node rims,
  * so sibling forks fan out naturally without a stack of center-originating
- * strokes. Sampling this single curve later gives its closed tapered outline.
+ * strokes. Extending beneath each node keeps the join visually continuous.
  */
 function moldHyphaPoints(p, c, vertical, rnd) {
   const nested = (p.side || 0) !== 0;
@@ -341,18 +341,18 @@ function moldHyphaPoints(p, c, vertical, rnd) {
   const centerDist = Math.hypot(dx, dy) || 1;
   const ux = dx / centerDist;
   const uy = dy / centerDist;
-  const startR = nodeRadius(p) * 0.94;
-  const endR = nodeRadius(c) * 0.96;
+  const startR = nodeRadius(p) + 1.5;
+  const endR = nodeRadius(c) + 1.5;
   const start = { x: p.x + ux * startR, y: p.y + uy * startR };
   const end = { x: c.x - ux * endR, y: c.y - uy * endR };
   const dist = Math.hypot(end.x - start.x, end.y - start.y) || 1;
   const nx = -uy;
   const ny = ux;
   const signedSway = () => (rnd() < 0.5 ? -1 : 1) * (0.45 + rnd() * 0.55);
-  // Constrained, uneven drift: more like a growing hypha than a broad S-curve.
-  const bend = signedSway() * Math.min(nested ? 6 : 14, dist * 0.055);
-  const twistA = signedSway() * Math.min(nested ? 4 : 8, dist * 0.032);
-  const twistB = signedSway() * Math.min(nested ? 2 : 4, dist * 0.016);
+  // A compact, irregular drift reads as a growing hypha rather than a smooth route.
+  const bend = signedSway() * Math.min(nested ? 8 : 18, dist * 0.075);
+  const twistA = signedSway() * Math.min(nested ? 6 : 12, dist * 0.06);
+  const twistB = signedSway() * Math.min(nested ? 3.5 : 7, dist * 0.032);
   const phaseA = rnd() * Math.PI * 2;
   const phaseB = rnd() * Math.PI * 2;
   const c1 = { x: start.x + ux * dist * 0.32 + nx * bend, y: start.y + uy * dist * 0.32 + ny * bend };
@@ -532,11 +532,9 @@ function moldForkBundle(p, c, vertical) {
 }
 
 /**
- * Filled hypha that thins along its whole length: wide at the parent rim,
- * narrow at the child. Width is a fraction of this fork, so a longer path
- * keeps thinning instead of dropping to a constant stroke.
+ * Filled hypha with a steady width from one node into the next.
  */
-function taperRibbon(pts, t0, t1, widthAt) {
+function ribbonOutline(pts, t0, t1, width) {
   const steps = 32;
   const left = [];
   const right = [];
@@ -545,7 +543,7 @@ function taperRibbon(pts, t0, t1, widthAt) {
     const u = i / steps;
     const t = t0 + span * u;
     const s = moldSample(pts, t);
-    const hw = Math.max(0.35, widthAt(u) / 2);
+    const hw = Math.max(0.35, width / 2);
     const nx = -s.ty;
     const ny = s.tx;
     left.push({ x: s.x + nx * hw, y: s.y + ny * hw });
@@ -558,13 +556,7 @@ function taperRibbon(pts, t0, t1, widthAt) {
   return cmds.join(" ");
 }
 
-/** Center-to-periphery: deeper forks start thinner and end thinner. */
-function forkTaperWidths(parentDepth) {
-  const depth = Math.max(0, parentDepth || 0);
-  const start = Math.max(2.2, 8.6 * Math.pow(0.58, depth));
-  const end = Math.max(0.7, 1.35 * Math.pow(0.7, depth));
-  return { start, end };
-}
+const HYPHA_WIDTH = 5.5;
 
 function moldFork(p, c, vertical) {
   return moldForkBundle(p, c, vertical).main;
@@ -782,12 +774,7 @@ function renderGraph(projects) {
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
-      const { start, end } = forkTaperWidths(parent.depth || 0);
-      const ease = (u) => {
-        const t = Math.max(0, Math.min(1, u));
-        return t * t * (3 - 2 * t);
-      };
-      const ribbon = taperRibbon(bundle.pts, 0, 1, (u) => start + (end - start) * ease(u));
+      const ribbon = ribbonOutline(bundle.pts, 0, 1, HYPHA_WIDTH);
       const firstPt = bundle.pts[0];
       const lastPt = bundle.pts[bundle.pts.length - 1];
       const gradientId = `hyphaGradient-${escapeHtml(n.id)}`;
@@ -807,7 +794,7 @@ function renderGraph(projects) {
         `<path class="edge mold-whisker" d="${wd}"/>`
       ).join("");
       const spores = bundle.spores.join("");
-      return loops + filaments + whisk + spores + `<path class="edge mold-taper mold-taper-inner" style="fill: url(#${gradientId})" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
+      return loops + filaments + whisk + spores + `<path class="edge mold-ribbon mold-ribbon-inner" style="fill: url(#${gradientId})" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
     }
     const d = edgePath(parent, n, opts.edges, vertical);
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
