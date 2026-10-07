@@ -422,16 +422,51 @@ function adHocHyphaPoints(source, target, vertical, rnd, nodes) {
 }
 
 /** A calm chronological thread between root nodes, hidden beneath their rims. */
-function mainThreadPoints(parent, child) {
+function mainThreadPoints(parent, child, rnd) {
   const dx = child.x - parent.x;
   const dy = child.y - parent.y;
   const distance = Math.hypot(dx, dy) || 1;
   const ux = dx / distance;
   const uy = dy / distance;
+  const nx = -uy;
+  const ny = ux;
+  const bend = (rnd() < 0.5 ? -1 : 1) * Math.min(5, distance * 0.012);
   return [
     { x: parent.x + ux * (nodeRadius(parent) + 1.5), y: parent.y + uy * (nodeRadius(parent) + 1.5) },
+    { x: parent.x + ux * distance * 0.35 + nx * bend, y: parent.y + uy * distance * 0.35 + ny * bend },
+    { x: parent.x + ux * distance * 0.68 - nx * bend * 0.35, y: parent.y + uy * distance * 0.68 - ny * bend * 0.35 },
     { x: child.x - ux * (nodeRadius(child) + 1.5), y: child.y - uy * (nodeRadius(child) + 1.5) },
   ];
+}
+
+/** Low-contrast dust and one companion strand give the root thread atmosphere. */
+function mainThreadAtmosphere(pts, rnd) {
+  const spores = [];
+  for (let i = 0; i < 10; i++) {
+    const s = moldSample(pts, 0.06 + rnd() * 0.88);
+    const nx = -s.ty;
+    const ny = s.tx;
+    const side = rnd() < 0.5 ? -1 : 1;
+    const spread = 5 + rnd() * 18;
+    spores.push(`<circle class="main-spore" cx="${fmt(s.x + nx * side * spread)}" cy="${fmt(s.y + ny * side * spread)}" r="${fmt(0.35 + rnd() * 0.55)}"/>`);
+  }
+  const a = moldSample(pts, 0.12);
+  const b = moldSample(pts, 0.88);
+  const side = rnd() < 0.5 ? -1 : 1;
+  const middle = moldLerpPt(a, b, 0.5);
+  const nx = -(a.ty + b.ty) * 0.5;
+  const ny = (a.tx + b.tx) * 0.5;
+  const inv = 1 / (Math.hypot(nx, ny) || 1);
+  const filament = moldSmooth([
+    { x: a.x, y: a.y },
+    { x: middle.x + nx * inv * side * (8 + rnd() * 8), y: middle.y + ny * inv * side * (8 + rnd() * 8) },
+    { x: b.x, y: b.y },
+  ]);
+  return `<path class="edge main-filament" d="${filament}"/>${spores.join("")}`;
+}
+
+function crookedPolyline(pts) {
+  return pts.map((pt, i) => `${i ? "L" : "M"} ${fmt(pt.x)} ${fmt(pt.y)}`).join(" ");
 }
 
 /** Approximate the rendered label so cross-links route through clear space. */
@@ -637,9 +672,6 @@ function ribbonOutline(pts, t0, t1, widthAt) {
 
 /** Main-node links hold this width; parent-to-child forks deliberately taper. */
 const MAIN_HYPHA_WIDTH = 5.5;
-const ADHOC_END_WIDTH = 1.6;
-const ADHOC_MID_WIDTH = 0.35;
-
 /** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
   const depth = Math.max(0, parentDepth || 0);
@@ -862,10 +894,13 @@ function renderGraph(projects) {
   // Roots are the primary chronological thread. Connect them directly with
   // one crooked, steady-width strand; the nodes paint over its end overlap.
   const roots = nodes.filter((n) => (n.depth || 0) === 0);
+  const mainAtmosphere = [];
   const mainConnections = roots.slice(1).map((n, i) => {
     if (opts.edges !== "mold") return "";
     const parent = roots[i];
-    const pts = mainThreadPoints(parent, n);
+    const rnd = mulberry32(hashSeed(`${parent.id}->${n.id}:main`));
+    const pts = mainThreadPoints(parent, n, rnd);
+    mainAtmosphere.push(mainThreadAtmosphere(pts, rnd));
     const ribbon = ribbonOutline(pts, 0, 1, () => MAIN_HYPHA_WIDTH);
     return `<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
   }).join("");
@@ -881,10 +916,7 @@ function renderGraph(projects) {
       drawnAdHocLinks.add(key);
       const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
       const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
-      const widthAt = (t) => ADHOC_MID_WIDTH + (ADHOC_END_WIDTH - ADHOC_MID_WIDTH) * Math.pow(Math.abs(2 * t - 1), 0.58);
-      return [[0.08, 0.34], [0.42, 0.62], [0.7, 0.92]].map(([start, end]) =>
-        `<path class="edge adhoc-connection" filter="url(#hyphaTexture)" d="${ribbonOutline(pts, start, end, (u) => widthAt(start + (end - start) * u))}"/>`
-      ).join("");
+      return `<path class="edge adhoc-connection" d="${crookedPolyline(pts)}"/>`;
     });
   }).join("");
 
@@ -970,7 +1002,7 @@ function renderGraph(projects) {
     </g>`;
   }).join("");
 
-  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainConnections + branches + adHocConnections + dots;
+  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainAtmosphere.join("") + mainConnections + branches + adHocConnections + dots;
   svg.querySelectorAll(".node").forEach((el) => {
     const id = el.getAttribute("data-id");
     const focus = () => {

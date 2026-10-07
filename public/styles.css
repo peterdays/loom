@@ -261,9 +261,24 @@ h1 {
 .graph .node text { fill: var(--text); font-family: inherit; }
 .graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
 .graph .edge.adhoc-connection {
-  fill: var(--branch);
-  fill-opacity: 0.48;
-  stroke: none;
+  fill: none;
+  stroke: var(--spine);
+  stroke-width: 0.8;
+  stroke-opacity: 0.62;
+  stroke-linecap: round;
+  stroke-dasharray: 1 4;
+  pointer-events: none;
+}
+.graph .edge.main-filament {
+  fill: none;
+  stroke: var(--branch);
+  stroke-width: 0.7;
+  stroke-opacity: 0.16;
+  pointer-events: none;
+}
+.graph .main-spore {
+  fill: var(--spine);
+  fill-opacity: 0.24;
   pointer-events: none;
 }
 .graph .spine-line { stroke-width: 3; }
