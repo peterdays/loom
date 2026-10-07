@@ -272,13 +272,13 @@ h1 {
 .graph .edge.main-filament {
   fill: none;
   stroke: var(--branch);
-  stroke-width: 0.7;
-  stroke-opacity: 0.16;
+  stroke-width: 0.75;
+  stroke-opacity: 0.22;
   pointer-events: none;
 }
 .graph .main-spore {
   fill: var(--spine);
-  fill-opacity: 0.24;
+  fill-opacity: 0.3;
   pointer-events: none;
 }
 .graph .spine-line { stroke-width: 3; }

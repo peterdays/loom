@@ -430,39 +430,48 @@ function mainThreadPoints(parent, child, rnd) {
   const uy = dy / distance;
   const nx = -uy;
   const ny = ux;
-  const bend = (rnd() < 0.5 ? -1 : 1) * Math.min(5, distance * 0.012);
+  const signedDrift = () => (rnd() < 0.5 ? -1 : 1) * (0.45 + rnd() * 0.55);
+  // Keep chronology legible, but let the root thread wander like a living vein.
+  const drift = Math.min(12, distance * 0.032);
+  const bendA = signedDrift() * drift;
+  const bendB = signedDrift() * drift * 0.82;
+  const bendC = signedDrift() * drift * 0.48;
   return [
     { x: parent.x + ux * (nodeRadius(parent) + 1.5), y: parent.y + uy * (nodeRadius(parent) + 1.5) },
-    { x: parent.x + ux * distance * 0.35 + nx * bend, y: parent.y + uy * distance * 0.35 + ny * bend },
-    { x: parent.x + ux * distance * 0.68 - nx * bend * 0.35, y: parent.y + uy * distance * 0.68 - ny * bend * 0.35 },
+    { x: parent.x + ux * distance * 0.22 + nx * bendA, y: parent.y + uy * distance * 0.22 + ny * bendA },
+    { x: parent.x + ux * distance * 0.48 + nx * bendB, y: parent.y + uy * distance * 0.48 + ny * bendB },
+    { x: parent.x + ux * distance * 0.74 + nx * bendC, y: parent.y + uy * distance * 0.74 + ny * bendC },
     { x: child.x - ux * (nodeRadius(child) + 1.5), y: child.y - uy * (nodeRadius(child) + 1.5) },
   ];
 }
 
-/** Low-contrast dust and one companion strand give the root thread atmosphere. */
+/** Low-contrast dust and companion strands keep the root thread in a living field. */
 function mainThreadAtmosphere(pts, rnd) {
   const spores = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 18; i++) {
     const s = moldSample(pts, 0.06 + rnd() * 0.88);
     const nx = -s.ty;
     const ny = s.tx;
     const side = rnd() < 0.5 ? -1 : 1;
-    const spread = 5 + rnd() * 18;
-    spores.push(`<circle class="main-spore" cx="${fmt(s.x + nx * side * spread)}" cy="${fmt(s.y + ny * side * spread)}" r="${fmt(0.35 + rnd() * 0.55)}"/>`);
+    const spread = 5 + rnd() * 23;
+    spores.push(`<circle class="main-spore" cx="${fmt(s.x + nx * side * spread)}" cy="${fmt(s.y + ny * side * spread)}" r="${fmt(0.3 + rnd() * 0.65)}"/>`);
   }
-  const a = moldSample(pts, 0.12);
-  const b = moldSample(pts, 0.88);
-  const side = rnd() < 0.5 ? -1 : 1;
-  const middle = moldLerpPt(a, b, 0.5);
-  const nx = -(a.ty + b.ty) * 0.5;
-  const ny = (a.tx + b.tx) * 0.5;
-  const inv = 1 / (Math.hypot(nx, ny) || 1);
-  const filament = moldSmooth([
-    { x: a.x, y: a.y },
-    { x: middle.x + nx * inv * side * (8 + rnd() * 8), y: middle.y + ny * inv * side * (8 + rnd() * 8) },
-    { x: b.x, y: b.y },
-  ]);
-  return `<path class="edge main-filament" d="${filament}"/>${spores.join("")}`;
+  const filaments = [-1, 1].map((side) => {
+    const a = moldSample(pts, 0.1 + rnd() * 0.08);
+    const b = moldSample(pts, 0.82 + rnd() * 0.1);
+    const middle = moldLerpPt(a, b, 0.5);
+    const nx = -(a.ty + b.ty) * 0.5;
+    const ny = (a.tx + b.tx) * 0.5;
+    const inv = 1 / (Math.hypot(nx, ny) || 1);
+    const distance = 7 + rnd() * 11;
+    const filament = moldSmooth([
+      { x: a.x + nx * inv * side * distance * 0.45, y: a.y + ny * inv * side * distance * 0.45 },
+      { x: middle.x + nx * inv * side * distance, y: middle.y + ny * inv * side * distance },
+      { x: b.x + nx * inv * side * distance * 0.55, y: b.y + ny * inv * side * distance * 0.55 },
+    ]);
+    return `<path class="edge main-filament" d="${filament}"/>`;
+  });
+  return `${filaments.join("")}${spores.join("")}`;
 }
 
 function crookedPolyline(pts) {
@@ -912,7 +921,7 @@ function renderGraph(projects) {
     return targets.flatMap((targetId) => {
       const target = byId[targetId];
       const key = [source.id, targetId].sort().join("::");
-      if (!activeId || (source.id !== activeId && targetId !== activeId) || !target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
+      if (!target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
       drawnAdHocLinks.add(key);
       const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
       const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
