@@ -1,0 +1,9 @@
+{
+  "id": "kebab-case-unique-id",
+  "title": "Short public title",
+  "started": "YYYY-MM",
+  "ended": null,
+  "parent": "existing-project-id-or-null",
+  "summary": "One public sentence under 160 characters.",
+  "tags": ["lowercase-kebab-tag"]
+}

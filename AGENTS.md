@@ -72,7 +72,7 @@ The scripts only edit files locally. Open a pull request for the node.
 ## Do not regress
 
 - Default skin **Spores**. Default fork **Ribbon**. Default look is that current page. White mode is one optional toggle, saved in the browser; a first visit stays on the current look. No skin or fork picker.
-- Chronological spine: time left→right, top→bottom on narrow viewports.
+- Chronological spine: time left→right, top→bottom on narrow viewports. Root nodes are larger than subnodes; hyphae taper from the parent toward the child.
 - CI: `add-node.py --validate-only` and `scripts/smoke-page.py`.
 - Project data lives under `data/` and `public/data/`.
 

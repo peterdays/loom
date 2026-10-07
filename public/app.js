@@ -16,9 +16,9 @@ const FORK_STYLES = {
     microScale: 0.12,
     sheath: "soft",
     midLayer: true,
-    maxWhiskers: 0,
+    maxWhiskers: 3,
     whiskerTiny: false,
-    anastomoses: false,
+    anastomoses: true,
     jitter: 0,
   },
 };
@@ -31,6 +31,13 @@ let orientMode = "horizontal";
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+/** Safely preserve public links embedded in otherwise plain-text summaries. */
+function linkifyPublicUrls(s) {
+  return escapeHtml(s).replace(/https?:\/\/[^\s<]+/g, (url) =>
+    `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
   );
 }
 
@@ -165,25 +172,30 @@ function layout(projects, orient) {
     return 96 + (mag - 1) * 76;
   };
 
-  let maxUp = 64;
-  let maxDown = 64;
+  // Leave deliberate breathing room above and below the horizontal spine:
+  // hub halos, titles, and chronology labels should never compete.
+  let maxUp = 104;
+  let maxDown = 108;
   let maxRight = 210;
   for (const item of items) {
     const c = Math.abs(crossOf(item.side));
     if (vertical) maxRight = Math.max(maxRight, crossOf(item.side) + 210);
     else if (item.side < 0) maxUp = Math.max(maxUp, c + 46);
     else if (item.side > 0) maxDown = Math.max(maxDown, c + 44);
-    else maxUp = Math.max(maxUp, 50);
+    else maxUp = Math.max(maxUp, (item.depth || 0) === 0 ? 104 : 64);
   }
 
-  const spine = vertical ? 40 : Math.round(maxUp + 16);
-  const h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + maxDown + 26);
+  // Horizontal chronology lives in its own band below the entire hyphal field.
+  // On narrow screens, the date column stays outside the root hub instead.
+  const nodeBase = Math.round(maxUp + 16);
+  const spine = vertical ? 74 : Math.round(nodeBase + maxDown + 44);
+  const h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + 94);
   const width = vertical ? Math.round(spine + maxRight) : w;
 
   const nodes = items.map((item, i) => {
     const off = crossOf(item.side);
     const x = vertical ? spine + off : mains[i];
-    const y = vertical ? mains[i] : spine + off;
+    const y = vertical ? mains[i] : nodeBase + off;
     return { ...item, x, y, main: mains[i], spine, vertical };
   });
 
@@ -261,10 +273,6 @@ function mulberry32(seed) {
   };
 }
 
-/**
- * Open curve through pts. Catmull-Rom-ish beziers with tight tension (÷6)
- * so the hypha follows samples instead of looping back across the time spine.
- */
 function moldSmooth(pts) {
   if (!pts || pts.length < 2) return "";
   const d = [`M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`];
@@ -317,141 +325,46 @@ function moldSample(pts, t) {
   return { x: last.x, y: last.y, tx: dx * inv, ty: dy * inv };
 }
 
-/**
- * Build the main hypha point chain: peel off the straight time spine, then
- * meander. Amplitude / sample density / jitter come from fork style.
- * Seeded from child project id. Nested sibling lanes stay quieter.
- */
-function moldHyphaPoints(p, c, vertical, rnd, style) {
-  const st = style || FORK_STYLES[DEFAULT_FORK_STYLE];
+// Parent rim to child rim.
+function moldHyphaPoints(p, c, vertical, rnd) {
   const nested = (p.side || 0) !== 0;
-  const spine = p.spine ?? (vertical ? p.x : p.y);
   const dx = c.x - p.x;
   const dy = c.y - p.y;
-  const dist = Math.hypot(dx, dy) || 1;
-  const ampScale = st.ampScale ?? 1;
-  const midScale = st.midScale ?? 1;
-  const peelScale = st.peelScale ?? 1;
-  const microScale = st.microScale ?? 1;
-  const pointJitter = st.jitter ?? 0;
-
-  let outX = 0;
-  let outY = 0;
-  if (vertical) outX = Math.sign(c.x - spine) || 1;
-  else outY = Math.sign(c.y - spine) || Math.sign(c.side) || -1;
-
-  // Peel off the spine before wandering. Downward forks clear the date labels.
-  let peel = 0;
-  if (!nested) peel = vertical ? 28 : (outY > 0 ? 46 : 26);
-  peel = Math.min(peel * peelScale, dist * 0.4);
-  const ampBase = nested
-    ? Math.min(10, 4.5 + dist * 0.032)
-    : Math.min(30, 13 + dist * 0.032);
-  const amp = ampBase * ampScale;
-
-  const pts = [{ x: p.x, y: p.y }];
-  const latX = vertical ? 0 : 1;
-  const latY = vertical ? 1 : 0;
-  if (peel > 6) {
-    // Calm/ribbon: fewer peel waypoints → smoother organic leave.
-    const peelSteps = midScale < 0.4 ? 2 : midScale < 0.55 ? 3 : 4;
-    const j1 = (rnd() * 2 - 1) * Math.min(9, amp * 0.48);
-    const j2 = (rnd() * 2 - 1) * Math.min(7, amp * 0.32);
-    if (peelSteps <= 2) {
-      pts.push({
-        x: p.x + outX * peel * 0.45 + latX * j1 * 0.5,
-        y: p.y + outY * peel * 0.45 + latY * j1 * 0.5,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.35,
-        y: p.y + outY * peel + latY * j2 * 0.35,
-      });
-    } else if (peelSteps === 3) {
-      pts.push({
-        x: p.x + outX * peel * 0.35 + latX * j1,
-        y: p.y + outY * peel * 0.35 + latY * j1,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.72 + latX * j2 * 0.45,
-        y: p.y + outY * peel * 0.72 + latY * j2 * 0.45,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.4,
-        y: p.y + outY * peel + latY * j2 * 0.4,
-      });
-    } else {
-      pts.push({
-        x: p.x + outX * peel * 0.32 + latX * j1,
-        y: p.y + outY * peel * 0.32 + latY * j1,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.62 + latX * j2 * 0.4,
-        y: p.y + outY * peel * 0.62 + latY * j2 * 0.4,
-      });
-      pts.push({
-        x: p.x + outX * peel * 0.88 + latX * j2,
-        y: p.y + outY * peel * 0.88 + latY * j2,
-      });
-      pts.push({
-        x: p.x + outX * peel + latX * j2 * 0.55,
-        y: p.y + outY * peel + latY * j2 * 0.55,
-      });
-    }
+  const centerDist = Math.hypot(dx, dy) || 1;
+  const ux = dx / centerDist;
+  const uy = dy / centerDist;
+  const startR = nodeRadius(p) * 0.94;
+  const endR = nodeRadius(c) * 0.96;
+  const start = { x: p.x + ux * startR, y: p.y + uy * startR };
+  const end = { x: c.x - ux * endR, y: c.y - uy * endR };
+  const dist = Math.hypot(end.x - start.x, end.y - start.y) || 1;
+  const nx = -uy;
+  const ny = ux;
+  const signedSway = () => (rnd() < 0.5 ? -1 : 1) * (0.45 + rnd() * 0.55);
+  // Constrained, uneven drift: more like a growing hypha than a broad S-curve.
+  const bend = signedSway() * Math.min(nested ? 6 : 14, dist * 0.055);
+  const twistA = signedSway() * Math.min(nested ? 4 : 8, dist * 0.032);
+  const twistB = signedSway() * Math.min(nested ? 2 : 4, dist * 0.016);
+  const phaseA = rnd() * Math.PI * 2;
+  const phaseB = rnd() * Math.PI * 2;
+  const c1 = { x: start.x + ux * dist * 0.32 + nx * bend, y: start.y + uy * dist * 0.32 + ny * bend };
+  const c2 = { x: end.x - ux * dist * 0.25 + nx * bend * 0.45, y: end.y - uy * dist * 0.25 + ny * bend * 0.45 };
+  const pts = [];
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24;
+    const mt = 1 - t;
+    const sway = Math.sin(Math.PI * t) * (
+      twistA * Math.sin(Math.PI * 2 * t + phaseA) +
+      twistB * Math.sin(Math.PI * 4 * t + phaseB)
+    );
+    pts.push({
+      x: mt ** 3 * start.x + 3 * mt ** 2 * t * c1.x + 3 * mt * t ** 2 * c2.x + t ** 3 * end.x + nx * sway,
+      y: mt ** 3 * start.y + 3 * mt ** 2 * t * c1.y + 3 * mt * t ** 2 * c2.y + t ** 3 * end.y + ny * sway,
+    });
   }
-
-  const ax = pts[pts.length - 1].x;
-  const ay = pts[pts.length - 1].y;
-  const ex = c.x - ax;
-  const ey = c.y - ay;
-  const el = Math.hypot(ex, ey) || 1;
-  const pxn = -ey / el;
-  const pyn = ex / el;
-  const ox = vertical ? outX : 0;
-  const oy = vertical ? 0 : outY;
-  const denseMid = el < 70 ? 3 : el < 140 ? 5 : el < 240 ? 7 : el < 380 ? 9 : 11;
-  const nMid = Math.max(2, Math.round(denseMid * midScale));
-  let prevT = 0.04;
-  for (let i = 1; i <= nMid; i++) {
-    const t = i / (nMid + 1);
-    const jitter = (rnd() - 0.5) * (0.06 + 0.04 * midScale);
-    const tt = Math.min(0.94, Math.max(prevT + 0.05, t + jitter));
-    prevT = tt;
-    const taper = Math.sin(Math.PI * tt);
-    // Ribbon uses a low midScale, so the meander stays a gentle S-curve.
-    const flipChance = midScale > 0.55 ? 0.18 : 0.06;
-    const side = (i % 2 === 0 ? 1 : -1) * (rnd() < flipChance ? -1 : 1);
-    const gain = midScale > 0.55 ? (0.35 + rnd() * 0.9) : (0.45 + rnd() * 0.45);
-    const micro = (rnd() * 2 - 1) * amp * 0.22 * taper * microScale;
-    const w = side * gain * amp * taper + micro;
-    const outwardBoost = (0.1 + rnd() * 0.42) * amp * taper * (nested ? 0.18 : 1) * Math.min(1, ampScale + 0.2);
-    let x = ax + ex * tt + pxn * w + ox * outwardBoost;
-    let y = ay + ey * tt + pyn * w + oy * outwardBoost;
-    if (!nested && !vertical) {
-      if (outY < 0) y = Math.min(y, spine - 7);
-      else y = Math.max(y, spine + 44);
-    } else if (!nested && vertical) {
-      x = Math.max(x, spine + 10);
-    }
-    pts.push({ x, y });
-  }
-  pts.push({ x: c.x, y: c.y });
-
-  // Paper-pen jitter for ink-etched (skip endpoints so nodes stay clean).
-  if (pointJitter > 0 && pts.length > 2) {
-    for (let i = 1; i < pts.length - 1; i++) {
-      pts[i] = {
-        x: pts[i].x + (rnd() * 2 - 1) * pointJitter,
-        y: pts[i].y + (rnd() * 2 - 1) * pointJitter,
-      };
-    }
-  }
-  return { pts, nested, amp, el, outX, outY, spine };
+  return { pts, nested, amp: Math.abs(bend), el: dist, outX: ux, outY: uy, spine: p.spine };
 }
 
-/**
- * Decorative side-whiskers: short secondary filaments that die out and never
- * land on a node (no fake terminals). Seeded from the same RNG stream.
- */
 function moldWhiskers(pts, rnd, nested, amp, style) {
   const out = [];
   if (pts.length < 4) return out;
@@ -489,10 +402,6 @@ function moldWhiskers(pts, rnd, nested, amp, style) {
   return out;
 }
 
-/**
- * Anastomosing loops: leave the main hypha and rejoin further along it.
- * Decorative only — no extra graph nodes. Keeps the mesh/mycelium feel.
- */
 function moldAnastomoses(pts, rnd, nested, amp, style) {
   const out = [];
   if (nested || pts.length < 5) return out;
@@ -508,7 +417,7 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
     const ny = (a.tx + b.tx) * 0.5;
     const nlen = Math.hypot(nx, ny) || 1;
     const side = rnd() < 0.5 ? 1 : -1;
-    const bulge = (0.55 + rnd() * 0.85) * Math.min(amp * 0.95, 22);
+    const bulge = (0.55 + rnd() * 0.85) * Math.min(Math.max(8, amp * 1.3), 16);
     const midT = 0.35 + rnd() * 0.3;
     const midBase = moldLerpPt(
       { x: a.x, y: a.y },
@@ -536,28 +445,151 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   return out;
 }
 
-/**
- * Organic fork from parent → child. Ribbon geometry, seeded from the child id.
- */
+function moldFieldFilaments(pts, rnd, nested) {
+  const out = [];
+  const count = nested ? 1 : 2 + (rnd() < 0.4 ? 1 : 0);
+  for (let i = 0; i < count; i++) {
+    const t0 = 0.06 + rnd() * 0.22;
+    const t1 = Math.min(0.94, t0 + 0.28 + rnd() * 0.24);
+    const a = moldSample(pts, t0);
+    const b = moldSample(pts, t1);
+    const nx = -(a.ty + b.ty) * 0.5;
+    const ny = (a.tx + b.tx) * 0.5;
+    const nlen = Math.hypot(nx, ny) || 1;
+    const side = rnd() < 0.5 ? -1 : 1;
+    const offset = 8 + rnd() * (nested ? 8 : 15);
+    out.push(moldSmooth([
+      { x: a.x, y: a.y },
+      { x: a.x + (nx / nlen) * side * offset * 0.7 + a.tx * 12, y: a.y + (ny / nlen) * side * offset * 0.7 + a.ty * 12 },
+      { x: b.x + (nx / nlen) * side * offset - b.tx * 10, y: b.y + (ny / nlen) * side * offset - b.ty * 10 },
+      { x: b.x, y: b.y },
+    ]));
+  }
+  return out;
+}
+
+function moldSpores(pts, rnd, nested) {
+  const out = [];
+  const count = (nested ? 8 : 15) + Math.floor(rnd() * (nested ? 6 : 10));
+  for (let i = 0; i < count; i++) {
+    const s = moldSample(pts, 0.08 + rnd() * 0.84);
+    const nx = -s.ty;
+    const ny = s.tx;
+    const sign = rnd() < 0.5 ? -1 : 1;
+    const spread = 5 + rnd() * (nested ? 15 : 28);
+    const drift = (rnd() * 2 - 1) * 7;
+    const r = 0.45 + rnd() * 0.85;
+    out.push(`<circle class="field-spore" cx="${fmt(s.x + nx * sign * spread + s.tx * drift)}" cy="${fmt(s.y + ny * sign * spread + s.ty * drift)}" r="${fmt(r)}"/>`);
+  }
+  return out;
+}
+
 function moldForkBundle(p, c, vertical) {
   const style = forkOpts();
   const rnd = mulberry32(hashSeed(String(c.id || "")));
-  const { pts, nested, amp } = moldHyphaPoints(p, c, vertical, rnd, style);
+  const { pts, nested, amp, el } = moldHyphaPoints(p, c, vertical, rnd, style);
   const main = moldSmooth(pts);
   const whiskers = moldWhiskers(pts, rnd, nested, amp, style);
   const anastomoses = moldAnastomoses(pts, rnd, nested, amp, style);
+  const filaments = moldFieldFilaments(pts, rnd, nested);
+  const spores = moldSpores(pts, rnd, nested);
   return {
     main,
+    pts,
+    el,
     whiskers,
     anastomoses,
+    filaments,
+    spores,
     nested,
     sheath: style.sheath || "none",
     midLayer: !!style.midLayer,
   };
 }
 
+/** Thick at the parent rim, thin at the child, along the whole fork. */
+function taperRibbon(pts, t0, t1, widthAt) {
+  const steps = 32;
+  const left = [];
+  const right = [];
+  const span = Math.max(0.08, t1 - t0);
+  for (let i = 0; i <= steps; i++) {
+    const u = i / steps;
+    const t = t0 + span * u;
+    const s = moldSample(pts, t);
+    const hw = Math.max(0.35, widthAt(u) / 2);
+    const nx = -s.ty;
+    const ny = s.tx;
+    left.push({ x: s.x + nx * hw, y: s.y + ny * hw });
+    right.push({ x: s.x - nx * hw, y: s.y - ny * hw });
+  }
+  const cmds = [`M ${fmt(left[0].x)} ${fmt(left[0].y)}`];
+  for (let i = 1; i < left.length; i++) cmds.push(`L ${fmt(left[i].x)} ${fmt(left[i].y)}`);
+  for (let i = right.length - 1; i >= 0; i--) cmds.push(`L ${fmt(right[i].x)} ${fmt(right[i].y)}`);
+  cmds.push("Z");
+  return cmds.join(" ");
+}
+
+/** Center-to-periphery: deeper forks start thinner and end thinner. */
+function forkTaperWidths(parentDepth) {
+  const depth = Math.max(0, parentDepth || 0);
+  const start = Math.max(2.2, 8.6 * Math.pow(0.58, depth));
+  const end = Math.max(0.7, 1.35 * Math.pow(0.7, depth));
+  return { start, end };
+}
+
 function moldFork(p, c, vertical) {
   return moldForkBundle(p, c, vertical).main;
+}
+
+/** Closed smooth outline. Same tension as the hypha curves. */
+function closedBlob(pts) {
+  const n = pts.length;
+  if (n < 3) return "";
+  const d = [`M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`];
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const p3 = pts[(i + 2) % n];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${fmt(c1x)} ${fmt(c1y)} ${fmt(c2x)} ${fmt(c2y)} ${fmt(p2.x)} ${fmt(p2.y)}`);
+  }
+  d.push("Z");
+  return d.join(" ");
+}
+
+/** Seeded near-circular blob. */
+function organicBlob(cx, cy, radius, seed) {
+  const rnd = mulberry32(hashSeed(String(seed || "blob")));
+  const count = 12;
+  const amp1 = 0.055 + rnd() * 0.035;
+  const amp2 = 0.022 + rnd() * 0.02;
+  const f1 = 2 + Math.floor(rnd() * 2);
+  const f2 = 3 + Math.floor(rnd() * 2);
+  const ph1 = rnd() * Math.PI * 2;
+  const ph2 = rnd() * Math.PI * 2;
+  const bulgeAt = rnd() * Math.PI * 2;
+  const bulge = 0.08 + rnd() * 0.06;
+  const pts = [];
+  for (let i = 0; i < count; i++) {
+    const t = (i / count) * Math.PI * 2;
+    let k = 1 + amp1 * Math.sin(f1 * t + ph1) + amp2 * Math.sin(f2 * t + ph2);
+    const dAng = Math.atan2(Math.sin(t - bulgeAt), Math.cos(t - bulgeAt));
+    k += bulge * Math.exp(-(dAng * dAng) / 0.28);
+    const rr = Math.max(radius * 0.86, radius * k);
+    pts.push({ x: cx + Math.cos(t) * rr, y: cy + Math.sin(t) * rr });
+  }
+  return closedBlob(pts);
+}
+
+/** The same deterministic radius is used by both the blob and its hyphae. */
+function nodeRadius(n) {
+  const rnd = mulberry32(hashSeed(String(n.id || "") + ":size"));
+  return (n.depth || 0) === 0 ? 10.8 + rnd() * 1.1 : 5.6 + rnd() * 0.7;
 }
 
 function nodeShape(n, kind) {
@@ -592,18 +624,15 @@ function nodeShape(n, kind) {
     return `<ellipse class="orb" cx="${n.x}" cy="${n.y}" rx="${fmt(rx)}" ry="${fmt(ry)}" transform="rotate(${rot} ${n.x} ${n.y})"/>` +
       `<circle class="orb orb-lobe" cx="${fmt(lx)}" cy="${fmt(ly)}" r="${fmt(lobeR)}"/>`;
   }
-  /* Small hyphal tip — spores (soft core + tapered tip) */
   if (kind === "hyphal-tip") {
-    const rnd = mulberry32(hashSeed(String(n.id || "")));
-    const core = 4.6 + rnd() * 1.4;
-    const ang = rnd() * Math.PI * 2;
-    const tipLen = 7 + rnd() * 4;
-    const tx = n.x + Math.cos(ang) * tipLen;
-    const ty = n.y + Math.sin(ang) * tipLen;
-    const midX = n.x + Math.cos(ang) * tipLen * 0.55 + Math.cos(ang + 1.2) * 1.4;
-    const midY = n.y + Math.sin(ang) * tipLen * 0.55 + Math.sin(ang + 1.2) * 1.4;
-    return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${fmt(core)}"${glow}/>` +
-      `<path class="orb orb-tip" d="M ${fmt(n.x)} ${fmt(n.y)} Q ${fmt(midX)} ${fmt(midY)} ${fmt(tx)} ${fmt(ty)}"${glow}/>`;
+    const hub = (n.depth || 0) === 0;
+    const core = nodeRadius(n);
+    const fill = hub ? "hubBlobGradient" : "tipBlobGradient";
+    const body = `<path class="orb orb-blob${hub ? " hub-orb" : ""}" style="fill: url(#${fill})" d="${organicBlob(n.x, n.y, core, String(n.id || "") + ":shape")}"${hub ? glow : ""}/>`;
+    if (!hub) {
+      return body;
+    }
+    return body;
   }
   return `<circle class="orb" cx="${n.x}" cy="${n.y}" r="${r}"${glow}/>`;
 }
@@ -611,18 +640,19 @@ function nodeShape(n, kind) {
 function nodeLabel(n, opts) {
   const label = escapeHtml(n.title || "");
   const vertical = n.vertical;
+  const labelClass = (n.depth || 0) === 0 ? "node-label node-label-root" : "node-label node-label-child";
   if (vertical) {
-    const tx = n.x + 16;
+    const tx = n.x + ((n.depth || 0) === 0 ? nodeRadius(n) * 1.7 + 12 : nodeRadius(n) + 10);
     if (opts.stamp) {
       const tw = Math.min(188, Math.max(36, (n.title || "").length * 6.15 + 10));
       const th = 14;
       const ty = n.y - th / 2 - 7;
       return `<g class="stamp-label">
         <rect class="stamp" x="${tx}" y="${ty}" width="${tw}" height="${th}"/>
-        <text x="${tx + 5}" y="${ty + 10.5}" text-anchor="start">${label}</text>
+        <text class="${labelClass}" x="${tx + 5}" y="${ty + 10.5}" text-anchor="start">${label}</text>
       </g>`;
     }
-    return `<text x="${tx}" y="${n.y - 2}" text-anchor="start">${label}</text>`;
+    return `<text class="${labelClass}" x="${tx}" y="${n.y - 2}" text-anchor="start">${label}</text>`;
   }
   const outward = n.side === 0 ? -1 : Math.sign(n.side);
   if (opts.stamp) {
@@ -632,11 +662,12 @@ function nodeLabel(n, opts) {
     const tyBox = outward < 0 ? n.y - (n.side === 0 ? 36 : 28) : n.y + 14;
     return `<g class="stamp-label">
       <rect class="stamp" x="${tx}" y="${tyBox}" width="${tw}" height="${th}"/>
-      <text x="${n.x}" y="${tyBox + 10.5}" text-anchor="middle">${label}</text>
-    </g>`;
+      <text class="${labelClass}" x="${n.x}" y="${tyBox + 10.5}" text-anchor="middle">${label}</text>
+      </g>`;
   }
-  const ty = outward < 0 ? n.y - (n.side === 0 ? 18 : 16) : n.y + 22;
-  return `<text x="${n.x}" y="${ty}" text-anchor="middle">${label}</text>`;
+  const lift = n.side === 0 ? ((n.depth || 0) === 0 ? 40 : 22) : nodeRadius(n) + 12;
+  const ty = outward < 0 ? n.y - lift : n.y + nodeRadius(n) + 15;
+  return `<text class="${labelClass}" x="${n.x}" y="${ty}" text-anchor="middle">${label}</text>`;
 }
 
 
@@ -678,15 +709,8 @@ function renderGraph(projects) {
   const glowFilter = opts.glow
     ? `<filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
     : "";
-
-  const defs = `<defs>
-    <linearGradient id="spineGrad" x1="${vertical ? 0 : 0}" y1="${vertical ? 0 : 0}" x2="${vertical ? 0 : 1}" y2="${vertical ? 1 : 0}">
-      <stop offset="0%" stop-color="var(--spine)" stop-opacity="0.35"/>
-      <stop offset="18%" stop-color="var(--spine)"/>
-      <stop offset="100%" stop-color="var(--spine)"/>
-    </linearGradient>
-    ${glowFilter}
-  </defs>`;
+  const branchGradients = [];
+  let defs = "";
 
   const cap = opts.edges === "ortho" ? "square" : "round";
   const spineLine = `<line class="spine-line" x1="${spineStart.x}" y1="${spineStart.y}" x2="${spineEnd.x}" y2="${spineEnd.y}"
@@ -718,7 +742,7 @@ function renderGraph(projects) {
     if (vertical) {
       return `<text class="tick-label" x="${spine - 8}" y="${n.main + 3}" text-anchor="end">${date}</text>`;
     }
-    return `<text class="tick-label" x="${n.main}" y="${spine + 30}" text-anchor="middle">${date}</text>`;
+    return `<text class="tick-label" x="${n.main}" y="${spine + 72}" text-anchor="middle">${date}</text>`;
   }).join("");
 
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
@@ -726,29 +750,61 @@ function renderGraph(projects) {
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
-      const d = bundle.main;
-      // Ribbon: soft sheath and a quieter mid taper. No whiskers.
-      let layers = "";
-      if (bundle.sheath === "soft") {
-        layers += `<path class="edge mold-sheath" d="${d}" pathLength="100" stroke-dasharray="40 64"/>`;
-        if (bundle.midLayer) {
-          layers += `<path class="edge mold-mid" d="${d}" pathLength="100" stroke-dasharray="68 36"/>`;
-        }
-      } else if (bundle.sheath === "thin") {
-        layers += `<path class="edge mold-sheath mold-sheath-thin" d="${d}" pathLength="100" stroke-dasharray="36 70"/>`;
-      }
-      const core = `<path class="edge mold-core" d="${d}"${dash}${filt}/>`;
+      const { start, end } = forkTaperWidths(parent.depth || 0);
+      const ease = (u) => {
+        const t = Math.max(0, Math.min(1, u));
+        return t * t * (3 - 2 * t);
+      };
+      const ribbon = taperRibbon(bundle.pts, 0, 1, (u) => start + (end - start) * ease(u));
+      const firstPt = bundle.pts[0];
+      const lastPt = bundle.pts[bundle.pts.length - 1];
+      const gradientId = `hyphaGradient-${escapeHtml(n.id)}`;
+      branchGradients.push(`<linearGradient id="${gradientId}" gradientUnits="userSpaceOnUse" x1="${fmt(firstPt.x)}" y1="${fmt(firstPt.y)}" x2="${fmt(lastPt.x)}" y2="${fmt(lastPt.y)}">
+        <stop offset="0%" stop-color="#f7fee7" stop-opacity="0.98"/>
+        <stop offset="20%" stop-color="var(--node)" stop-opacity="0.98"/>
+        <stop offset="68%" stop-color="var(--branch)" stop-opacity="0.96"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.82"/>
+      </linearGradient>`);
       const loops = bundle.anastomoses.map((ad) =>
         `<path class="edge mold-anas" d="${ad}"/>`
+      ).join("");
+      const filaments = bundle.filaments.map((fd) =>
+        `<path class="edge mold-field" d="${fd}"/>`
       ).join("");
       const whisk = bundle.whiskers.map((wd) =>
         `<path class="edge mold-whisker" d="${wd}"/>`
       ).join("");
-      return loops + layers + core + whisk;
+      const spores = bundle.spores.join("");
+      return loops + filaments + whisk + spores + `<path class="edge mold-taper mold-taper-inner" style="fill: url(#${gradientId})" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
     }
     const d = edgePath(parent, n, opts.edges, vertical);
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
   }).join("");
+
+  defs = `<defs>
+    <linearGradient id="spineGrad" x1="${vertical ? 0 : 0}" y1="${vertical ? 0 : 0}" x2="${vertical ? 0 : 1}" y2="${vertical ? 1 : 0}">
+      <stop offset="0%" stop-color="var(--spine)" stop-opacity="0.35"/>
+      <stop offset="18%" stop-color="var(--spine)"/>
+      <stop offset="100%" stop-color="var(--spine)"/>
+    </linearGradient>
+    <radialGradient id="hubBlobGradient" cx="31%" cy="26%" r="76%">
+      <stop offset="0%" stop-color="#f7fee7" stop-opacity="0.98"/>
+      <stop offset="42%" stop-color="var(--node)" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.94"/>
+    </radialGradient>
+    <radialGradient id="tipBlobGradient" cx="30%" cy="24%" r="78%">
+      <stop offset="0%" stop-color="#ecfccb" stop-opacity="0.98"/>
+      <stop offset="55%" stop-color="var(--node)" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
+    </radialGradient>
+    <filter id="hyphaTexture" x="-8%" y="-12%" width="116%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.12 0.42" numOctaves="2" seed="7" result="noise"/>
+      <feComposite in="noise" in2="SourceGraphic" operator="in" result="grain"/>
+      <feBlend in="SourceGraphic" in2="grain" mode="soft-light"/>
+    </filter>
+    ${branchGradients.join("")}
+    ${glowFilter}
+  </defs>`;
 
   const dots = nodes.map((n) => {
     const hard = opts.edges === "ortho";
@@ -762,7 +818,8 @@ function renderGraph(projects) {
         : (hard
           ? `<rect class="anchor" x="${n.x - 2.5}" y="${spine - 2.5}" width="5" height="5"/>`
           : `<circle class="anchor" cx="${n.x}" cy="${spine}" r="3"/>`));
-    return `<g class="node" tabindex="0" role="button" data-id="${escapeHtml(n.id)}">
+    const hub = (n.depth || 0) === 0;
+    return `<g class="node${hub ? " hub" : ""}" tabindex="0" role="button" data-id="${escapeHtml(n.id)}" data-depth="${n.depth || 0}">
       <title>${escapeHtml(n.title || "")} · ${escapeHtml(n.started || "undated")}</title>
       ${anchor}
       ${nodeShape(n, opts.nodes)}
@@ -792,8 +849,7 @@ function renderGraph(projects) {
   syncCards(false);
 }
 
-/** Cards stay hidden until a node is chosen, or until every card is shown.
- * Choosing the active node again clears the selection and hides its card. */
+/** Hidden until a node is chosen; choosing it again hides the card. */
 function syncCards(scroll) {
   const toggle = document.getElementById("cards-toggle");
   if (toggle) {
@@ -848,7 +904,7 @@ function renderCards(projects) {
       <div class="meta">${escapeHtml(when)}</div>
       ${fork}
       <h2>${escapeHtml(p.title || "Untitled")}</h2>
-      <p>${escapeHtml(p.summary || "")}</p>
+      <p>${linkifyPublicUrls(p.summary || "")}</p>
       <div class="tags">${tags}</div>
     </article>`;
   }).join("");

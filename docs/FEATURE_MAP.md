@@ -4,7 +4,7 @@ One-page map for adding a timeline node or touching the UI.
 
 | Feature | What it is | Where |
 |---------|------------|--------|
-| **Spine UI** | Chronological project spine. Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/index.html`, `public/app.js`, `public/styles.css` |
+| **Spine UI** | Chronological project spine (earlier left of later; top→bottom on narrow viewports). Root nodes are larger than subnodes. Hyphae taper from the parent toward the child. Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/index.html`, `public/app.js`, `public/styles.css` |
 | **Look** | Default skin **Spores**, fork **Ribbon**, `data-look="current"`. One **White mode** toggle persists in the browser; a first visit stays on the current look. No skin or fork picker | `public/index.html`, `public/styles.css`, `public/app.js` |
 | **Node data (dual path)** | Same `projects` array in two files — keep in sync | `data/projects.json`, `public/data/projects.json` |
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
