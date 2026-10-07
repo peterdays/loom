@@ -32,6 +32,8 @@ python3 scripts/add-node.py --dry-run …
 python3 scripts/smoke-page.py
 ```
 
+To add a secondary association while appending the node, include `--connect-to existing-project-id`; repeat it for up to five existing nodes. It is distinct from `--parent`: the parent sets lineage, while `--connect-to` adds a non-lineage relationship.
+
 `scripts/smoke-page.py` is stdlib only. It serves `public/`, then checks `index.html` (200), linked `styles.css` and `app.js`, the fetched `projects` array, and the startup DOM hooks in `index.html` (`#graph`, `#cards`, `#cards-toggle`, `#look-toggle`, `#about`, `.tab`, default skin **Spores** / fork **Ribbon** / look **current** on `<html>`). The show-all control starts labeled **Show all node cards**, the White mode switch starts off, and `index.html` does not include a node card. `node --check public/app.js` runs when `node` is on `PATH`. The same checks are the `page-smoke` job in CI.
 
 ## Proposal → node
@@ -47,6 +49,7 @@ ended: null
 parent: null
 summary: One public sentence.
 tags: [process]
+connections: [existing-project-id] # optional
 EOF
 
 python3 scripts/proposal-to-node.py docs/proposals/some-filled-proposal.md --apply

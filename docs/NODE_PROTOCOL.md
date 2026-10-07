@@ -24,6 +24,8 @@ One node per pull request. Leave `main` for the merge.
 | `parent` | an existing project `id`, or `null` |
 | `connections` | optional list of up to five existing project ids for ad hoc links |
 
+`parent` is the one primary lineage link: it determines whether the node is a root or a subnode. `connections` are optional secondary associations, rendered separately and never used to change hierarchy. Every connection must be a distinct existing id other than the node’s own id.
+
 ## Refuse
 
 - Missing or invalid fields, duplicate `id`, or a `parent` that does not exist.
@@ -63,5 +65,7 @@ python3 scripts/add-node.py \
   --parent null --connect-to existing-project-id \
   --summary "One public sentence about a linked project." --tag process
 ```
+
+Repeat `--connect-to existing-project-id` to add up to five secondary associations. Omit it entirely when the project only needs its normal parent/root relationship.
 
 Agent rules: [`AGENTS.md`](../AGENTS.md). Map: [`FEATURE_MAP.md`](FEATURE_MAP.md).
