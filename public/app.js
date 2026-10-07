@@ -273,10 +273,6 @@ function mulberry32(seed) {
   };
 }
 
-/**
- * Open curve through pts. Catmull-Rom-ish beziers with tight tension (÷6)
- * so the hypha follows samples instead of looping back across the time spine.
- */
 function moldSmooth(pts) {
   if (!pts || pts.length < 2) return "";
   const d = [`M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`];
@@ -329,11 +325,7 @@ function moldSample(pts, t) {
   return { x: last.x, y: last.y, tx: dx * inv, ty: dy * inv };
 }
 
-/**
- * One cubic centerline per hypha. It starts and ends on the actual node rims,
- * so sibling forks fan out naturally without a stack of center-originating
- * strokes. Sampling this single curve later gives its closed tapered outline.
- */
+// Parent rim to child rim.
 function moldHyphaPoints(p, c, vertical, rnd) {
   const nested = (p.side || 0) !== 0;
   const dx = c.x - p.x;
@@ -373,10 +365,6 @@ function moldHyphaPoints(p, c, vertical, rnd) {
   return { pts, nested, amp: Math.abs(bend), el: dist, outX: ux, outY: uy, spine: p.spine };
 }
 
-/**
- * Decorative side-whiskers: short secondary filaments that die out and never
- * land on a node (no fake terminals). Seeded from the same RNG stream.
- */
 function moldWhiskers(pts, rnd, nested, amp, style) {
   const out = [];
   if (pts.length < 4) return out;
@@ -414,10 +402,6 @@ function moldWhiskers(pts, rnd, nested, amp, style) {
   return out;
 }
 
-/**
- * Anastomosing loops: leave the main hypha and rejoin further along it.
- * Decorative only — no extra graph nodes. Keeps the mesh/mycelium feel.
- */
 function moldAnastomoses(pts, rnd, nested, amp, style) {
   const out = [];
   if (nested || pts.length < 5) return out;
@@ -461,7 +445,6 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   return out;
 }
 
-/** Dim companion filaments that leave and rejoin a real hypha. */
 function moldFieldFilaments(pts, rnd, nested) {
   const out = [];
   const count = nested ? 1 : 2 + (rnd() < 0.4 ? 1 : 0);
@@ -485,10 +468,6 @@ function moldFieldFilaments(pts, rnd, nested) {
   return out;
 }
 
-/**
- * Faint particles live near real hyphae, not as standalone graph nodes.
- * They are seeded from the branch id and deliberately cannot receive input.
- */
 function moldSpores(pts, rnd, nested) {
   const out = [];
   const count = (nested ? 8 : 15) + Math.floor(rnd() * (nested ? 6 : 10));
@@ -505,9 +484,6 @@ function moldSpores(pts, rnd, nested) {
   return out;
 }
 
-/**
- * Organic fork from parent → child. Ribbon geometry, seeded from the child id.
- */
 function moldForkBundle(p, c, vertical) {
   const style = forkOpts();
   const rnd = mulberry32(hashSeed(String(c.id || "")));
@@ -531,11 +507,7 @@ function moldForkBundle(p, c, vertical) {
   };
 }
 
-/**
- * Filled hypha that thins along its whole length: wide at the parent rim,
- * narrow at the child. Width is a fraction of this fork, so a longer path
- * keeps thinning instead of dropping to a constant stroke.
- */
+/** Thick at the parent rim, thin at the child, along the whole fork. */
 function taperRibbon(pts, t0, t1, widthAt) {
   const steps = 32;
   const left = [];
@@ -590,10 +562,7 @@ function closedBlob(pts) {
   return d.join(" ");
 }
 
-/**
- * Near-circular organic outline. Seeded from the node id so it stays put.
- * Low harmonics plus one soft lobe — irregular, not a perfect circle.
- */
+/** Seeded near-circular blob. */
 function organicBlob(cx, cy, radius, seed) {
   const rnd = mulberry32(hashSeed(String(seed || "blob")));
   const count = 12;
@@ -655,7 +624,6 @@ function nodeShape(n, kind) {
     return `<ellipse class="orb" cx="${n.x}" cy="${n.y}" rx="${fmt(rx)}" ry="${fmt(ry)}" transform="rotate(${rot} ${n.x} ${n.y})"/>` +
       `<circle class="orb orb-lobe" cx="${fmt(lx)}" cy="${fmt(ly)}" r="${fmt(lobeR)}"/>`;
   }
-  /* Spores nodes: irregular near-circles. Roots stay larger than leaves. */
   if (kind === "hyphal-tip") {
     const hub = (n.depth || 0) === 0;
     const core = nodeRadius(n);
@@ -881,8 +849,7 @@ function renderGraph(projects) {
   syncCards(false);
 }
 
-/** Cards stay hidden until a node is chosen, or until every card is shown.
- * Choosing the active node again clears the selection and hides its card. */
+/** Hidden until a node is chosen; choosing it again hides the card. */
 function syncCards(scroll) {
   const toggle = document.getElementById("cards-toggle");
   if (toggle) {
