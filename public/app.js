@@ -531,10 +531,8 @@ function moldForkBundle(p, c, vertical) {
   };
 }
 
-/**
- * Filled hypha with a steady width from one node into the next.
- */
-function ribbonOutline(pts, t0, t1, width) {
+/** Filled hypha; callers choose a constant or tapered width along its path. */
+function ribbonOutline(pts, t0, t1, widthAt) {
   const steps = 32;
   const left = [];
   const right = [];
@@ -543,7 +541,7 @@ function ribbonOutline(pts, t0, t1, width) {
     const u = i / steps;
     const t = t0 + span * u;
     const s = moldSample(pts, t);
-    const hw = Math.max(0.35, width / 2);
+    const hw = Math.max(0.35, widthAt(u) / 2);
     const nx = -s.ty;
     const ny = s.tx;
     left.push({ x: s.x + nx * hw, y: s.y + ny * hw });
@@ -556,7 +554,16 @@ function ribbonOutline(pts, t0, t1, width) {
   return cmds.join(" ");
 }
 
-const HYPHA_WIDTH = 5.5;
+/** Main-node links hold this width; parent-to-child forks deliberately taper. */
+const MAIN_HYPHA_WIDTH = 5.5;
+
+/** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
+function forkTaperWidths(parentDepth) {
+  const depth = Math.max(0, parentDepth || 0);
+  const start = Math.max(2.2, 8.6 * Math.pow(0.58, depth));
+  const end = Math.max(0.7, 1.35 * Math.pow(0.7, depth));
+  return { start, end };
+}
 
 function moldFork(p, c, vertical) {
   return moldForkBundle(p, c, vertical).main;
@@ -769,12 +776,29 @@ function renderGraph(projects) {
     return `<text class="tick-label" x="${n.main}" y="${spine + 72}" text-anchor="middle">${date}</text>`;
   }).join("");
 
+  // Roots are the primary chronological thread. Connect them directly with
+  // one crooked, steady-width strand; the nodes paint over its end overlap.
+  const roots = nodes.filter((n) => (n.depth || 0) === 0);
+  const mainConnections = roots.slice(1).map((n, i) => {
+    if (opts.edges !== "mold") return "";
+    const parent = roots[i];
+    const rnd = mulberry32(hashSeed(`${parent.id}->${n.id}:main`));
+    const { pts } = moldHyphaPoints(parent, n, vertical, rnd);
+    const ribbon = ribbonOutline(pts, 0, 1, () => MAIN_HYPHA_WIDTH);
+    return `<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
+  }).join("");
+
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
     const parent = byId[n.parent];
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
-      const ribbon = ribbonOutline(bundle.pts, 0, 1, HYPHA_WIDTH);
+      const { start, end } = forkTaperWidths(parent.depth || 0);
+      const ribbon = ribbonOutline(bundle.pts, 0, 1, (u) => {
+        const t = Math.max(0, Math.min(1, u));
+        const ease = t * t * (3 - 2 * t);
+        return start + (end - start) * ease;
+      });
       const firstPt = bundle.pts[0];
       const lastPt = bundle.pts[bundle.pts.length - 1];
       const gradientId = `hyphaGradient-${escapeHtml(n.id)}`;
@@ -846,7 +870,7 @@ function renderGraph(projects) {
     </g>`;
   }).join("");
 
-  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + branches + dots;
+  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainConnections + branches + dots;
   svg.querySelectorAll(".node").forEach((el) => {
     const id = el.getAttribute("data-id");
     const focus = () => {

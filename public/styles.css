@@ -425,7 +425,7 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid {
   stroke-opacity: 0.42;
 }
 
-/* Constant-width ribbon: the node overlays hide its small end overlap. */
+/* Filled organic ribbons; main links are steady, child forks taper. */
 .graph .edge.mold-ribbon {
   stroke: none;
   pointer-events: none;
