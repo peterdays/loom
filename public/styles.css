@@ -87,7 +87,7 @@ body {
   }
 }
 
-.tabs, header, main, footer {
+.tabs, header, main {
   position: relative;
   max-width: 960px;
   margin: 0 auto;
@@ -253,8 +253,6 @@ h1 {
 }
 
 .panel.hidden, .hidden { display: none; }
-footer { color: var(--muted); font-size: 0.78rem; padding-bottom: 2rem; }
-
 .graph .node { cursor: pointer; }
 .graph .node .orb { transition: r 0.15s ease, fill 0.15s ease; }
 .graph .node:hover .orb,
