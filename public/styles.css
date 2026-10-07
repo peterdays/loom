@@ -260,6 +260,12 @@ h1 {
 .graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
 .graph .node text { fill: var(--text); font-family: inherit; }
 .graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
+.graph .edge.adhoc-connection {
+  stroke-width: 1.2;
+  stroke-opacity: 0.62;
+  stroke-linecap: round;
+  pointer-events: none;
+}
 .graph .spine-line { stroke-width: 3; }
 .graph .spine-arrow { fill: var(--spine); stroke: none; }
 .graph .tick {
@@ -464,6 +470,12 @@ html[data-fork-style="ribbon"] .graph .edge.mold-mid {
 .graph .node.active .orb { stroke: var(--node); stroke-width: 2.5; }
 
 html[data-skin="spores"] .graph .edge { stroke: var(--branch); }
+
+.connection {
+  color: var(--branch);
+  font-size: 0.72rem;
+  margin: 0.15rem 0;
+}
 
 /* White mode — same Spores nodes and Ribbon forks on a white ground.
    Rules sit last so they win ties with the Spores / Ribbon stroke opacities. */

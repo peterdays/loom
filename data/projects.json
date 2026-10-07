@@ -43,9 +43,10 @@
       "title": "OraXle",
       "started": "2026-09-24",
       "ended": null,
-      "parent": "jarvas",
+      "parent": null,
       "summary": "X-native oracle with its own LLM wiki for capturing and querying selected tweets, threads, X Articles, and native media; durable signals relay into Jarvas.",
-      "tags": ["x-native", "oracle", "llm-wiki", "agent"]
+      "tags": ["x-native", "oracle", "llm-wiki", "agent"],
+      "connections": ["jarvas-mnemoteca"]
     },
     {
       "id": "loom",

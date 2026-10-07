@@ -788,6 +788,21 @@ function renderGraph(projects) {
     return `<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
   }).join("");
 
+  // Optional data links are not parentage: they can join any two nodes once.
+  const drawnAdHocLinks = new Set();
+  const adHocConnections = nodes.flatMap((source) => {
+    const targets = Array.isArray(source.connections) ? source.connections : [];
+    return targets.flatMap((targetId) => {
+      const target = byId[targetId];
+      const key = [source.id, targetId].sort().join("::");
+      if (!target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
+      drawnAdHocLinks.add(key);
+      const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
+      const { pts } = moldHyphaPoints(source, target, vertical, rnd);
+      return `<path class="edge adhoc-connection" d="${moldSmooth(pts)}"/>`;
+    });
+  }).join("");
+
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
     const parent = byId[n.parent];
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
@@ -870,7 +885,7 @@ function renderGraph(projects) {
     </g>`;
   }).join("");
 
-  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainConnections + branches + dots;
+  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainConnections + branches + adHocConnections + dots;
   svg.querySelectorAll(".node").forEach((el) => {
     const id = el.getAttribute("data-id");
     const focus = () => {
@@ -942,11 +957,18 @@ function renderCards(projects) {
     const fork = parentTitle
       ? `<div class="fork">fork of ${escapeHtml(parentTitle)}</div>`
       : `<div class="fork">on the spine</div>`;
+    const connections = (Array.isArray(p.connections) ? p.connections : [])
+      .map((id) => byId[id] && byId[id].title)
+      .filter(Boolean);
+    const links = connections.length
+      ? `<div class="connection">linked to ${connections.map((title) => escapeHtml(title)).join(", ")}</div>`
+      : "";
     const selected = activeId != null && p.id === activeId;
     const visible = showAllCards || selected;
     return `<article class="card${selected ? " active" : ""}" id="card-${escapeHtml(p.id || "")}" data-id="${escapeHtml(p.id || "")}"${visible ? "" : " hidden"}>
       <div class="meta">${escapeHtml(when)}</div>
       ${fork}
+      ${links}
       <h2>${escapeHtml(p.title || "Untitled")}</h2>
       <p>${linkifyPublicUrls(p.summary || "")}</p>
       <div class="tags">${tags}</div>
