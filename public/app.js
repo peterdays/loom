@@ -7,7 +7,7 @@ const DEFAULT_LOOK = "current";
 const LOOK_STORAGE_KEY = "loom-look";
 
 const DEFAULT_FORK_STYLE = "ribbon";
-/** Ribbon hyphae: soft tapered stroke, gentle S-curves. */
+/** Ribbon hyphae: a single-width, crooked organic strand. */
 const FORK_STYLES = {
   ribbon: {
     ampScale: 0.32,
@@ -273,6 +273,10 @@ function mulberry32(seed) {
   };
 }
 
+/**
+ * Open curve through pts. Catmull-Rom-ish beziers with tight tension (÷6)
+ * so the hypha follows samples instead of looping back across the time spine.
+ */
 function moldSmooth(pts) {
   if (!pts || pts.length < 2) return "";
   const d = [`M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`];
@@ -325,7 +329,11 @@ function moldSample(pts, t) {
   return { x: last.x, y: last.y, tx: dx * inv, ty: dy * inv };
 }
 
-// Parent rim to child rim.
+/**
+ * One cubic centerline per hypha. It starts and ends on the actual node rims,
+ * so sibling forks fan out naturally without a stack of center-originating
+ * strokes. Extending beneath each node keeps the join visually continuous.
+ */
 function moldHyphaPoints(p, c, vertical, rnd) {
   const nested = (p.side || 0) !== 0;
   const dx = c.x - p.x;
@@ -333,18 +341,18 @@ function moldHyphaPoints(p, c, vertical, rnd) {
   const centerDist = Math.hypot(dx, dy) || 1;
   const ux = dx / centerDist;
   const uy = dy / centerDist;
-  const startR = nodeRadius(p) * 0.94;
-  const endR = nodeRadius(c) * 0.96;
+  const startR = nodeRadius(p) + 1.5;
+  const endR = nodeRadius(c) + 1.5;
   const start = { x: p.x + ux * startR, y: p.y + uy * startR };
   const end = { x: c.x - ux * endR, y: c.y - uy * endR };
   const dist = Math.hypot(end.x - start.x, end.y - start.y) || 1;
   const nx = -uy;
   const ny = ux;
   const signedSway = () => (rnd() < 0.5 ? -1 : 1) * (0.45 + rnd() * 0.55);
-  // Constrained, uneven drift: more like a growing hypha than a broad S-curve.
-  const bend = signedSway() * Math.min(nested ? 6 : 14, dist * 0.055);
-  const twistA = signedSway() * Math.min(nested ? 4 : 8, dist * 0.032);
-  const twistB = signedSway() * Math.min(nested ? 2 : 4, dist * 0.016);
+  // A compact, irregular drift reads as a growing hypha rather than a smooth route.
+  const bend = signedSway() * Math.min(nested ? 8 : 18, dist * 0.075);
+  const twistA = signedSway() * Math.min(nested ? 6 : 12, dist * 0.06);
+  const twistB = signedSway() * Math.min(nested ? 3.5 : 7, dist * 0.032);
   const phaseA = rnd() * Math.PI * 2;
   const phaseB = rnd() * Math.PI * 2;
   const c1 = { x: start.x + ux * dist * 0.32 + nx * bend, y: start.y + uy * dist * 0.32 + ny * bend };
@@ -365,6 +373,10 @@ function moldHyphaPoints(p, c, vertical, rnd) {
   return { pts, nested, amp: Math.abs(bend), el: dist, outX: ux, outY: uy, spine: p.spine };
 }
 
+/**
+ * Decorative side-whiskers: short secondary filaments that die out and never
+ * land on a node (no fake terminals). Seeded from the same RNG stream.
+ */
 function moldWhiskers(pts, rnd, nested, amp, style) {
   const out = [];
   if (pts.length < 4) return out;
@@ -402,6 +414,10 @@ function moldWhiskers(pts, rnd, nested, amp, style) {
   return out;
 }
 
+/**
+ * Anastomosing loops: leave the main hypha and rejoin further along it.
+ * Decorative only — no extra graph nodes. Keeps the mesh/mycelium feel.
+ */
 function moldAnastomoses(pts, rnd, nested, amp, style) {
   const out = [];
   if (nested || pts.length < 5) return out;
@@ -445,6 +461,7 @@ function moldAnastomoses(pts, rnd, nested, amp, style) {
   return out;
 }
 
+/** Dim companion filaments that leave and rejoin a real hypha. */
 function moldFieldFilaments(pts, rnd, nested) {
   const out = [];
   const count = nested ? 1 : 2 + (rnd() < 0.4 ? 1 : 0);
@@ -468,6 +485,10 @@ function moldFieldFilaments(pts, rnd, nested) {
   return out;
 }
 
+/**
+ * Faint particles live near real hyphae, not as standalone graph nodes.
+ * They are seeded from the branch id and deliberately cannot receive input.
+ */
 function moldSpores(pts, rnd, nested) {
   const out = [];
   const count = (nested ? 8 : 15) + Math.floor(rnd() * (nested ? 6 : 10));
@@ -484,6 +505,9 @@ function moldSpores(pts, rnd, nested) {
   return out;
 }
 
+/**
+ * Organic fork from parent → child. Ribbon geometry, seeded from the child id.
+ */
 function moldForkBundle(p, c, vertical) {
   const style = forkOpts();
   const rnd = mulberry32(hashSeed(String(c.id || "")));
@@ -507,8 +531,8 @@ function moldForkBundle(p, c, vertical) {
   };
 }
 
-/** Thick at the parent rim, thin at the child, along the whole fork. */
-function taperRibbon(pts, t0, t1, widthAt) {
+/** Filled hypha; callers choose a constant or tapered width along its path. */
+function ribbonOutline(pts, t0, t1, widthAt) {
   const steps = 32;
   const left = [];
   const right = [];
@@ -530,7 +554,10 @@ function taperRibbon(pts, t0, t1, widthAt) {
   return cmds.join(" ");
 }
 
-/** Center-to-periphery: deeper forks start thinner and end thinner. */
+/** Main-node links hold this width; parent-to-child forks deliberately taper. */
+const MAIN_HYPHA_WIDTH = 5.5;
+
+/** Center-to-periphery: a parent-to-child hypha thins as it grows outward. */
 function forkTaperWidths(parentDepth) {
   const depth = Math.max(0, parentDepth || 0);
   const start = Math.max(2.2, 8.6 * Math.pow(0.58, depth));
@@ -562,7 +589,10 @@ function closedBlob(pts) {
   return d.join(" ");
 }
 
-/** Seeded near-circular blob. */
+/**
+ * Near-circular organic outline. Seeded from the node id so it stays put.
+ * Low harmonics plus one soft lobe — irregular, not a perfect circle.
+ */
 function organicBlob(cx, cy, radius, seed) {
   const rnd = mulberry32(hashSeed(String(seed || "blob")));
   const count = 12;
@@ -624,6 +654,7 @@ function nodeShape(n, kind) {
     return `<ellipse class="orb" cx="${n.x}" cy="${n.y}" rx="${fmt(rx)}" ry="${fmt(ry)}" transform="rotate(${rot} ${n.x} ${n.y})"/>` +
       `<circle class="orb orb-lobe" cx="${fmt(lx)}" cy="${fmt(ly)}" r="${fmt(lobeR)}"/>`;
   }
+  /* Spores nodes: irregular near-circles. Roots stay larger than leaves. */
   if (kind === "hyphal-tip") {
     const hub = (n.depth || 0) === 0;
     const core = nodeRadius(n);
@@ -745,17 +776,29 @@ function renderGraph(projects) {
     return `<text class="tick-label" x="${n.main}" y="${spine + 72}" text-anchor="middle">${date}</text>`;
   }).join("");
 
+  // Roots are the primary chronological thread. Connect them directly with
+  // one crooked, steady-width strand; the nodes paint over its end overlap.
+  const roots = nodes.filter((n) => (n.depth || 0) === 0);
+  const mainConnections = roots.slice(1).map((n, i) => {
+    if (opts.edges !== "mold") return "";
+    const parent = roots[i];
+    const rnd = mulberry32(hashSeed(`${parent.id}->${n.id}:main`));
+    const { pts } = moldHyphaPoints(parent, n, vertical, rnd);
+    const ribbon = ribbonOutline(pts, 0, 1, () => MAIN_HYPHA_WIDTH);
+    return `<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
+  }).join("");
+
   const branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
     const parent = byId[n.parent];
     const filt = opts.glow ? ' filter="url(#glow)"' : "";
     if (opts.edges === "mold") {
       const bundle = moldForkBundle(parent, n, vertical);
       const { start, end } = forkTaperWidths(parent.depth || 0);
-      const ease = (u) => {
+      const ribbon = ribbonOutline(bundle.pts, 0, 1, (u) => {
         const t = Math.max(0, Math.min(1, u));
-        return t * t * (3 - 2 * t);
-      };
-      const ribbon = taperRibbon(bundle.pts, 0, 1, (u) => start + (end - start) * ease(u));
+        const ease = t * t * (3 - 2 * t);
+        return start + (end - start) * ease;
+      });
       const firstPt = bundle.pts[0];
       const lastPt = bundle.pts[bundle.pts.length - 1];
       const gradientId = `hyphaGradient-${escapeHtml(n.id)}`;
@@ -775,7 +818,7 @@ function renderGraph(projects) {
         `<path class="edge mold-whisker" d="${wd}"/>`
       ).join("");
       const spores = bundle.spores.join("");
-      return loops + filaments + whisk + spores + `<path class="edge mold-taper mold-taper-inner" style="fill: url(#${gradientId})" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
+      return loops + filaments + whisk + spores + `<path class="edge mold-ribbon mold-ribbon-inner" style="fill: url(#${gradientId})" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
     }
     const d = edgePath(parent, n, opts.edges, vertical);
     return `<path class="edge" d="${d}"${dash}${filt}/>`;
@@ -827,7 +870,7 @@ function renderGraph(projects) {
     </g>`;
   }).join("");
 
-  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + branches + dots;
+  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + mainConnections + branches + dots;
   svg.querySelectorAll(".node").forEach((el) => {
     const id = el.getAttribute("data-id");
     const focus = () => {
@@ -849,7 +892,8 @@ function renderGraph(projects) {
   syncCards(false);
 }
 
-/** Hidden until a node is chosen; choosing it again hides the card. */
+/** Cards stay hidden until a node is chosen, or until every card is shown.
+ * Choosing the active node again clears the selection and hides its card. */
 function syncCards(scroll) {
   const toggle = document.getElementById("cards-toggle");
   if (toggle) {
