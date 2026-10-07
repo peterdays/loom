@@ -261,8 +261,8 @@ h1 {
 .graph .node text { fill: var(--text); font-family: inherit; }
 .graph .edge { fill: none; stroke: var(--branch); stroke-width: var(--edge-width); }
 .graph .edge.adhoc-connection {
-  stroke-width: 1.2;
-  stroke-opacity: 0.62;
+  stroke-width: 2.2;
+  stroke-opacity: 0.78;
   stroke-linecap: round;
   pointer-events: none;
 }

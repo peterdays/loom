@@ -27,7 +27,8 @@
       "ended": null,
       "parent": "jarvas",
       "summary": "A curated playlist feeds transcripts into Jarvas so useful talks can become durable Mnemoteca context.",
-      "tags": ["youtube", "transcripts", "ingestion", "second-brain"]
+      "tags": ["youtube", "transcripts", "ingestion", "second-brain"],
+      "connections": ["jarvas-mnemoteca"]
     },
     {
       "id": "jarvas-inbox-ranking",
