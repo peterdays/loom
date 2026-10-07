@@ -374,6 +374,22 @@ function moldHyphaPoints(p, c, vertical, rnd) {
 }
 
 /**
+ * Cross-links take a visibly separate lane, so they do not appear to attach
+ * to an unrelated root that happens to sit between their two endpoints.
+ */
+function adHocHyphaPoints(source, target, vertical, rnd) {
+  const bundle = moldHyphaPoints(source, target, vertical, rnd);
+  const side = target.side || source.side || (rnd() < 0.5 ? -1 : 1);
+  const offset = Math.min(34, bundle.el * 0.09) + 8;
+  bundle.pts = bundle.pts.map((pt, i) => {
+    const t = i / Math.max(1, bundle.pts.length - 1);
+    const bow = Math.sin(Math.PI * t) * offset * Math.sign(side);
+    return vertical ? { ...pt, x: pt.x + bow } : { ...pt, y: pt.y + bow };
+  });
+  return bundle;
+}
+
+/**
  * Decorative side-whiskers: short secondary filaments that die out and never
  * land on a node (no fake terminals). Seeded from the same RNG stream.
  */
@@ -798,7 +814,7 @@ function renderGraph(projects) {
       if (!target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
       drawnAdHocLinks.add(key);
       const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
-      const { pts } = moldHyphaPoints(source, target, vertical, rnd);
+      const { pts } = adHocHyphaPoints(source, target, vertical, rnd);
       return `<path class="edge adhoc-connection" d="${moldSmooth(pts)}"/>`;
     });
   }).join("");

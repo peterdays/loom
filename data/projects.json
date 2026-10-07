@@ -46,8 +46,7 @@
       "ended": null,
       "parent": null,
       "summary": "X-native oracle with its own LLM wiki for capturing and querying selected tweets, threads, X Articles, and native media; durable signals relay into Jarvas.",
-      "tags": ["x-native", "oracle", "llm-wiki", "agent"],
-      "connections": ["jarvas-mnemoteca"]
+      "tags": ["x-native", "oracle", "llm-wiki", "agent"]
     },
     {
       "id": "loom",
@@ -56,7 +55,8 @@
       "ended": null,
       "parent": null,
       "summary": "Mycelium/neuron/universe-inspired project graph: a chronological spine where public-safe projects branch into features, agents, experiments; no private notes.",
-      "tags": ["portfolio", "timeline", "graph", "projects"]
+      "tags": ["portfolio", "timeline", "graph", "projects"],
+      "connections": ["jarvas-mnemoteca"]
     }
   ]
 }
