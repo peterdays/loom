@@ -10,6 +10,10 @@
         if (localStorage.getItem("loom-look") === "white") {
           document.documentElement.setAttribute("data-look", "white");
         }
+        var timeLayout = new URLSearchParams(location.search).get("time");
+        if (timeLayout === "spine-plus" || timeLayout === "rings" || timeLayout === "strata") {
+          document.documentElement.setAttribute("data-time-layout", timeLayout);
+        }
       } catch (err) {}
     })();
   </script>
@@ -32,6 +36,18 @@
     <p class="lede">Follow time along the spine; each branch marks where an idea grew into something else.</p>
   </header>
   <main>
+    <div class="time-switch" id="time-layout" role="group" aria-label="Time layout">
+      <span class="time-switch-label">Time</span>
+      <button type="button" class="time-layout-btn active" data-time-layout="spine" aria-pressed="true" title="Chronological spine">Spine</button>
+      <button type="button" class="time-layout-btn" data-time-layout="spine-plus" aria-pressed="false" title="Spine with growth, age, and duration">Spine+</button>
+      <button type="button" class="time-layout-btn" data-time-layout="rings" aria-pressed="false" title="Time grows outward in rings">Rings</button>
+      <button type="button" class="time-layout-btn" data-time-layout="strata" aria-pressed="false" title="Time layers downward">Strata</button>
+    </div>
+    <div class="growth" id="growth" hidden>
+      <button type="button" id="growth-play" class="growth-play" aria-pressed="false">Play</button>
+      <input type="range" id="growth-scrub" class="growth-scrub" min="0" max="1000" value="1000" aria-label="Scrub growth through time" />
+      <span id="growth-readout" class="growth-readout">now</span>
+    </div>
     <svg id="graph" class="graph" role="img" aria-label="Temporal project graph"></svg>
     <button type="button" id="cards-toggle" class="cards-toggle" aria-pressed="false" aria-controls="cards">Show all node cards</button>
     <section id="cards" class="cards" aria-live="polite"></section>

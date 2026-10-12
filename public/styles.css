@@ -184,6 +184,66 @@ h1 {
 }
 .lede { color: var(--muted); max-width: 40rem; }
 
+.time-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0.2rem 0 0.75rem;
+}
+.time-switch-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 0.15rem;
+}
+.time-layout-btn,
+.growth-play {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--tab-border);
+  border-radius: var(--tag-radius);
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.time-layout-btn:hover,
+.growth-play:hover { color: var(--text); border-color: var(--accent); }
+.time-layout-btn:focus-visible,
+.growth-play:focus-visible,
+.growth-scrub:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.time-layout-btn[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+.growth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.85rem;
+}
+.growth[hidden],
+.growth.hidden,
+.time-switch.hidden { display: none; }
+.growth-scrub {
+  flex: 1 1 160px;
+  min-width: 120px;
+  accent-color: var(--accent);
+}
+.growth-readout {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text);
+  min-width: 6.2rem;
+}
 
 .graph {
   width: 100%;
@@ -195,6 +255,22 @@ h1 {
 .graph[data-orient="vertical"] {
   max-height: none;
   max-width: 100%;
+}
+html[data-time-layout="spine-plus"] main { overflow-x: auto; }
+html[data-time-layout="spine-plus"] .graph {
+  width: 960px;
+  max-width: none;
+  max-height: none;
+}
+html[data-time-layout="rings"] .graph {
+  max-height: none;
+  max-width: 920px;
+  margin: 0 auto;
+}
+html[data-time-layout="strata"] .graph {
+  width: min(100%, 680px);
+  max-height: none;
+  margin: 0 auto;
 }
 .cards-toggle {
   margin-top: 0.85rem;
@@ -550,4 +626,93 @@ html[data-look="white"] .graph .edge.mold-ribbon-inner {
 }
 html[data-look="white"] .graph .orb-halo {
   fill: color-mix(in srgb, var(--node) 28%, transparent);
+}
+
+/* Time layouts — same Spores ink, no new palette. */
+html[data-time-layout="spine-plus"] .graph .spine-line {
+  opacity: 0.88;
+  stroke-width: 2.6;
+}
+html[data-time-layout="spine-plus"] .graph .tick {
+  stroke: var(--accent);
+  stroke-width: 2;
+  opacity: 1;
+}
+html[data-time-layout="spine-plus"] .graph .tick-label,
+html[data-time-layout="spine-plus"] .graph .axis-caption {
+  fill: var(--text);
+  font-size: 13px;
+  opacity: 1;
+}
+html[data-time-layout="spine-plus"] .graph .axis-caption {
+  letter-spacing: 0.18em;
+}
+.graph .span-band {
+  fill: var(--spine);
+  fill-opacity: 0.05;
+  pointer-events: none;
+}
+.graph .duration-span {
+  fill: var(--branch);
+  stroke: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.graph .duration-span.duration-on {
+  stroke: var(--accent);
+  stroke-width: 0.9;
+}
+.graph .span-caption,
+.graph .ring-label,
+.graph .stratum-label,
+.graph .growth-front-label,
+.graph .now-label {
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.graph .span-caption,
+.graph .now-label { font-size: 12px; letter-spacing: 0.14em; }
+.graph .ring-line,
+.graph .ring-leader,
+.graph .growth-front {
+  fill: none;
+  stroke: var(--spine);
+  stroke-width: 1.25;
+  stroke-opacity: 0.55;
+  pointer-events: none;
+}
+.graph .ring-line.ring-future { stroke-opacity: 0.16; }
+.graph .ring-front {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.2;
+  stroke-opacity: 0.95;
+  pointer-events: none;
+}
+.graph .time-core { pointer-events: none; }
+.graph .stratum { pointer-events: none; }
+.graph .stratum-a { fill: var(--branch); fill-opacity: 0.055; }
+.graph .stratum-b { fill: var(--spine); fill-opacity: 0.05; }
+.graph .stratum.stratum-future { fill-opacity: 0.02; }
+.graph .growth-front {
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 6;
+  stroke-opacity: 0.9;
+}
+html[data-time-layout="spine-plus"] .graph .node.age-new .orb-blob,
+html[data-time-layout="rings"] .graph .node.age-new .orb-blob,
+html[data-time-layout="strata"] .graph .node.age-new .orb-blob {
+  filter: url(#glow);
+}
+html[data-look="white"] .graph .node.age-new .orb-blob { filter: none; }
+html[data-look="white"] .graph .ring-line { stroke-opacity: 0.72; }
+html[data-look="white"] .graph .stratum-a { fill-opacity: 0.08; }
+html[data-look="white"] .graph .stratum-b { fill-opacity: 0.06; }
+@media (prefers-reduced-motion: reduce) {
+  .growth-play,
+  .time-layout-btn,
+  .growth-scrub { transition: none; }
 }

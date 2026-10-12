@@ -11,9 +11,11 @@ Proves the page is wired, not merely that projects.json matches the schema:
   - html data-look defaults to current; #look-toggle is one White mode switch, off
   - node cards are not in the first paint; #cards-toggle starts as "Show all node cards"
   - node --check public/app.js when node is on PATH
+  - time layout switcher defaults to the spine; growth controls start hidden
 
 The page loads in Spores / Ribbon. One toggle can switch to white mode.
 There is no skin or fork picker.
+Time layouts (Spine+, Rings, Strata) sit behind #time-layout. The default is the spine.
 Node cards stay hidden until a node is chosen, or until the show-all control is used.
 
 Usage (from the repo root):
@@ -212,6 +214,32 @@ def check_cards_start_closed(html: str, js: str, errors: list[str]) -> None:
         fail(errors, "app.js missing Show all node cards / Hide node cards labels")
 
 
+def check_time_layout(html: str, js: str, errors: list[str]) -> None:
+    """The current spine stays the default. Other time layouts are opt-in."""
+    if 'id="time-layout"' not in html:
+        fail(errors, "missing #time-layout switcher")
+    if const_string(js, "DEFAULT_TIME_LAYOUT") != "spine":
+        fail(errors, "DEFAULT_TIME_LAYOUT must stay 'spine'")
+    for mode in ("spine", "spine-plus", "rings", "strata"):
+        if f'data-time-layout="{mode}"' not in html:
+            fail(errors, f"missing time layout button {mode}")
+    spine_btn = re.search(r'<button\b[^>]*\bdata-time-layout="spine"[^>]*>', html)
+    if not spine_btn or 'aria-pressed="true"' not in spine_btn.group(0):
+        fail(errors, 'spine time layout must start aria-pressed="true"')
+    for mode in ("spine-plus", "rings", "strata"):
+        btn = re.search(rf'<button\b[^>]*\bdata-time-layout="{mode}"[^>]*>', html)
+        if not btn or 'aria-pressed="false"' not in btn.group(0):
+            fail(errors, f"{mode} time layout must start aria-pressed=\"false\"")
+    if not re.search(r'\bid="growth"[^>]*\bhidden\b', html) and not re.search(r'\bhidden\b[^>]*\bid="growth"', html):
+        fail(errors, "#growth must be hidden on first paint")
+    if 'id="growth-play"' not in html or 'id="growth-scrub"' not in html:
+        fail(errors, "missing growth playback controls")
+    if "prefers-reduced-motion" not in js:
+        fail(errors, "playback must respect prefers-reduced-motion")
+    if not re.search(r'get\(\s*"time"\s*\)', js):
+        fail(errors, "time layout must be readable from the time URL parameter")
+
+
 def check_node(errors: list[str]) -> str:
     node = shutil.which("node")
     if not node:
@@ -284,6 +312,7 @@ def main() -> int:
             check_dom(js, page, errors)
             check_look_toggle(html, js, errors)
             check_cards_start_closed(html, js, errors)
+            check_time_layout(html, js, errors)
 
         node_note = check_node(errors)
     finally:
