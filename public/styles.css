@@ -256,10 +256,9 @@ h1 {
   max-height: none;
   max-width: 100%;
 }
-html[data-time-layout="spine-plus"] main { overflow-x: auto; }
 html[data-time-layout="spine-plus"] .graph {
-  width: 960px;
-  max-width: none;
+  width: 100%;
+  max-width: 100%;
   max-height: none;
 }
 html[data-time-layout="rings"] .graph {
@@ -365,18 +364,26 @@ html[data-time-layout="strata"] .graph {
   opacity: 0.85;
 }
 .graph .tick-label {
-  fill: var(--muted);
+  fill: var(--text);
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.04em;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  opacity: 1;
+}
+.graph .tick-plate,
+.graph .ring-plate,
+.graph .now-plate {
+  fill: var(--bg);
+  stroke: none;
+  pointer-events: none;
 }
 .graph .axis-caption {
-  fill: var(--muted);
+  fill: var(--text);
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.22em;
+  font-size: 11px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  opacity: 0.85;
+  opacity: 0.92;
 }
 
 /* Spores — deep blue substrate, lime capillary hyphae, hyphal-tip nodes.
@@ -505,9 +512,9 @@ html[data-skin="spores"] .graph .edge.mold-sheath {
   stroke-opacity: 0.3;
 }
 html[data-skin="spores"] .graph .spine-line { stroke-width: 2.2; opacity: 0.42; }
-html[data-skin="spores"] .graph .tick { opacity: 0.48; }
-html[data-skin="spores"] .graph .tick-label,
-html[data-skin="spores"] .graph .axis-caption { opacity: 0.62; }
+html[data-skin="spores"] .graph .tick { opacity: 0.8; }
+html[data-skin="spores"] .graph .tick-label { fill: var(--text); opacity: 1; }
+html[data-skin="spores"] .graph .axis-caption { fill: var(--text); opacity: 0.92; }
 html[data-skin="spores"] .tag {
   color: var(--branch);
   border-color: color-mix(in srgb, var(--branch) 45%, transparent);

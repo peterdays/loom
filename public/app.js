@@ -185,6 +185,44 @@ function layout(projects, orient) {
       }
     }
   }
+  // Wide titles on the same band need more than a center-to-center gap.
+  // Roots that land close in time take opposite lanes so their labels stay apart.
+  if (!vertical) {
+    const halfLabel = (item) => {
+      const root = (item.depth || 0) === 0;
+      return Math.max(22, (item.title || "").length * (root ? 4.7 : 3.55) + 4);
+    };
+    const bumpAway = (item, other) => {
+      if (item.side === other.side) {
+        if (!item._laneFlip) {
+          item.side = item.side === 0 ? (other.side === -1 ? 1 : -1) : -Math.sign(item.side);
+          item._laneFlip = true;
+          return;
+        }
+        const dir = Math.sign(item.side) || -1;
+        item.side = dir * (Math.abs(item.side) + 1);
+        return;
+      }
+      const dir = Math.sign(item.side) || -1;
+      item.side = dir * (Math.abs(item.side) + 1);
+    };
+    for (let pass = 0; pass < 24; pass++) {
+      let bumped = false;
+      for (let i = 0; i < items.length; i++) {
+        for (let j = 0; j < i; j++) {
+          if (items[i].side !== items[j].side) continue;
+          const pad = items[i].depth === 0 && items[j].depth === 0 ? 48 : 12;
+          const need = halfLabel(items[i]) + halfLabel(items[j]) + pad;
+          if (Math.abs(mains[i] - mains[j]) >= need) continue;
+          bumpAway(items[i], items[j]);
+          bumped = true;
+          break;
+        }
+        if (bumped) break;
+      }
+      if (!bumped) break;
+    }
+  }
 
   const crossOf = (s) => {
     if (!s) return 0;
@@ -210,9 +248,9 @@ function layout(projects, orient) {
   // Horizontal chronology lives in its own band below the entire hyphal field.
   // On narrow screens, the date column stays outside the root hub instead.
   const nodeBase = Math.round(maxUp + 16);
-  const spine = vertical ? 74 : Math.round(nodeBase + maxDown + 44);
-  const h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + 94);
-  const width = vertical ? Math.round(spine + maxRight) : w;
+  let spine = vertical ? 112 : Math.round(nodeBase + maxDown + 44);
+  let h = vertical ? Math.round(mainEnd + 46) : Math.round(spine + 94);
+  let width = vertical ? Math.round(spine + maxRight) : w;
 
   const nodes = items.map((item, i) => {
     const off = crossOf(item.side);
@@ -220,6 +258,36 @@ function layout(projects, orient) {
     const y = vertical ? mains[i] : nodeBase + off;
     return { ...item, x, y, main: mains[i], spine, vertical };
   });
+  placeSpineLabels(nodes, vertical);
+  let minX = 0;
+  let minY = 0;
+  let maxX = width;
+  let maxY = h;
+  for (const node of nodes) {
+    const box = node.labelBox;
+    if (!box) continue;
+    minX = Math.min(minX, box.x - 10);
+    minY = Math.min(minY, box.y - 8);
+    maxX = Math.max(maxX, box.x + box.width + 12);
+    maxY = Math.max(maxY, box.y + box.height + 10);
+  }
+  const shiftX = minX < 0 ? -minX : 0;
+  const shiftY = minY < 0 ? -minY : 0;
+  if (shiftX || shiftY) {
+    for (const node of nodes) {
+      node.x += shiftX;
+      node.y += shiftY;
+      node.main += vertical ? shiftY : shiftX;
+      node.spine += vertical ? shiftX : shiftY;
+      node.labelX += shiftX;
+      node.labelY += shiftY;
+      node.labelBox.x += shiftX;
+      node.labelBox.y += shiftY;
+    }
+    spine += vertical ? shiftX : shiftY;
+  }
+  width = Math.max(width, maxX) + shiftX;
+  h = Math.max(h, maxY) + shiftY;
 
   return { w: width, h, spine, vertical, nodes, byId: Object.fromEntries(nodes.map((nd) => [nd.id, nd])) };
 }
@@ -468,7 +536,7 @@ function mainThreadPoints(parent, child, rnd) {
 }
 
 /** Low-contrast dust and companion strands keep the root thread in a living field. */
-function mainThreadAtmosphere(pts, rnd) {
+function mainThreadAtmosphere(pts, rnd, nodes) {
   const spores = [];
   for (let i = 0; i < 18; i++) {
     const s = moldSample(pts, 0.06 + rnd() * 0.88);
@@ -478,6 +546,7 @@ function mainThreadAtmosphere(pts, rnd) {
     const spread = 5 + rnd() * 23;
     spores.push(`<circle class="main-spore" cx="${fmt(s.x + nx * side * spread)}" cy="${fmt(s.y + ny * side * spread)}" r="${fmt(0.3 + rnd() * 0.65)}"/>`);
   }
+  const labelBoxes = hyphaObstacles(nodes, false, new Set());
   const filaments = [-1, 1].map((side) => {
     const a = moldSample(pts, 0.1 + rnd() * 0.08);
     const b = moldSample(pts, 0.82 + rnd() * 0.1);
@@ -486,12 +555,13 @@ function mainThreadAtmosphere(pts, rnd) {
     const ny = (a.tx + b.tx) * 0.5;
     const inv = 1 / (Math.hypot(nx, ny) || 1);
     const distance = 7 + rnd() * 11;
-    const filament = moldSmooth([
+    const filamentPts = [
       { x: a.x + nx * inv * side * distance * 0.45, y: a.y + ny * inv * side * distance * 0.45 },
       { x: middle.x + nx * inv * side * distance, y: middle.y + ny * inv * side * distance },
       { x: b.x + nx * inv * side * distance * 0.55, y: b.y + ny * inv * side * distance * 0.55 },
-    ]);
-    return `<path class="edge main-filament" d="${filament}"/>`;
+    ];
+    if (hitCount(filamentPts, labelBoxes)) return "";
+    return `<path class="edge main-filament" d="${moldSmooth(filamentPts)}"/>`;
   });
   return `${filaments.join("")}${spores.join("")}`;
 }
@@ -525,7 +595,7 @@ function rectDistance(point, rect) {
  * Decorative side-whiskers: short secondary filaments that die out and never
  * land on a node (no fake terminals). Seeded from the same RNG stream.
  */
-function moldWhiskers(pts, rnd, nested, amp, style) {
+function moldWhiskers(pts, rnd, nested, amp, style, boxes) {
   const out = [];
   if (pts.length < 4) return out;
   const maxW = style && Number.isFinite(style.maxWhiskers) ? style.maxWhiskers : 0;
@@ -557,6 +627,7 @@ function moldWhiskers(pts, rnd, nested, amp, style) {
       x: s.x + nx * side * len + s.tx * bend * len * 1.4,
       y: s.y + ny * side * len + s.ty * bend * len * 1.4,
     };
+    if (hitCount([{ x: s.x, y: s.y }, mid, tip], boxes || [])) continue;
     out.push(moldSmooth([{ x: s.x, y: s.y }, mid, tip]));
   }
   return out;
@@ -653,15 +724,112 @@ function moldSpores(pts, rnd, nested) {
   return out;
 }
 
+function hyphaObstacles(nodes, vertical, ignoreIds) {
+  const boxes = [];
+  for (const node of nodes || []) {
+    if (!node || ignoreIds.has(node.id)) continue;
+    const box = node.labelBox || labelBounds(node, vertical);
+    if (!box) continue;
+    boxes.push({ x: box.x - 12, y: box.y - 8, width: box.width + 24, height: box.height + 16 });
+  }
+  return boxes;
+}
+
+function hitCount(pts, boxes) {
+  if (!boxes.length || !pts || pts.length < 2) return 0;
+  const inside = (x, y) => boxes.some((box) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height);
+  let hits = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    let crossed = false;
+    for (let s = 0; s <= 8; s++) {
+      const t = s / 8;
+      if (inside(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)) {
+        crossed = true;
+        break;
+      }
+    }
+    if (crossed) hits += 1;
+  }
+  return hits;
+}
+
+function rimAwayFromLabel(node) {
+  const box = node.labelBox || labelBounds(node, node.vertical);
+  const lx = box.x + box.width / 2;
+  const ly = box.y + box.height / 2;
+  const dx = node.x - lx;
+  const dy = node.y - ly;
+  const inv = 1 / (Math.hypot(dx, dy) || 1);
+  const r = nodeRadius(node) + 3;
+  return { x: node.x + dx * inv * r, y: node.y + dy * inv * r };
+}
+
+/** Bow a hypha off every title, including the labels of its own endpoints. */
+function dodgeHypha(pts, parent, child, nodes, vertical) {
+  const boxes = hyphaObstacles(nodes, vertical, new Set());
+  if (!hitCount(pts, boxes)) return pts;
+  const ax = parent.x;
+  const ay = parent.y;
+  const bx = child.x;
+  const by = child.y;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const start = rimAwayFromLabel(parent);
+  const end = rimAwayFromLabel(child);
+  const curve = (sign, mag) => {
+    const mid = {
+      x: (ax + bx) / 2 + nx * mag * sign,
+      y: (ay + by) / 2 + ny * mag * sign,
+    };
+    const out = [];
+    const steps = Math.max(8, pts.length - 1);
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const mt = 1 - t;
+      out.push({
+        x: mt * mt * start.x + 2 * mt * t * mid.x + t * t * end.x,
+        y: mt * mt * start.y + 2 * mt * t * mid.y + t * t * end.y,
+      });
+    }
+    return out;
+  };
+  let best = pts;
+  let bestHits = hitCount(pts, boxes);
+  for (const sign of [1, -1]) {
+    for (const mag of [28, 56, 96, 150, 220]) {
+      const next = curve(sign, mag);
+      const hits = hitCount(next, boxes);
+      if (hits < bestHits) {
+        best = next;
+        bestHits = hits;
+      }
+      if (!hits) return next;
+    }
+  }
+  return best;
+}
+
 /**
  * Organic fork from parent → child. Ribbon geometry, seeded from the child id.
+ * When `nodes` is passed, the curve bends off any foreign label it would cross.
  */
-function moldForkBundle(p, c, vertical) {
+function moldForkBundle(p, c, vertical, nodes) {
   const style = forkOpts();
   const rnd = mulberry32(hashSeed(String(c.id || "")));
-  const { pts, nested, amp, el } = moldHyphaPoints(p, c, vertical, rnd, style);
+  const hypha = moldHyphaPoints(p, c, vertical, rnd, style);
+  let pts = hypha.pts;
+  const nested = hypha.nested;
+  const amp = hypha.amp;
+  const el = hypha.el;
+  const labelBoxes = nodes && nodes.length ? hyphaObstacles(nodes, vertical, new Set()) : [];
+  if (nodes && nodes.length) pts = dodgeHypha(pts, p, c, nodes, vertical);
   const main = moldSmooth(pts);
-  const whiskers = moldWhiskers(pts, rnd, nested, amp, style);
+  const whiskers = moldWhiskers(pts, rnd, nested, amp, style, labelBoxes);
   const anastomoses = moldAnastomoses(pts, rnd, nested, amp, style);
   const filaments = moldFieldFilaments(pts, rnd, nested);
   const spores = moldSpores(pts, rnd, nested);
@@ -816,6 +984,9 @@ function nodeShape(n, kind) {
 }
 
 function nodeLabel(n, opts) {
+  if (n.labelX != null && n.labelY != null) {
+    return labelMarkup(n, n.labelX, n.labelY, n.labelAnchor || "middle");
+  }
   const label = escapeHtml(n.title || "");
   const vertical = n.vertical;
   const labelClass = (n.depth || 0) === 0 ? "node-label node-label-root" : "node-label node-label-child";
@@ -1061,7 +1232,76 @@ function labelMetrics(node, maxChars) {
 
 function textBox(x, y, anchor, width, height) {
   const left = anchor === "start" ? x : anchor === "end" ? x - width : x - width / 2;
-  return { x: left, y: y - height * 0.82, width, height };
+  const ascent = Math.min(height, 15);
+  return { x: left - 2, y: y - ascent, width: width + 4, height: Math.max(height, ascent + 4) };
+}
+
+function spineLabelPoint(node, x, y, anchor, width, height) {
+  return { x, y, anchor, box: textBox(x, y, anchor, width, height) };
+}
+
+/** Default label seat, matching the spine's historical placement. */
+function spineLabelHome(node) {
+  const root = (node.depth || 0) === 0;
+  const lines = wrapLabel(node.title || "", root ? 16 : 22);
+  const lineH = root ? 18 : 15;
+  const width = Math.max(28, ...lines.map((line) => line.length * (root ? 9.2 : 7.05))) + 4;
+  const height = Math.max(lineH, (lines.length - 1) * lineH + lineH * 0.95);
+  node.labelMetrics = { lines, width, height, lineH };
+  if (node.vertical) {
+    const x = node.x + (root ? nodeRadius(node) * 1.7 + 12 : nodeRadius(node) + 10);
+    const y = node.y - ((lines.length - 1) * lineH) / 2;
+    return spineLabelPoint(node, x, y, "start", width, height);
+  }
+  const outward = node.side === 0 ? -1 : Math.sign(node.side);
+  const lift = node.side === 0 ? (root ? 40 : 22) : nodeRadius(node) + 12;
+  let y = outward < 0 ? node.y - lift : node.y + nodeRadius(node) + 15;
+  if (outward < 0 && lines.length > 1) y -= (lines.length - 1) * lineH;
+  return spineLabelPoint(node, node.x, y, "middle", width, height);
+}
+
+/**
+ * Keep each spine title next to its node, nudging along the lane when a
+ * neighbor's title would occupy the same ink.
+ */
+function placeSpineLabels(nodes, vertical) {
+  const placed = [];
+  const ordered = [...nodes].sort((a, b) => a.main - b.main || a.depth - b.depth || String(a.id).localeCompare(String(b.id)));
+  for (const node of ordered) {
+    const home = spineLabelHome(node);
+    const width = node.labelMetrics.width;
+    const height = node.labelMetrics.height;
+    let chosen = home;
+    const blocked = (box) => placed.some((item) => boxesOverlap(item, box, 6))
+      || nodes.some((other) => other.id !== node.id && circleHitsBox(other.x, other.y, nodeRadius(other) + 3, box, 2));
+    if (blocked(home.box)) {
+      const outward = vertical ? 0 : (node.side === 0 ? -1 : Math.sign(node.side) || -1);
+      let best = home;
+      let bestScore = 1000;
+      for (let step = 0; step <= 4; step++) {
+        for (const slide of [0, -24, 24, -48, 48]) {
+          let x = home.x;
+          let y = home.y;
+          if (vertical) y = home.y + step * 16;
+          else if (outward < 0) y = home.y - step * 18;
+          else y = home.y + step * 18;
+          x += vertical ? 0 : slide;
+          const point = spineLabelPoint(node, x, y, home.anchor, width, height);
+          const score = (blocked(point.box) ? 40 : 0) + step * 3 + Math.abs(slide) / 20;
+          if (score < bestScore) {
+            bestScore = score;
+            best = point;
+          }
+        }
+      }
+      chosen = best;
+    }
+    node.labelX = chosen.x;
+    node.labelY = chosen.y;
+    node.labelAnchor = chosen.anchor;
+    node.labelBox = chosen.box;
+    placed.push(chosen.box);
+  }
 }
 
 function labelMarkup(node, x, y, anchor) {
@@ -1078,9 +1318,9 @@ function svgId(value) {
   return String(value || "id").replace(/[^A-Za-z0-9_-]/g, "");
 }
 
-function forkMarkup(parent, child, vertical, grow, opacity, key) {
+function forkMarkup(parent, child, vertical, grow, opacity, key, nodes, quiet) {
   if (grow <= 0.02) return { gradient: "", svg: "" };
-  const bundle = moldForkBundle(parent, child, vertical);
+  const bundle = moldForkBundle(parent, child, vertical, nodes);
   const widths = forkTaperWidths(parent.depth || 0);
   const drawn = Math.max(0.04, Math.min(1, grow));
   const ribbon = ribbonOutline(bundle.pts, 0, drawn, (u) => {
@@ -1098,7 +1338,7 @@ function forkMarkup(parent, child, vertical, grow, opacity, key) {
         <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.82"/>
       </linearGradient>`;
   let decor = "";
-  if (drawn >= 0.98) {
+  if (drawn >= 0.98 && !quiet) {
     decor = bundle.anastomoses.map((path) => `<path class="edge mold-anas" d="${path}"/>`).join("")
       + bundle.filaments.map((path) => `<path class="edge mold-field" d="${path}"/>`).join("")
       + bundle.whiskers.map((path) => `<path class="edge mold-whisker" d="${path}"/>`).join("")
@@ -1108,23 +1348,55 @@ function forkMarkup(parent, child, vertical, grow, opacity, key) {
   return { gradient, svg };
 }
 
-function mainThreadMarkup(parent, child, grow, opacity) {
+function mainThreadMarkup(parent, child, grow, opacity, nodes) {
   if (grow <= 0.02) return "";
   const rnd = mulberry32(hashSeed(`${parent.id}->${child.id}:main`));
-  const pts = mainThreadPoints(parent, child, rnd);
+  let pts = mainThreadPoints(parent, child, rnd);
+  if (nodes && nodes.length) pts = dodgeHypha(pts, parent, child, nodes, false);
   const drawn = Math.max(0.04, Math.min(1, grow));
   const ribbon = ribbonOutline(pts, 0, drawn, () => MAIN_HYPHA_WIDTH);
-  const atmosphere = drawn >= 0.98 ? mainThreadAtmosphere(pts, rnd) : "";
+  const atmosphere = drawn >= 0.98 ? mainThreadAtmosphere(pts, rnd, nodes) : "";
   return `<g class="fork-group" style="opacity:${fmt(opacity)}">${atmosphere}<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/></g>`;
 }
 
-function adHocMarkup(source, target, vertical, nodes, grow, opacity) {
+/** One gentle bow. Used where a seeded wobble would loop across empty bands. */
+function calmLinkPoints(source, target) {
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  const ux = dx / dist;
+  const uy = dy / dist;
+  const start = { x: source.x + ux * (nodeRadius(source) + 2), y: source.y + uy * (nodeRadius(source) + 2) };
+  const end = { x: target.x - ux * (nodeRadius(target) + 2), y: target.y - uy * (nodeRadius(target) + 2) };
+  const bow = Math.min(34, dist * 0.07);
+  const mx = (start.x + end.x) / 2 - uy * bow;
+  const my = (start.y + end.y) / 2 + ux * bow;
+  const pts = [];
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    const mt = 1 - t;
+    pts.push({
+      x: mt * mt * start.x + 2 * mt * t * mx + t * t * end.x,
+      y: mt * mt * start.y + 2 * mt * t * my + t * t * end.y,
+    });
+  }
+  return pts;
+}
+
+function adHocMarkup(source, target, vertical, nodes, grow, opacity, calm) {
   if (grow <= 0.02) return "";
   const rnd = mulberry32(hashSeed(`${source.id}->${target.id}:adhoc`));
-  const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
+  const seeded = calm
+    ? calmLinkPoints(source, target)
+    : adHocHyphaPoints(source, target, vertical, rnd, nodes).pts;
+  const pts = nodes && nodes.length ? dodgeHypha(seeded, source, target, nodes, vertical) : seeded;
   const drawn = Math.max(0.04, Math.min(1, grow));
   const count = Math.max(2, Math.round((pts.length - 1) * drawn) + 1);
-  return `<path class="edge adhoc-connection" style="opacity:${fmt(opacity)}" d="${moldSmooth(pts.slice(0, count))}"/>`;
+  const slice = pts.slice(0, count);
+  const d = nodes && nodes.length
+    ? slice.map((pt, i) => `${i ? "L" : "M"} ${fmt(pt.x)} ${fmt(pt.y)}`).join(" ")
+    : moldSmooth(slice);
+  return `<path class="edge adhoc-connection" style="opacity:${fmt(opacity)}" d="${d}"/>`;
 }
 
 function baseDefs(extra, glow) {
@@ -1210,7 +1482,7 @@ function placeChronoLabels(items) {
   const sorted = [...items].sort((a, b) => a.x - b.x);
   const rowEnds = [];
   return sorted.map((item) => {
-    const width = Math.max(42, item.text.length * 7.7);
+    const width = Math.max(52, item.text.length * 8.05);
     let row = 0;
     while (row < 4 && item.x - width / 2 < (rowEnds[row] ?? -1e9) + 10) row += 1;
     if (row > 3) row = 3;
@@ -1327,7 +1599,7 @@ function renderSpine(projects, plus) {
     ]);
     const maxRow = placed.reduce((max, item) => Math.max(max, item.row), 0);
     const dateBase = spine + 36;
-    const rowH = 18;
+    const rowH = 22;
     const trackTop = dateBase + (maxRow + 1) * rowH + 18;
     const trackPitch = 18;
     ticks = placed.filter((item) => item.kind === "date").map((item) => {
@@ -1338,7 +1610,8 @@ function renderSpine(projects, plus) {
       const y = dateBase + item.row * rowH;
       const shown = revealedAt(item.t, cursor) ? 1 : 0.38;
       const cls = item.kind === "now" ? "now-label" : "tick-label";
-      return `<text class="${cls}" x="${fmt(item.x)}" y="${fmt(y)}" text-anchor="middle" style="opacity:${shown}">${escapeHtml(item.text)}</text>`;
+      const plate = `<rect class="tick-plate" x="${fmt(item.x - item.width / 2 - 5)}" y="${fmt(y - 14)}" width="${fmt(item.width + 10)}" height="18" rx="3" style="opacity:${shown}"/>`;
+      return plate + `<text class="${cls}" x="${fmt(item.x)}" y="${fmt(y)}" text-anchor="middle" style="opacity:${shown}">${escapeHtml(item.text)}</text>`;
     }).join("");
     const spans = nodes.map((n, index) => {
       if (!revealedAt(n.t, cursor)) return "";
@@ -1366,13 +1639,31 @@ function renderSpine(projects, plus) {
       }
       return `<line class="tick" x1="${n.main}" y1="${spine - 4}" x2="${n.main}" y2="${spine + 4}"/>`;
     }).join("");
-    dates = chronos.map((n) => {
-      const date = escapeHtml(n.started || "—");
-      if (vertical) {
-        return `<text class="tick-label" x="${spine - 8}" y="${n.main + 3}" text-anchor="end">${date}</text>`;
-      }
-      return `<text class="tick-label" x="${n.main}" y="${spine + 72}" text-anchor="middle">${date}</text>`;
-    }).join("");
+    if (vertical) {
+      dates = chronos.map((n) => {
+        const date = escapeHtml(n.started || "—");
+        const width = Math.max(52, (n.started || "—").length * 8.05);
+        const y = n.main + 4;
+        const plate = `<rect class="tick-plate" x="${fmt(spine - 12 - width)}" y="${fmt(y - 13)}" width="${fmt(width + 6)}" height="17" rx="3"/>`;
+        return plate + `<text class="tick-label" x="${spine - 10}" y="${y}" text-anchor="end">${date}</text>`;
+      }).join("");
+    } else {
+      const placed = placeChronoLabels(chronos.map((n) => ({
+        x: n.main,
+        text: n.started || "—",
+        t: n.t,
+        kind: "date",
+      })));
+      const maxRow = placed.reduce((max, item) => Math.max(max, item.row), 0);
+      const dateBase = spine + 34;
+      const rowH = 22;
+      dates = placed.map((item) => {
+        const y = dateBase + item.row * rowH;
+        const plate = `<rect class="tick-plate" x="${fmt(item.x - item.width / 2 - 5)}" y="${fmt(y - 14)}" width="${fmt(item.width + 10)}" height="18" rx="3"/>`;
+        return plate + `<text class="tick-label" x="${fmt(item.x)}" y="${fmt(y)}" text-anchor="middle">${escapeHtml(item.text)}</text>`;
+      }).join("");
+      sceneH = Math.max(sceneH, dateBase + (maxRow + 1) * rowH + 14);
+    }
   }
 
   // Roots are the primary chronological thread. Connect them directly with
@@ -1387,8 +1678,9 @@ function renderSpine(projects, plus) {
       if (opts.edges !== "mold") return "";
       const parent = roots[i];
       const rnd = mulberry32(hashSeed(`${parent.id}->${n.id}:main`));
-      const pts = mainThreadPoints(parent, n, rnd);
-      mainAtmosphere.push(mainThreadAtmosphere(pts, rnd));
+      let pts = mainThreadPoints(parent, n, rnd);
+      pts = dodgeHypha(pts, parent, n, nodes, vertical);
+      mainAtmosphere.push(mainThreadAtmosphere(pts, rnd, nodes));
       const ribbon = ribbonOutline(pts, 0, 1, () => MAIN_HYPHA_WIDTH);
       return `<path class="edge mold-ribbon mold-ribbon-main" style="fill: var(--branch)" filter="url(#hyphaTexture)" d="${ribbon}"/>`;
     }).join("");
@@ -1402,9 +1694,7 @@ function renderSpine(projects, plus) {
         const key = [source.id, targetId].sort().join("::");
         if (!target || source.id === targetId || drawnAdHocLinks.has(key)) return [];
         drawnAdHocLinks.add(key);
-        const rnd = mulberry32(hashSeed(`${source.id}->${targetId}:adhoc`));
-        const { pts } = adHocHyphaPoints(source, target, vertical, rnd, nodes);
-        return `<path class="edge adhoc-connection" d="${moldSmooth(pts)}"/>`;
+        return adHocMarkup(source, target, vertical, nodes, 1, 1);
       });
     }).join("");
 
@@ -1412,7 +1702,7 @@ function renderSpine(projects, plus) {
       const parent = byId[n.parent];
       const filt = opts.glow ? ' filter="url(#glow)"' : "";
       if (opts.edges === "mold") {
-        const bundle = moldForkBundle(parent, n, vertical);
+        const bundle = moldForkBundle(parent, n, vertical, nodes);
         const { start, end } = forkTaperWidths(parent.depth || 0);
         const ribbon = ribbonOutline(bundle.pts, 0, 1, (u) => {
           const t = Math.max(0, Math.min(1, u));
@@ -1447,7 +1737,7 @@ function renderSpine(projects, plus) {
     mainConnections = roots.slice(1).map((n, i) => {
       const parent = roots[i];
       const grow = linkGrow(parent.t, n.t, cursor);
-      return mainThreadMarkup(parent, n, grow, ageOpacity(n.t, ageScale));
+      return mainThreadMarkup(parent, n, grow, ageOpacity(n.t, ageScale), nodes);
     }).join("");
     const drawnAdHocLinks = new Set();
     adHocConnections = nodes.flatMap((source) => {
@@ -1466,7 +1756,7 @@ function renderSpine(projects, plus) {
     branches = nodes.filter((n) => n.parent && byId[n.parent]).map((n) => {
       const parent = byId[n.parent];
       const grow = linkGrow(parent.t, n.t, cursor);
-      const fork = forkMarkup(parent, n, vertical, grow, ageOpacity(n.t, ageScale), n.id);
+      const fork = forkMarkup(parent, n, vertical, grow, ageOpacity(n.t, ageScale), n.id, nodes);
       if (fork.gradient) branchGradients.push(fork.gradient);
       return fork.svg;
     }).join("");
@@ -1529,7 +1819,7 @@ function renderSpine(projects, plus) {
   svg.style.aspectRatio = `${sceneW} / ${sceneH}`;
   svg.setAttribute("data-time-layout", plus ? "spine-plus" : "spine");
   svg.setAttribute("aria-label", plus ? SCENE_LABEL["spine-plus"] : SCENE_LABEL.spine);
-  svg.innerHTML = defs + spineLine + arrow + ticks + dates + caption + durationSvg + mainAtmosphere.join("") + mainConnections + branches + adHocConnections + dots;
+  svg.innerHTML = defs + spineLine + arrow + ticks + caption + durationSvg + mainAtmosphere.join("") + mainConnections + branches + adHocConnections + dates + dots;
   bindGraphNodes(svg);
   syncGrowthControls();
 }
@@ -1588,41 +1878,80 @@ function anchorForAngle(angle) {
   return "middle";
 }
 
+function ringLabelCenter(x, y, anchor, metrics) {
+  const cx = anchor === "start" ? x + metrics.width / 2 : anchor === "end" ? x - metrics.width / 2 : x;
+  const cy = y + (metrics.lines.length - 1) * metrics.lineH * 0.45;
+  return { x: cx, y: cy };
+}
+
 function placeRingLabels(nodes, frame) {
   const placed = [];
   const ordered = [...nodes].sort((a, b) => a.r - b.r || String(a.id).localeCompare(String(b.id)));
   for (const node of ordered) {
-    const metrics = labelMetrics(node, node.depth === 0 ? 18 : 20);
+    const metrics = labelMetrics(node, node.depth === 0 ? 11 : 14);
     node.labelMetrics = metrics;
-    let chosen = null;
-    for (let attempt = 0; attempt < 20 && !chosen; attempt++) {
-      const dir = attempt % 2 === 0 ? 1 : -1;
-      const step = Math.floor(attempt / 2);
-      const angle = node.angle + dir * step * 0.065;
-      const dist = node.r + nodeRadius(node) + 18 + step * 12;
-      const x = frame.cx + Math.cos(angle) * dist;
-      const y = frame.cy + Math.sin(angle) * dist + (metrics.lines.length > 1 ? 0 : 4);
-      const anchor = anchorForAngle(angle);
-      const box = textBox(x, y, anchor, metrics.width, metrics.height);
-      const hitLabel = placed.some((item) => boxesOverlap(item, box, 6));
-      const hitNode = nodes.some((other) => circleHitsBox(other.x, other.y, nodeRadius(other) + 7, box, 3));
-      const hitCore = circleHitsBox(frame.cx, frame.cy, frame.rInner * 0.9, box, 4);
-      if (!hitLabel && !hitNode && !hitCore) chosen = { x, y, anchor, box };
+    const radius = nodeRadius(node);
+    const rx = Math.cos(node.angle);
+    const ry = Math.sin(node.angle);
+    const tx = -ry;
+    const ty = rx;
+    let best = null;
+    let bestScore = Infinity;
+    let index = 0;
+    for (const dir of [-1, 1]) {
+      for (const slide of [8, 22, 36]) {
+        for (const out of [-(radius + 18), radius + 12, radius + 22]) {
+          const growX = dir * tx;
+          const anchor = Math.abs(growX) > 0.35 ? (growX > 0 ? "start" : "end") : "middle";
+          const x = node.x + rx * out + tx * dir * slide;
+          const y = node.y + ry * out + ty * dir * slide;
+          const box = textBox(x, y, anchor, metrics.width, metrics.height);
+          const center = ringLabelCenter(x, y, anchor, metrics);
+          const own = Math.hypot(center.x - node.x, center.y - node.y);
+          let closest = Infinity;
+          for (const other of nodes) {
+            if (other.id === node.id) continue;
+            closest = Math.min(closest, Math.hypot(center.x - other.x, center.y - other.y));
+          }
+          const foreign = closest + 6 < own;
+          const hitLabel = placed.some((item) => boxesOverlap(item, box, 3));
+          const hitNode = nodes.some((other) => circleHitsBox(other.x, other.y, nodeRadius(other) + 3, box, 1));
+          const score = (foreign ? 1000 : 0) + (hitNode ? 200 : 0) + (hitLabel ? 450 : 0) + own + index * 0.2;
+          if (score < bestScore) {
+            bestScore = score;
+            best = { x, y, anchor, box };
+          }
+          index += 1;
+        }
+      }
     }
-    if (!chosen) {
-      const dist = frame.rOuter + 36 + metrics.height;
-      const x = frame.cx + Math.cos(node.angle) * dist;
-      const y = frame.cy + Math.sin(node.angle) * dist;
-      const anchor = anchorForAngle(node.angle);
-      chosen = { x, y, anchor, box: textBox(x, y, anchor, metrics.width, metrics.height) };
-    }
-    node.labelX = chosen.x;
-    node.labelY = chosen.y;
-    node.labelAnchor = chosen.anchor;
-    node.labelBox = chosen.box;
-    placed.push(chosen.box);
+    node.labelX = best.x;
+    node.labelY = best.y;
+    node.labelAnchor = best.anchor;
+    node.labelBox = best.box;
+    placed.push(best.box);
   }
-  return placed;
+  for (let pass = 0; pass < 5; pass++) {
+    let moved = false;
+    for (let i = 0; i < ordered.length; i++) {
+      for (let j = 0; j < i; j++) {
+        const a = ordered[i];
+        const b = ordered[j];
+        if (!boxesOverlap(a.labelBox, b.labelBox, 10)) continue;
+        const node = a.r >= b.r ? a : b;
+        const other = node === a ? b : a;
+        const dx = node.x - other.x || 1;
+        const dy = node.y - other.y || 0;
+        const inv = 1 / (Math.hypot(dx, dy) || 1);
+        node.labelX += (dx * inv * 12) + (-dy * inv * 8);
+        node.labelY += (dy * inv * 12) + (dx * inv * 8);
+        node.labelBox = textBox(node.labelX, node.labelY, node.labelAnchor, node.labelMetrics.width, node.labelMetrics.height);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  return ordered.map((node) => node.labelBox);
 }
 
 function largestGapAngle(angles) {
@@ -1694,39 +2023,42 @@ function renderRings(projects) {
   ];
   const ringLabels = [];
   const missedLabels = [];
-  const ringMarks = bands.map((band) => {
+  const ringLabelSvg = [];
+  const ringCircles = bands.map((band) => {
     const at = Math.max(band.start, extent.tMin);
     const r = Math.max(frame.rInner, radiusAt(at));
     const future = band.start > cursor + 1;
     const circle = `<circle class="ring-line${future ? " ring-future" : ""}" cx="${fmt(frame.cx)}" cy="${fmt(frame.cy)}" r="${fmt(r)}"/>`;
-    let label = "";
     if (!future) {
-      const metricsWidth = band.label.length * 7.3 + 4;
+      const metricsWidth = band.label.length * 7.6 + 6;
       let chosen = null;
       for (let attempt = 0; attempt < 18 && !chosen; attempt++) {
         const dir = attempt % 2 === 0 ? 1 : -1;
         const angle = gapAngle + dir * Math.floor(attempt / 2) * 0.08;
-        const x = frame.cx + Math.cos(angle) * (r + 14);
-        const y = frame.cy + Math.sin(angle) * (r + 14);
+        const x = frame.cx + Math.cos(angle) * (r + 16);
+        const y = frame.cy + Math.sin(angle) * (r + 16);
         const anchor = anchorForAngle(angle);
         const box = textBox(x, y, anchor, metricsWidth, 16);
         if (!ringObstacles.some((item) => boxesOverlap(item, box, 4))) chosen = { x, y, anchor, box };
       }
       if (chosen) {
         ringObstacles.push(chosen.box);
-        label = `<text class="ring-label" x="${fmt(chosen.x)}" y="${fmt(chosen.y)}" text-anchor="${chosen.anchor}">${escapeHtml(band.label)}</text>`;
+        ringLabelSvg.push(`<rect class="ring-plate" x="${fmt(chosen.box.x - 5)}" y="${fmt(chosen.box.y - 3)}" width="${fmt(chosen.box.width + 10)}" height="${fmt(chosen.box.height + 6)}" rx="4"/>`
+          + `<text class="ring-label" x="${fmt(chosen.x)}" y="${fmt(chosen.y)}" text-anchor="${chosen.anchor}">${escapeHtml(band.label)}</text>`);
         ringLabels.push(chosen.box);
       } else missedLabels.push(band.label);
     }
-    return circle + label;
+    return circle;
   }).join("");
   let columnX = frame.cx + frame.rOuter + 22;
   for (const box of ringObstacles) columnX = Math.max(columnX, box.x + box.width + 16);
   const missedSvg = missedLabels.map((text, index) => {
     const y = frame.cy - ((missedLabels.length - 1) * 18) / 2 + index * 18;
-    const box = textBox(columnX, y, "start", text.length * 7.3 + 4, 16);
+    const width = text.length * 7.6 + 6;
+    const box = textBox(columnX, y, "start", width, 16);
     ringLabels.push(box);
-    return `<text class="ring-label" x="${fmt(columnX)}" y="${fmt(y)}" text-anchor="start">${escapeHtml(text)}</text>`;
+    return `<rect class="ring-plate" x="${fmt(box.x - 4)}" y="${fmt(box.y - 2)}" width="${fmt(box.width + 8)}" height="${fmt(box.height + 4)}" rx="4"/>`
+      + `<text class="ring-label" x="${fmt(columnX)}" y="${fmt(y)}" text-anchor="start">${escapeHtml(text)}</text>`;
   }).join("");
   const frontR = radiusAt(cursor);
   const front = `<circle class="ring-front" cx="${fmt(frame.cx)}" cy="${fmt(frame.cy)}" r="${fmt(frontR)}"/>`;
@@ -1742,14 +2074,14 @@ function renderRings(projects) {
   const roots = nodes.filter((node) => node.depth === 0);
   const trunks = roots.map((node) => {
     const grow = linkGrow(extent.tMin, node.t, cursor);
-    const fork = forkMarkup(core, node, false, grow, ageOpacity(node.t, ageScale), `core-${node.id}`);
+    const fork = forkMarkup(core, node, false, grow, ageOpacity(node.t, ageScale), `core-${node.id}`, nodes);
     if (fork.gradient) gradients.push(fork.gradient);
     return fork.svg;
   }).join("");
   const branches = nodes.filter((node) => node.parent && byId[node.parent]).map((node) => {
     const parent = byId[node.parent];
     const grow = linkGrow(parent.t, node.t, cursor);
-    const fork = forkMarkup(parent, node, false, grow, ageOpacity(node.t, ageScale), node.id);
+    const fork = forkMarkup(parent, node, false, grow, ageOpacity(node.t, ageScale), node.id, nodes);
     if (fork.gradient) gradients.push(fork.gradient);
     return fork.svg;
   }).join("");
@@ -1785,7 +2117,7 @@ function renderRings(projects) {
     maxY = Math.max(maxY, box.y + box.height + 14);
   }
   setScene(svg, minX, minY, maxX - minX, maxY - minY, "radial", "rings");
-  svg.innerHTML = baseDefs(gradients.join(""), opts.glow) + ringMarks + missedSvg + front + trunks + branches + adHoc + coreBlob + dots;
+  svg.innerHTML = baseDefs(gradients.join(""), opts.glow) + ringCircles + front + trunks + branches + adHoc + coreBlob + ringLabelSvg.join("") + missedSvg + dots;
   bindGraphNodes(svg);
   syncGrowthControls();
 }
@@ -1849,10 +2181,13 @@ function layoutStrata(projects) {
     node.x = gutter + 36 + node.lane * pitch;
     node.spine = gutter - 16;
   });
+  const nowY = yAt(extent.tNow);
   const obstacles = bands.map((band, index) => {
     const width = band.label.length * 7.5 + 6;
     return { x: 12, y: padTop + index * bandH + 6, width, height: 18 };
   });
+  // Keep titles off the dotted "now" rule.
+  obstacles.push({ x: 0, y: nowY - 9, width: 4000, height: 18 });
   const ordered = [...nodes].sort((a, b) => a.y - b.y || a.lane - b.lane);
   for (const node of ordered) {
     const metrics = labelMetrics(node, narrow ? (node.depth === 0 ? 14 : 12) : (node.depth === 0 ? 22 : 20));
@@ -1860,22 +2195,25 @@ function layoutStrata(projects) {
     let x = node.x + nodeRadius(node) + 12;
     let y = node.y + 4;
     let chosen = null;
-    for (let attempt = 0; attempt < 12 && !chosen; attempt++) {
+    for (let attempt = 0; attempt < 14 && !chosen; attempt++) {
       const box = textBox(x, y, "start", metrics.width, metrics.height);
-      const hit = obstacles.some((item) => boxesOverlap(item, box, 6));
+      const hit = obstacles.some((item) => boxesOverlap(item, box, 4));
       const hitNode = nodes.some((other) => other.id !== node.id && circleHitsBox(other.x, other.y, nodeRadius(other) + 6, box, 2));
       if (!hit && !hitNode) chosen = { x, y, box };
-      else if (attempt % 2 === 0) y += 14;
-      else x += 22;
+      else if (attempt % 2 === 0) y -= 16;
+      else x += 18;
     }
-    if (!chosen) chosen = { x, y, box: textBox(x, y, "start", metrics.width, metrics.height) };
+    if (!chosen) {
+      y = node.y - metrics.height - 8;
+      chosen = { x, y, box: textBox(x, y, "start", metrics.width, metrics.height) };
+    }
     node.labelX = chosen.x;
     node.labelY = chosen.y;
     node.labelAnchor = "start";
     node.labelBox = chosen.box;
     obstacles.push(chosen.box);
   }
-  const maxRight = obstacles.reduce((max, box) => Math.max(max, box.x + box.width), 0);
+  const maxRight = obstacles.reduce((max, box) => (box.width > 2400 ? max : Math.max(max, box.x + box.width)), 0);
   const w = Math.max(narrow ? 360 : 520, maxRight + 28);
   const h = padTop + bands.length * bandH + padBottom;
   return { w, h, nodes, byId, bands, padTop, bandH, extent, yAt, gutter };
@@ -1911,14 +2249,14 @@ function renderStrata(projects) {
   const trunks = roots.map((node) => {
     if (!revealedAt(node.t, cursor)) return "";
     const sprout = { id: "soil-cord", x: cordX, y: node.y, depth: 0, side: 0, t: extent.tMin };
-    const fork = forkMarkup(sprout, node, true, 1, ageOpacity(node.t, ageScale), `soil-${node.id}`);
+    const fork = forkMarkup(sprout, node, true, 1, ageOpacity(node.t, ageScale), `soil-${node.id}`, nodes, true);
     if (fork.gradient) gradients.push(fork.gradient);
     return fork.svg;
   }).join("");
   const branches = nodes.filter((node) => node.parent && byId[node.parent]).map((node) => {
     const parent = byId[node.parent];
     const grow = linkGrow(parent.t, node.t, cursor);
-    const fork = forkMarkup(parent, node, true, grow, ageOpacity(node.t, ageScale), node.id);
+    const fork = forkMarkup(parent, node, true, grow, ageOpacity(node.t, ageScale), node.id, nodes, true);
     if (fork.gradient) gradients.push(fork.gradient);
     return fork.svg;
   }).join("");
@@ -1930,7 +2268,7 @@ function renderStrata(projects) {
     seen.add(key);
     const earlier = source.t <= target.t ? source : target;
     const later = earlier === source ? target : source;
-    return adHocMarkup(earlier, later, true, nodes, linkGrow(earlier.t, later.t, cursor), 0.8);
+    return adHocMarkup(earlier, later, true, nodes, linkGrow(earlier.t, later.t, cursor), 0.8, true);
   })).join("");
   const dots = nodes.map((node) => {
     if (!revealedAt(node.t, cursor)) return "";
@@ -1942,9 +2280,30 @@ function renderStrata(projects) {
     </g>`;
   }).join("");
   const frontLabel = growth >= 0.999 ? "now" : formatISO(cursor);
-  const front = `<line class="growth-front" x1="8" y1="${fmt(frontY)}" x2="${fmt(w - 8)}" y2="${fmt(frontY)}"/>
-    <text class="growth-front-label" x="${fmt(w - 12)}" y="${fmt(frontY - 8)}" text-anchor="end">${escapeHtml(frontLabel)}</text>`;
-  setScene(svg, 0, 0, w, h, "vertical", "strata");
+  const nowWidth = frontLabel.length * 7.6 + 8;
+  let nowX = 12;
+  let nowBaseline = frontY - 12;
+  const monthBoxes = bands.map((band, index) => ({
+    x: 14,
+    y: padTop + index * bandH + 6,
+    width: band.label.length * 7.5 + 8,
+    height: 18,
+  }));
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const box = textBox(nowX, nowBaseline, "start", nowWidth, 16);
+    const hit = monthBoxes.some((item) => boxesOverlap(item, box, 3))
+      || nodes.some((node) => node.labelBox && boxesOverlap(node.labelBox, box, 3));
+    if (!hit) break;
+    nowBaseline -= 16;
+  }
+  const lineEnd = Math.max(36, cordX - 8);
+  const nowBox = textBox(nowX, nowBaseline, "start", nowWidth, 16);
+  const front = `<line class="growth-front" x1="8" y1="${fmt(frontY)}" x2="${fmt(lineEnd)}" y2="${fmt(frontY)}"/>
+    <rect class="now-plate" x="${fmt(nowBox.x - 4)}" y="${fmt(nowBox.y - 2)}" width="${fmt(nowBox.width + 8)}" height="${fmt(nowBox.height + 4)}" rx="3"/>
+    <text class="growth-front-label" x="${fmt(nowX)}" y="${fmt(nowBaseline)}" text-anchor="start">${escapeHtml(frontLabel)}</text>`;
+  const tail = growth >= 0.999 ? 28 : 64;
+  const sceneH = Math.min(h, Math.max(padTop + bandH * 0.55, frontY + tail));
+  setScene(svg, 0, 0, w, sceneH, "vertical", "strata");
   svg.innerHTML = baseDefs(gradients.join(""), opts.glow) + strata + cord + trunks + branches + adHoc + dots + front;
   bindGraphNodes(svg);
   syncGrowthControls();
