@@ -92,6 +92,10 @@ The scripts only edit files locally. Open a pull request for the node.
 - CI: `add-node.py --validate-only` and `scripts/smoke-page.py`.
 - Project data lives under `data/` and `public/data/`.
 
+## PR size
+
+**Rule (Pedro, 2026-10-14).** Keep a pull request around **400 changed lines** and **at most 15 files**. Non-code changes (YAML/config, small images) are exceptions. Split everything else into simple, clear pull requests.
+
 ## Ship gate (UI proof)
 
 **Rule (Pedro, 2026-10-06).** A pull request that changes the page needs a human-visible proof walk before merge. A pull request that does not change the page is not blocked by that walk.
