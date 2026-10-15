@@ -94,7 +94,13 @@ The scripts only edit files locally. Open a pull request for the node.
 
 ## PR size
 
-**Rule (Pedro, 2026-10-14).** Keep a pull request around **400 changed lines** and **at most 15 files**. Non-code changes (YAML/config, small images) are exceptions. Split everything else into simple, clear pull requests.
+**Rule (Pedro, 2026-10-15).** One concern per pull request.
+
+- Cap: about **1,000 changed lines of hand-written code**. No file limit.
+- Not counted: generated files, lockfiles, vendored code, binary/art/sound assets, and docs/markdown.
+- Over the cap: split along natural seams, or add a `## Why this is large` section to the pull request description.
+- Do not over-split into tiny dependent pull requests.
+- Report the counted size in the pull request description.
 
 ## Ship gate (UI proof)
 
