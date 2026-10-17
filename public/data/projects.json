@@ -64,8 +64,44 @@
       "started": "2026-09-21",
       "ended": null,
       "parent": null,
-      "summary": "Independent archive of xAI's 25-hour, 3-day Grok Bot Galaxy livestream: searchable transcripts, ranked highlights, chapter notes and a seekable local viewer.",
+      "summary": "Built during Grok Bot Galaxy: archive of xAI's 25-hour, 3-day livestream to search and replay: https://github.com/peterdays/grok-bot-galaxy-livestream-archive",
       "tags": ["transcripts", "livestream", "faster-whisper", "search", "archive"]
+    },
+    {
+      "id": "galaxy-transcription-pipeline",
+      "title": "Transcription pipeline",
+      "started": "2026-09-21",
+      "ended": null,
+      "parent": "grok-bot-galaxy-archive",
+      "summary": "Resumable yt-dlp download and checkpointed Faster-Whisper small.en transcription in 30-minute chunks, rendered to Markdown, TXT, SRT, VTT and JSONL.",
+      "tags": ["transcripts", "faster-whisper", "pipeline"]
+    },
+    {
+      "id": "galaxy-scored-chapters",
+      "title": "Scored chapters and viewing guides",
+      "started": "2026-09-21",
+      "ended": null,
+      "parent": "grok-bot-galaxy-archive",
+      "summary": "50 scored chapter notes with takeaways and caveats; rankings favor live coding, debugging and verification, and separate observed behavior from claims.",
+      "tags": ["curation", "ranking", "summaries"]
+    },
+    {
+      "id": "galaxy-seekable-viewer",
+      "title": "Seekable local viewer",
+      "started": "2026-09-21",
+      "ended": null,
+      "parent": "grok-bot-galaxy-archive",
+      "summary": "Dependency-free static viewer behind make run; timestamp links jump into local video through a byte-range server, without downloading the whole file first.",
+      "tags": ["viewer", "search", "video"]
+    },
+    {
+      "id": "galaxy-format-map",
+      "title": "Continuous format map",
+      "started": "2026-09-23",
+      "ended": null,
+      "parent": "grok-bot-galaxy-archive",
+      "summary": "Viewer opens on a per-day map with thumbnails and tags for presentations, screen work, team discussion and breaks, each linked to its transcript slice.",
+      "tags": ["viewer", "navigation", "ux"]
     }
   ]
 }
