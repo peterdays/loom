@@ -57,6 +57,15 @@
       "summary": "Personal project map: living timeline where projects grow like mycelium/neural/universe, linking agents, features, experiments, shipped work; no private notes.",
       "tags": ["portfolio", "timeline", "graph", "projects"],
       "connections": ["jarvas-mnemoteca"]
+    },
+    {
+      "id": "grok-bot-galaxy-archive",
+      "title": "Grok Bot Galaxy livestream archive",
+      "started": "2026-09-21",
+      "ended": null,
+      "parent": null,
+      "summary": "Independent archive of xAI's 25-hour, 3-day Grok Bot Galaxy livestream: searchable transcripts, ranked highlights, chapter notes and a seekable local viewer.",
+      "tags": ["transcripts", "livestream", "faster-whisper", "search", "archive"]
     }
   ]
 }
