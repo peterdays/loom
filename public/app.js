@@ -837,9 +837,46 @@ function arrowPoints(spine, vertical, x1, y1, x2, y2) {
   return `${x},${y} ${x - 4.5},${y - 11} ${x + 4.5},${y - 11}`;
 }
 
+/** Default view: each root project grows as its own mycelium colony (organic-net.js).
+ * Age is tissue maturity: dim, dense knots are older; bright tips are recent growth.
+ * ?layout=spine keeps the previous chronological spine for comparison. */
+function renderOrganic(projects) {
+  const svg = document.getElementById("graph");
+  const ts = projects.map((p) => parseTime(p.started)).filter(Number.isFinite);
+  const t0 = Math.min(...ts), t1 = Math.max(...ts);
+  const age = (p) => {
+    const t = parseTime(p.started);
+    return Number.isFinite(t) ? (t - t0) / Math.max(1, t1 - t0) : 1;
+  };
+  const month = (t) => new Date(t).toLocaleString("en", { month: "short", year: "numeric", timeZone: "UTC" });
+  const graph = {
+    nodes: projects.map((p) => ({ id: p.id, label: p.title || p.id, parent: p.parent || null, date: p.started || "", age: age(p) })),
+    links: projects.flatMap((p) => (Array.isArray(p.connections) ? p.connections : []).map((c) => [p.id, c])),
+  };
+  orientMode = preferredOrient(); // narrow screens get a taller canvas so labels stay legible
+  OrganicNet.render(svg, graph, {
+    activeId,
+    overrides: orientMode === "vertical" ? { width: 520, height: 760 } : undefined,
+    legend: ts.length ? { from: month(t0), to: month(t1) } : undefined,
+    onSelect: (id) => {
+      if (activeId === id) {
+        activeId = null;
+        renderGraph(projectsCache);
+        syncCards(false);
+        return;
+      }
+      selectNode(id);
+    },
+  });
+  syncCards(false);
+}
+
 function renderGraph(projects) {
   const svg = document.getElementById("graph");
   if (!svg) return;
+  const layoutParam = new URLSearchParams(location.search).get("layout");
+  if (layoutParam !== "spine" && window.OrganicNet && projects.length) return renderOrganic(projects);
+  svg.removeAttribute("data-layout");
   orientMode = preferredOrient();
   const { w, h, spine, vertical, nodes, byId } = layout(projects, orientMode);
   const opts = skinOpts();
@@ -1087,7 +1124,7 @@ function renderCards(projects) {
     const parentTitle = p.parent && byId[p.parent] ? byId[p.parent].title : null;
     const fork = parentTitle
       ? `<div class="fork">fork of ${escapeHtml(parentTitle)}</div>`
-      : `<div class="fork">on the spine</div>`;
+      : `<div class="fork">root project</div>`;
     const connections = (Array.isArray(p.connections) ? p.connections : [])
       .map((id) => byId[id] && byId[id].title)
       .filter(Boolean);
