@@ -88,7 +88,7 @@ The scripts only edit files locally. Open a pull request for the node.
 ## Do not regress
 
 - Default skin **Spores**. Default fork **Ribbon**. Default look is that current page. White mode is one optional toggle, saved in the browser; a first visit stays on the current look. No skin or fork picker.
-- Chronological spine: time left→right, top→bottom on narrow viewports. Root nodes are larger than subnodes; hyphae taper from the parent toward the child.
+- Mycelium graph (`public/organic-net.js`) is the default view: each root project grows as its own colony, children branch off as hyphae with smooth joins, and age shows as tissue maturity (dim, dense knots = older; bright tips = recent) with an age legend. Seeded, so the layout is the same on every load. `?layout=spine` keeps the old chronological spine.
 - CI: `add-node.py --validate-only` and `scripts/smoke-page.py`.
 - Project data lives under `data/` and `public/data/`.
 

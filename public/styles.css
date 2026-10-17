@@ -551,3 +551,17 @@ html[data-look="white"] .graph .edge.mold-ribbon-inner {
 html[data-look="white"] .graph .orb-halo {
   fill: color-mix(in srgb, var(--node) 28%, transparent);
 }
+
+/* Mycelium graph (organic-net.js): the default view. */
+.graph[data-layout="organic"] .on-node { cursor: pointer; }
+.graph[data-layout="organic"] .on-label { fill: var(--text); }
+.graph[data-layout="organic"] .on-node:hover .on-label,
+.graph[data-layout="organic"] .on-node.active .on-label { fill: #ffffff; }
+.graph[data-layout="organic"] .on-node:focus { outline: none; }
+.graph[data-layout="organic"] .on-node:focus-visible .on-label { text-decoration: underline; }
+.graph[data-layout="organic"] .on-legend text { fill: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+.graph[data-layout="organic"] .on-legend .on-legend-cap { letter-spacing: 0.14em; font-size: 10px; }
+.graph[data-layout="organic"] .on-legend .on-legend-hint { font-family: var(--font); font-size: 11px; font-style: italic; }
+html[data-look="white"] .graph[data-layout="organic"] { --on-label-halo: rgba(255, 255, 255, 0.9); }
+html[data-look="white"] .graph[data-layout="organic"] .on-node:hover .on-label,
+html[data-look="white"] .graph[data-layout="organic"] .on-node.active .on-label { fill: var(--text); }
