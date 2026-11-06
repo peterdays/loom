@@ -227,7 +227,7 @@ h1 {
 }
 .card h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
 .card .meta { color: var(--accent); font-size: 0.8rem; margin-bottom: 0.35rem; }
-.card p { margin: 0; color: var(--muted); line-height: 1.45; }
+.card p { margin: 0; color: var(--muted); line-height: 1.45; white-space: pre-line; }
 .card p a {
   color: var(--branch);
   text-decoration-color: color-mix(in srgb, var(--branch) 55%, transparent);

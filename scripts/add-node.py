@@ -31,7 +31,8 @@ SCHEMA_PATH = ROOT / "schemas" / "projects.schema.json"
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DATE = re.compile(r"^\d{4}-\d{2}(-\d{2})?$")
 TITLE_MAX = 60
-SUMMARY_MAX = 160
+# Pedro set this to the Python len() of the approved AI Cambrian summary.
+SUMMARY_MAX = 1513
 TAGS_MAX = 5
 
 # Soft refuse hints (not exhaustive — human gate still required)
@@ -168,10 +169,9 @@ def validate_node_fields(
         if not isinstance(summary, str) or not summary.strip():
             errs.append("summary must be a non-empty string")
         else:
+            # Paragraph breaks and short bullet lines are allowed inside the budget.
             if len(summary) > SUMMARY_MAX:
                 errs.append(f"summary over budget ({len(summary)} > {SUMMARY_MAX})")
-            if "\n\n" in summary or summary.count("\n") > 1:
-                errs.append("summary must be one sentence (no multi-paragraph)")
 
     tags = node.get("tags")
     if tags is not None:
@@ -462,7 +462,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="existing project id, or null for a new root (default: null)",
     )
-    p.add_argument("--summary", help=f"one public-safe sentence (≤ {SUMMARY_MAX} chars)")
+    p.add_argument(
+        "--summary",
+        help=f"public summary (≤ {SUMMARY_MAX} characters; paragraphs and short bullet lines allowed)",
+    )
     p.add_argument(
         "--tag",
         action="append",
