@@ -1,11 +1,11 @@
 # Timeline node proposal
 
-Short title + one-line summary. One node per pull request.
+Short title and a public summary. One node per pull request.
 
 ## Size budget
 
 - `title` ≤ ~60 characters
-- `summary` ≤ ~160 characters (one sentence)
+- `summary` ≤ 1513 characters. Paragraphs and short bullet lines are allowed. A `|` block under `summary:` keeps the line breaks.
 - `tags` ≤ 5 lowercase kebab-case tags
 
 ## Shape
@@ -38,7 +38,7 @@ connections: existing-id
 
 ## Checklist
 
-- [ ] Mini proposal — one sentence, within the size budget
+- [ ] Summary is public and within 1513 characters
 - [ ] `id` is kebab-case and absent from `data/projects.json`
 - [ ] `started` / `ended` use `YYYY-MM` or `YYYY-MM-DD` (`ended` may be `null`)
 - [ ] `parent` is an existing project `id`, or `null` for a new root

@@ -65,8 +65,8 @@
         "summary": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 160,
-          "description": "one public-safe sentence"
+          "maxLength": 1513,
+          "description": "public summary; paragraphs and short bullet lines allowed (max 1513 characters)"
         },
         "tags": {
           "type": "array",

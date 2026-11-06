@@ -96,6 +96,32 @@ def normalize(data: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def read_indented_block(lines: list[str], start: int) -> tuple[str, int]:
+    """Read a YAML-like indented block. Internal blank lines stay; trailing ones do not."""
+    collected: list[str] = []
+    indent: int | None = None
+    j = start
+    while j < len(lines):
+        line = lines[j]
+        if line.strip() == "":
+            if indent is None:
+                j += 1
+                continue
+            collected.append("")
+            j += 1
+            continue
+        current = len(line) - len(line.lstrip(" "))
+        if current == 0 or (indent is not None and current < indent):
+            break
+        if indent is None:
+            indent = current
+        collected.append(line[indent:])
+        j += 1
+    while collected and collected[-1] == "":
+        collected.pop()
+    return "\n".join(collected), j
+
+
 def parse_labeled(body: str) -> dict[str, Any]:
     data: dict[str, Any] = {}
     lines = body.splitlines()
@@ -129,7 +155,11 @@ def parse_labeled(body: str) -> dict[str, Any]:
                 data[key] = None
                 i += 1
                 continue
-            die(f"{key}: put the value on the same line")
+            text, i = read_indented_block(lines, i + 1)
+            if not text:
+                die(f"{key}: put the value on the same line")
+            data[key] = text
+            continue
         data[key] = rest
         i += 1
     return data
