@@ -1,0 +1,23 @@
+# Fails a PR over 1,000 code lines or 20 code files unless its body has a
+# "## Why this is large" section. Exclusions live in scripts/pr-size.py.
+name: pr-size
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Count changed code lines and files
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python3 scripts/pr-size.py "${{ github.event.pull_request.base.sha }}" HEAD
