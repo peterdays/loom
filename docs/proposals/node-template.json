@@ -4,7 +4,7 @@
   "started": "YYYY-MM",
   "ended": null,
   "parent": "existing-project-id-or-null",
-  "summary": "One public sentence under 160 characters.",
+  "summary": "Public summary within 1513 characters.",
   "tags": ["lowercase-kebab-tag"],
   "connections": ["existing-project-id"]
 }

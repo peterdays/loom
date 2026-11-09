@@ -4,7 +4,7 @@ Loom is a personal chronological mycelium graph. This repo does not ingest priva
 
 ## Flow
 
-1. **Draft** a mini stub: short title, one-line summary. Shape: [`proposals/_TEMPLATE.md`](proposals/_TEMPLATE.md).
+1. **Draft** a mini stub: short title and a public summary (≤ 1513 characters; paragraphs and short bullet lines allowed). Shape: [`proposals/_TEMPLATE.md`](proposals/_TEMPLATE.md).
 2. **Append on a branch** with `scripts/add-node.py`, or `scripts/proposal-to-node.py` which calls it. The helper updates both `data/projects.json` and `public/data/projects.json`.
 3. **Open a pull request** that adds that one node via `add-node.py`.
 4. **Review.** A reviewer checks the graph and the page still work (`python3 scripts/add-node.py --validate-only` and `python3 scripts/smoke-page.py`).
@@ -17,7 +17,7 @@ One node per pull request. Leave `main` for the merge.
 |-------|------|
 | `id` | kebab-case, unique |
 | `title` | ≤ ~60 characters |
-| `summary` | one sentence, ≤ ~160 characters |
+| `summary` | public text, ≤ 1513 characters; paragraphs and short bullet lines allowed |
 | `tags` | ≤ 5 lowercase kebab-case tags |
 | `started` | `YYYY-MM` or `YYYY-MM-DD` |
 | `ended` | `null` or the same date format |
@@ -29,7 +29,7 @@ One node per pull request. Leave `main` for the merge.
 ## Refuse
 
 - Missing or invalid fields, duplicate `id`, or a `parent` that does not exist.
-- Essays, multi-paragraph summaries, or more than five tags.
+- A summary over 1513 characters, or more than five tags.
 - Secrets, credentials, or absolute filesystem paths.
 
 ## Example

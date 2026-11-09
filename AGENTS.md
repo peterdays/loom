@@ -10,7 +10,7 @@ This repo does not ingest private notes. New nodes arrive as pull requests. A re
 - **No private notes in git.** Sample nodes only. Leave out secrets, credentials, and absolute filesystem paths.
 - **Pages stay off.** Do not enable GitHub Pages. Do not change repository visibility.
 - **One node per pull request.** Open a PR that adds a node via `scripts/add-node.py`. Leave `main` for the merge.
-- **Nodes stay small.** Short title + one-line summary. No essays.
+- **Summary budget.** Short title (≤ ~60 characters). A summary is public and at most 1513 characters, and may include paragraphs and short bullet lines.
 - **Dual JSON.** `data/projects.json` and `public/data/projects.json` carry the same `projects` array.
 
 ## Add one node
@@ -37,7 +37,7 @@ Map: [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md).
 | `ended` | `null` or the same date format as `started` |
 | `parent` | existing project `id`, or `null` for a new root |
 | `connections` | optional, up to 5 existing project ids for secondary non-lineage links |
-| `summary` | **one sentence**, public, **≤ ~160 characters** |
+| `summary` | public, **≤ 1513 characters**; paragraphs and short bullet lines allowed |
 | `tags` | lowercase kebab-case strings, **≤ 5** tags |
 
 `parent` establishes the primary project lineage and layout. Use `connections` only for an intentional secondary relationship to an existing node; it does not make the target a parent or child. Each connection must name a distinct existing id and cannot name the node being added.
@@ -82,7 +82,7 @@ The scripts only edit files locally. Open a pull request for the node.
 ### Refuse if
 
 - Fields are missing or invalid, `id` is already used, `parent` does not exist (unless `null`), or a `connections` target is missing, duplicated, or self-referential.
-- Title, summary, or tags exceed the size budget, or the summary is more than one sentence.
+- Title, summary, or tags exceed the size budget.
 - Title, summary, or tags contain secrets, credentials, or absolute filesystem paths.
 
 ## Do not regress
