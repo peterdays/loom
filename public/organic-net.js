@@ -10,10 +10,11 @@
  * opts  = { seed, activeId, onSelect(id), legend: { from, to }, overrides: {...partial CONFIG} }
  *
  * Pipeline: layout (roots relax apart, children grow along noisy self-avoiding walks that may
- * fork off sibling hyphae) -> geometry (knot outlines that swell toward each attached hypha,
- * tapered hyphae, side hairs, rhizoids) -> one SVG filter over the whole tissue layer (gooey
- * alpha fusion for continuous joins, displacement, diffuse + specular lighting, grain, rim, a
- * light bloom). Age reads as tissue maturity: old = dim, dense knots; new = bright growing tips.
+ * fork off sibling hyphae) -> geometry (knot outlines, tapered hyphae, side hairs, rhizoids)
+ * -> paint only a sparse subset of that fur, with no field specks or filaments -> one SVG
+ * filter over the tissue (a short alpha weld at real joins, slight displacement, soft diffuse
+ * light, a trace of grain). Age reads as tissue maturity: old = dim, dense knots; new = bright
+ * growing tips. Layout radii and the seeded chooser stay as they are.
  */
 (function (root) {
   "use strict";
@@ -63,19 +64,22 @@
     key: "mycelium", width: 960, height: 600, margin: 46, size: 1.3, fitMax: 1.6,
     rootR: [13, 16], childR: [6.5, 8], matureGrow: 0.28,   // old knots are a bit larger (grown)
     len: [100, 170], step: 6, wander: 0.95, wanderFreq: 0.22, avoid: 0.9, forkFromTrunk: 0.55,
-    lobes: 0.16, lobeFine: 0.06, hillock: 0.6, hillockWidth: 0.5,
-    shaft: [3.6, 1.1], flare: 0.9, beads: 0.05, beadFreq: 0.09, jitter: 0.1,
+    lobes: 0.1, lobeFine: 0.035, hillock: 0.3, hillockWidth: 0.4,
+    shaft: [2.6, 1.7], flare: 0.46, beads: 0.05, beadFreq: 0.09, jitter: 0.1,
     hairs: 9, hairLen: [10, 30], hairCurl: 0.9, rhizoids: 7,
-    filaments: 46, filamentLen: [50, 160], specks: 40,
+    // Counts above stay in the seeded score so the chosen layout does not jump.
+    // Paint a sparse subset: extra hairs and rhizoids were reading as stray dots.
+    paintEvery: 4, paintRhizoids: 0,
+    filaments: 0, filamentLen: [50, 160], specks: 0,
     ramp: ["#2c4652", "#3d6b5a", "#5e9420", "#9fd247", "#d3f08e"],
-    halo: 0.32, haloR: [1.5, 1.1], tipSpark: 0.55,          // kept low: luminous, not a lamp
-    goo: { blur: 2.6, mul: 22, off: 7 },
-    displace: { freq: 0.035, scale: 2.4 },
-    light: { soft: 2.0, surface: 3.6, diffuse: 1.0, az: 235, el: 52, mulK: 0.82, ambient: 0.36,
-             spec: 0.6, specExp: 28, specColor: "#f2ffd8" },
-    grain: { type: "fractalNoise", freq: 0.9, oct: 2, amount: 0.32 },
-    rim: { erode: 1.2, blur: 1.2, color: "#e2f7b8", amount: 0.32 },
-    bloom: { blur: 3, amount: 0.22 },
+    halo: 0.26, haloR: [1.3, 0.85], tipSpark: 0.28,        // young tips glow; not a lamp
+    goo: { blur: 1.0, mul: 10, off: 4.5 },                 // weld overlaps, don't inflate
+    displace: { freq: 0.035, scale: 0.85 },
+    light: { soft: 0.75, surface: 1.0, diffuse: 0.36, az: 235, el: 60, mulK: 0.2, ambient: 0.86,
+             spec: 0.08, specExp: 16, specColor: "#e4f0c6" },
+    grain: { type: "fractalNoise", freq: 0.9, oct: 2, amount: 0.07 },
+    rim: { erode: 0.45, blur: 0.45, color: "#d7ecb4", amount: 0.08 },
+    bloom: { blur: 1.2, amount: 0 },
     labelHalo: "rgba(2,8,24,0.88)",
     legendHint: "dim, dense knots = matured · bright tips = still growing",
   };
@@ -372,21 +376,27 @@
         w = Math.max(w, Rc * 1.15 * cfg.flare * Math.exp(-Math.pow((L - s) / (Rc * 1.6), 2)));
         return w;
       };
-      // hairs / spines: count grows with maturity of the child
+      // hairs / spines: count grows with maturity of the child. All of them feed the
+      // layout score; paint keeps every paintEvery-th so the picture is not furred.
       const n = Math.round(cfg.hairs * (0.35 + 0.9 * (1 - p.child.age)) * (p.L / 120));
       for (let i = 0; i < n; i++) {
         const s = p.L * (0.18 + r() * 0.66), idx = Math.min(p.pts.length - 1, Math.round(s / 2.4));
-        hairs.push(makeHair(p.pts[idx], headingAt(p.pts, idx), p.widthAt(s, p.L), cfg, r, p));
+        hairs.push(Object.assign(makeHair(p.pts[idx], headingAt(p.pts, idx), p.widthAt(s, p.L), cfg, r, p), { kind: "hair", ord: i }));
       }
     }
     for (const n of G.nodes) {
       const k = Math.round(cfg.rhizoids * (n.depth ? 0.35 : 1) * (0.4 + (1 - n.age)));
       for (let i = 0; i < k; i++) {
         const a = r() * TAU, pt = { x: n.x + Math.cos(a) * n.R * 0.7, y: n.y + Math.sin(a) * n.R * 0.7 };
-        hairs.push(makeHair(pt, a, n.R * 0.45, cfg, r, { child: n }, [cfg.hairLen[0] * 1.2, cfg.hairLen[1] * 1.3]));
+        hairs.push(Object.assign(makeHair(pt, a, n.R * 0.45, cfg, r, { child: n }, [cfg.hairLen[0] * 1.2, cfg.hairLen[1] * 1.3]), { kind: "rhizoid", ord: i }));
       }
     }
     geo.hairs = hairs;
+  }
+  function paintedHair(h, cfg) {
+    if (h.kind === "rhizoid") return !!cfg.paintRhizoids;
+    const every = Math.max(1, cfg.paintEvery || 1);
+    return h.ord % every === 0;
   }
   function makeHair(at, heading, baseW, cfg, r, p, lenR) {
     const side = r() < 0.5 ? -1 : 1, a0 = heading + (lenR ? 0 : side * (0.6 + r() * 0.7));
@@ -414,8 +424,8 @@
   <feTurbulence type="fractalNoise" baseFrequency="${dp.freq}" numOctaves="2" seed="${cfg.seed % 97}" result="dn"/>
   <feDisplacementMap in="fused" in2="dn" scale="${dp.scale}" xChannelSelector="R" yChannelSelector="G" result="body"/>
   <feGaussianBlur in="body" stdDeviation="${l.soft}" result="h1"/>
-  <feGaussianBlur in="body" stdDeviation="${l.soft * 3.2}" result="h2"/>
-  <feComposite in="h1" in2="h2" operator="arithmetic" k2="0.45" k3="0.55" result="h3"/>
+  <feGaussianBlur in="body" stdDeviation="${(l.soft * 1.5).toFixed(2)}" result="h2"/>
+  <feComposite in="h1" in2="h2" operator="arithmetic" k2="0.7" k3="0.3" result="h3"/>
   <feComposite in="h3" in2="body" operator="in" result="height"/>
   <feDiffuseLighting in="height" surfaceScale="${l.surface}" diffuseConstant="${l.diffuse}" lighting-color="#ffffff" result="diff"><feDistantLight azimuth="${l.az}" elevation="${l.el}"/></feDiffuseLighting>
   <feSpecularLighting in="height" surfaceScale="${l.surface}" specularConstant="${l.spec}" specularExponent="${l.specExp}" lighting-color="${l.specColor}" result="spec"><feDistantLight azimuth="${l.az}" elevation="${l.el + 12}"/></feSpecularLighting>
@@ -461,11 +471,15 @@
       const score = lab.cost + lab.overlaps * 5e4 + lab.tissueHits * 300 + cross * 400 + tangle * 30;
       if (!best || score < best.score) best = { G, geo, lab, score, s, tangle };
     }
-    const { G, geo } = best, col = (f) => ramp(cfg.ramp, f), bg = "#020818";
+    const { G, geo } = best;
+    // Drop unpainted fur before labels are fitted to what is actually drawn.
+    geo.hairs = geo.hairs.filter((h) => paintedHair(h, cfg));
+    const lab = placeLabels(G, geo, cfg);
+    const col = (f) => ramp(cfg.ramp, f), bg = "#020818";
     const grads = [], dark = "#06101f";
     let gi = 0;
     const lin = (a, b, ca, cb) => { const id = `${uid}-g${gi++}`; grads.push(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${f1(a.x)}" y1="${f1(a.y)}" x2="${f1(b.x)}" y2="${f1(b.y)}"><stop offset="0" stop-color="${ca}"/><stop offset="1" stop-color="${cb}"/></linearGradient>`); return id; };
-    const rad = (c) => { const id = `${uid}-g${gi++}`; grads.push(`<radialGradient id="${id}" cx="0.5" cy="0.5" r="0.55" fx="0.36" fy="0.32"><stop offset="0" stop-color="${mixc(c, "#ffffff", 0.22)}"/><stop offset="0.7" stop-color="${c}"/><stop offset="1" stop-color="${c}"/></radialGradient>`); return id; };
+    const rad = (c) => { const id = `${uid}-g${gi++}`; grads.push(`<radialGradient id="${id}" cx="0.5" cy="0.5" r="0.55" fx="0.36" fy="0.32"><stop offset="0" stop-color="${mixc(c, "#ffffff", 0.08)}"/><stop offset="0.7" stop-color="${c}"/><stop offset="1" stop-color="${c}"/></radialGradient>`); return id; };
     const sr = prng(best.s ^ 0x51);
 
     // background: specks and fine field filaments (non-interactive)
@@ -534,10 +548,9 @@
     for (const n of G.nodes) {
       if (cfg.tipSpark && n.age > 0.6) {
         const t = cfg.tipSpark * (n.age - 0.6) / 0.4;
-        detail += `<circle cx="${f1(n.x - n.R * 0.25)}" cy="${f1(n.y - n.R * 0.3)}" r="${f1(1 + n.R * 0.16)}" fill="#ffffff" opacity="${f1(0.2 + 0.35 * t)}" filter="url(#${uid}-soft)"/>`;
+        detail += `<circle cx="${f1(n.x - n.R * 0.22)}" cy="${f1(n.y - n.R * 0.28)}" r="${f1(0.6 + n.R * 0.05)}" fill="#ffffff" opacity="${f1(0.12 + 0.22 * t)}" filter="url(#${uid}-soft)"/>`;
       }
     }
-    if (cfg.tipSpark) for (const h of geo.hairs) if (h.node.age > 0.7) detail += `<circle cx="${f1(h.tip.x)}" cy="${f1(h.tip.y)}" r="${f1(0.9 + h.node.age * 0.6)}" fill="${mixc(col(1), "#ffffff", 0.5)}" opacity="${f1(0.4 * cfg.tipSpark + 0.3 * h.node.age)}" filter="url(#${uid}-soft)"/>`;
     // interactive overlay: invisible hit areas + labels
     const halo = cfg.labelHalo;
     let over = "";
@@ -552,7 +565,7 @@
       `<g class="on-back" pointer-events="none">${back}</g><g class="on-glow" pointer-events="none">${glow}</g><g class="on-links" pointer-events="none">${links}</g>` +
       `<g class="on-tissue" pointer-events="none" filter="url(#${uid}-tissue)">${tissue}</g>` +
       `<g class="on-detail" pointer-events="none">${detail}</g><g class="on-overlay">${over}</g><g class="on-legend" pointer-events="none">${legendText}</g>`;
-    return { svg, model: { cfg, nodes: G.nodes, paths: geo.paths, stats: Object.assign({ layoutSeed: best.s, score: Math.round(best.score), tangle: Math.round(best.tangle) }, best.lab), width: W, height: H } };
+    return { svg, model: { cfg, nodes: G.nodes, paths: geo.paths, stats: Object.assign({ layoutSeed: best.s, score: Math.round(best.score), tangle: Math.round(best.tangle) }, lab), width: W, height: H } };
   }
   function render(svgEl, graph, opts) {
     opts = opts || {};
