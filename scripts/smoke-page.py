@@ -40,6 +40,7 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public"
 APP_JS = PUBLIC / "app.js"
+GRAPH_JS = PUBLIC / "graph.js"
 
 # Classes stamped into the DOM after fetch (renderGraph / renderCards).
 # They are not in index.html; the containers #graph and #cards are.
@@ -216,12 +217,24 @@ def check_node(errors: list[str]) -> str:
     node = shutil.which("node")
     if not node:
         return "node --check skipped (node not on PATH)"
-    proc = subprocess.run([node, "--check", str(APP_JS)], capture_output=True, text=True)
-    if proc.returncode != 0:
-        detail = (proc.stderr or proc.stdout or "node --check failed").strip()
-        fail(errors, "\n".join(detail.splitlines()[:8]))
-        return "node --check failed"
+    for path in (APP_JS, GRAPH_JS):
+        proc = subprocess.run([node, "--check", str(path)], capture_output=True, text=True)
+        if proc.returncode != 0:
+            detail = (proc.stderr or proc.stdout or "node --check failed").strip()
+            fail(errors, "\n".join(detail.splitlines()[:8]))
+            return "node --check failed"
     return "node --check ok"
+
+
+def check_radial(html: str, errors: list[str]) -> None:
+    """The homepage graph is the radial field, not the old mycelium SVG."""
+    for needle in ('id="stage"', 'id="graph"', 'id="filter"', 'id="detail"', 'id="labels"', 'data-f="ongoing"'):
+        if needle not in html:
+            fail(errors, f"radial graph missing {needle}")
+    if "organic-net.js" in html:
+        fail(errors, "organic-net.js is still loaded")
+    if not re.search(r'<script[^>]+src="[^"]*graph\.js"', html):
+        fail(errors, "index.html does not load graph.js")
 
 
 def main() -> int:
@@ -253,11 +266,15 @@ def main() -> int:
         if status == 200:
             sheets = [href for href in page.stylesheets if path_of(href).endswith("/styles.css")]
             scripts = [src for src in page.scripts if path_of(src).endswith("/app.js")]
+            local_assets = [
+                href for href in page.stylesheets + page.scripts
+                if not urlparse(href).netloc
+            ]
             if not sheets:
                 fail(errors, "index.html does not link styles.css")
             if not scripts:
                 fail(errors, "index.html does not load app.js")
-            for href in sheets + scripts:
+            for href in dict.fromkeys(sheets + scripts + local_assets):
                 asset_status, asset_body = fetch(base, href)
                 if asset_status != 200 or not asset_body:
                     fail(errors, f"GET {href} returned {asset_status} (empty={not asset_body})")
@@ -284,6 +301,7 @@ def main() -> int:
             check_dom(js, page, errors)
             check_look_toggle(html, js, errors)
             check_cards_start_closed(html, js, errors)
+            check_radial(html, errors)
 
         node_note = check_node(errors)
     finally:
