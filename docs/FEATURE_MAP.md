@@ -4,8 +4,8 @@ One-page map for adding a timeline node or touching the UI.
 
 | Feature | What it is | Where |
 |---------|------------|--------|
-| **Mycelium graph** | Default view. Each root project grows as its own seeded colony; children branch off as tapered hyphae; age shows as tissue maturity plus a legend. Narrow viewports get a taller canvas. `?layout=spine` keeps the old chronological spine. Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/organic-net.js`, `public/app.js`, `public/styles.css` |
-| **Look** | Default skin **Spores**, fork **Ribbon**, `data-look="current"`. One **White mode** toggle persists in the browser; a first visit stays on the current look. No skin or fork picker | `public/index.html`, `public/styles.css`, `public/app.js` |
+| **Radial graph** | Default view. Colour is time (violet → white-gold); older work sits further from the core. Roots draw lifespan rings. Links are solid strands. `ongoing: true` glows into the core. Hover or tap opens the detail; a phone uses a bottom sheet. All / Ongoing / Ended filters the field. Node cards stay hidden until a node is chosen, or until **Show all node cards** | `public/graph.js`, `public/app.js`, `public/styles.css` |
+| **Look** | `data-skin="spores"` and `data-fork-style="ribbon"` stay declared. No skin or fork picker. One **White mode** toggle persists in the browser; a first visit stays on the current look. White mode lightens nav, cards, and about. The radial field stays dark | `public/index.html`, `public/styles.css`, `public/app.js` |
 | **Node data (dual path)** | Same `projects` array in two files — `parent` establishes lineage and optional `connections` add ad hoc links | `data/projects.json`, `public/data/projects.json` |
 | **JSON Schema** | Machine-readable node + file shape | `schemas/projects.schema.json` |
 | **add-node helper** | Append **one** validated stub on a branch; repeat `--connect-to` for optional links to existing nodes. `--validate-only` checks field rules and the schema (stdlib) | `scripts/add-node.py` |
@@ -59,7 +59,7 @@ Then open a pull request against `main`. A reviewer checks the graph and the pag
 
 ## Do not regress
 
-- Default skin **Spores**, default fork **Ribbon**, default look **current** (White mode is one optional toggle)
-- Mycelium graph is the default view; age reads from tissue maturity and the legend
+- Default skin **Spores**, default fork **Ribbon**, default look **current** (White mode is one optional toggle; the radial field stays dark)
+- Radial graph is the default view; colour is time, and `ongoing: true` is data, not a recency guess
 - Dual JSON `projects` arrays stay identical
 - Public nodes only — this repo does not ingest private notes

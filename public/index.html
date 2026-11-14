@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>loom — temporal weave</title>
+  <title>loom — a record of making</title>
   <script>
     (function () {
       try {
@@ -16,30 +16,69 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="void" aria-hidden="true"></div>
-  <nav class="tabs" aria-label="Sections">
-    <button class="tab active" data-tab="timeline" type="button">Timeline</button>
-    <button class="tab" data-tab="about" type="button" disabled title="Later">About</button>
-    <button type="button" id="look-toggle" class="look-toggle" aria-pressed="false" aria-label="White mode">
-      <span class="look-toggle-label">White mode</span>
-      <span class="look-toggle-track" aria-hidden="true"><span class="look-toggle-knob"></span></span>
-    </button>
-  </nav>
-  <header>
-    <p class="eyebrow">LOOM // TEMPORAL WEAVE</p>
-    <h1>A record of making</h1>
-    <p class="intro">Projects, experiments, and the tools that shape them—arranged as an evolving map.</p>
-    <p class="lede">Each project grows as its own colony; bright tips are recent growth, dim tissue is older.</p>
-  </header>
-  <main>
-    <svg id="graph" class="graph" role="img" aria-label="Temporal project graph"></svg>
-    <button type="button" id="cards-toggle" class="cards-toggle" aria-pressed="false" aria-controls="cards">Show all node cards</button>
-    <section id="cards" class="cards" aria-live="polite"></section>
-    <section id="about" class="panel hidden">
-      <p>Personal presentation tab — placeholder for later.</p>
-    </section>
-  </main>
-  <script src="./organic-net.js"></script>
+  <canvas id="space" aria-hidden="true"></canvas>
+  <div class="page">
+    <nav class="tabs" aria-label="Sections">
+      <button class="tab active" data-tab="timeline" type="button">Timeline</button>
+      <button class="tab" data-tab="about" type="button" disabled title="Later">About</button>
+      <button type="button" id="look-toggle" class="look-toggle" aria-pressed="false" aria-label="White mode">
+        <span class="look-toggle-label">White mode</span>
+        <span class="look-toggle-track" aria-hidden="true"><span class="look-toggle-knob"></span></span>
+      </button>
+    </nav>
+    <main>
+      <div class="graph-field" id="graph-field">
+        <div class="layout">
+          <section class="loom" aria-label="Project graph">
+            <header class="masthead">
+              <p class="eyebrow">Loom</p>
+              <h1>A record of making</h1>
+              <p class="intro">Projects as a woven graph. Colour is time: the oldest work burns violet at the edge, the newest runs gold toward the bright core of now. Rings mark how long each body of work lived.</p>
+            </header>
+            <div class="stage" id="stage">
+              <canvas id="graph" role="img" aria-label="Projects as a graph, coloured by time. Older work sits further from the centre."></canvas>
+              <div class="labels" id="labels"></div>
+            </div>
+          </section>
+          <aside class="side" id="side">
+            <div class="side-idle" id="idle">
+              <p class="side-label">Colour is time</p>
+              <div class="ramp" id="ramp"><div class="ramp-bar"></div><div class="ramp-ticks" id="ramp-ticks"></div></div>
+              <ul class="key">
+                <li><span class="k k-ring"></span><span><b>Ring</b> — a body of work’s lifespan, from its start to its latest addition. Its colour runs from start to end.</span></li>
+                <li><span class="k k-ended"></span><span><b>Cooled</b> — ended. Its light stops at the latest addition.</span></li>
+                <li><span class="k k-live"></span><span><b>Glowing</b> — ongoing. Its light reaches the core of now.</span></li>
+              </ul>
+              <div class="filter" id="filter" role="group" aria-label="Show">
+                <button type="button" data-f="all" class="on" aria-pressed="true">All</button>
+                <button type="button" data-f="ongoing" aria-pressed="false">Ongoing</button>
+                <button type="button" data-f="ended" aria-pressed="false">Ended</button>
+              </div>
+              <p class="side-meta" id="meta"></p>
+              <p class="side-note" id="note"></p>
+            </div>
+            <article class="detail" id="detail" hidden aria-live="polite">
+              <button class="detail-close" id="close" type="button" aria-label="Close">×</button>
+              <p class="detail-eyebrow"><span class="status" id="c-status"></span><span id="c-kind"></span></p>
+              <h2 class="detail-title" id="c-title"></h2>
+              <p class="detail-date" id="c-date"></p>
+              <div class="life" id="c-life"><div class="life-bar"><span class="life-span" id="c-span"></span></div><div class="life-ends"><span id="c-l0"></span><span id="c-l1"></span></div></div>
+              <div class="detail-body" id="c-body"></div>
+              <dl class="detail-facts" id="c-facts"></dl>
+            </article>
+          </aside>
+        </div>
+      </div>
+      <div class="record" id="record">
+        <button type="button" id="cards-toggle" class="cards-toggle" aria-pressed="false" aria-controls="cards">Show all node cards</button>
+        <section id="cards" class="cards" aria-live="polite"></section>
+        <section id="about" class="panel hidden">
+          <p>Personal presentation tab — placeholder for later.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="./graph.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

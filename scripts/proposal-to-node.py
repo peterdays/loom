@@ -34,7 +34,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 ADD_NODE = Path(__file__).resolve().parent / "add-node.py"
-FIELDS = ("id", "title", "started", "ended", "parent", "summary", "tags", "connections")
+FIELDS = ("id", "title", "started", "ended", "parent", "summary", "tags", "connections", "ongoing")
 FENCE = re.compile(r"```([A-Za-z0-9_-]*)[^\n]*\n(.*?)```", re.DOTALL)
 LABELED = re.compile(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$")
 BLOCK_SCALAR = {"|", ">", "|-", ">-", "|+", ">+"}
@@ -93,6 +93,11 @@ def normalize(data: dict[str, Any]) -> dict[str, Any]:
             out[key] = None
     out["tags"] = parse_tags(data.get("tags"))
     out["connections"] = parse_tags(data.get("connections"))
+    raw_ongoing = data.get("ongoing")
+    if isinstance(raw_ongoing, bool):
+        out["ongoing"] = raw_ongoing
+    elif isinstance(raw_ongoing, str):
+        out["ongoing"] = raw_ongoing.strip().lower() == "true"
     return out
 
 
@@ -231,6 +236,8 @@ def build_add_node_args(fields: dict[str, Any]) -> list[str]:
         args.extend(["--tag", str(tag)])
     for target in fields.get("connections") or []:
         args.extend(["--connect-to", str(target)])
+    if fields.get("ongoing") is True:
+        args.append("--ongoing")
     return args
 
 
