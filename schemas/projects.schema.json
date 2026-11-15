@@ -52,6 +52,10 @@
           ],
           "description": "null or same date format as started"
         },
+        "ongoing": {
+          "type": "boolean",
+          "description": "Optional. True means the work is still being made: its span runs to today and it glows into the core. Omit or false for ended work. Do not infer this from recency."
+        },
         "parent": {
           "oneOf": [
             { "type": "null" },

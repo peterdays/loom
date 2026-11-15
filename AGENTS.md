@@ -1,7 +1,7 @@
 # Agent guidelines — loom
 
 **Owner:** Pedro.
-**Repo:** [peterdays/loom](https://github.com/peterdays/loom) — a personal chronological mycelium graph of projects.
+**Repo:** [peterdays/loom](https://github.com/peterdays/loom) — a personal radial graph of projects. Colour is time.
 
 This repo does not ingest private notes. New nodes arrive as pull requests. A reviewer checks the graph and the UI do not break.
 
@@ -35,6 +35,7 @@ Map: [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md).
 | `title` | short public title, **≤ ~60 characters** |
 | `started` | `YYYY-MM` or `YYYY-MM-DD` |
 | `ended` | `null` or the same date format as `started` |
+| `ongoing` | optional boolean. `true` means the work is still being made: its span runs to today and it glows into the core. Omit it for ended work. Do not infer it from how recent `started` is |
 | `parent` | existing project `id`, or `null` for a new root |
 | `connections` | optional, up to 5 existing project ids for secondary non-lineage links |
 | `summary` | public, **≤ 1513 characters**; paragraphs and short bullet lines allowed |
@@ -87,8 +88,10 @@ The scripts only edit files locally. Open a pull request for the node.
 
 ## Do not regress
 
-- Default skin **Spores**. Default fork **Ribbon**. Default look is that current page. White mode is one optional toggle, saved in the browser; a first visit stays on the current look. No skin or fork picker.
-- Mycelium graph (`public/organic-net.js`) is the default view: each root project grows as its own colony, children branch off as hyphae with smooth joins, and age shows as tissue maturity (dim, dense knots = older; bright tips = recent) with an age legend. Seeded, so the layout is the same on every load. `?layout=spine` keeps the old chronological spine.
+- Default skin **Spores** and fork **Ribbon** stay declared on `<html>` (`data-skin`, `data-fork-style`). No skin or fork picker. They do not draw a second graph.
+- The homepage graph is the radial field in `public/graph.js`. Colour is one ramp (violet at the edge, white-gold at now). Older work sits further out. Each root draws a lifespan ring. Links are solid strands. A span runs from `started` to the start of the newest descendant; a project with no descendants is a single burst. `ongoing: true` runs the span to today and glows into the core. `prefers-reduced-motion` skips the entry and the shimmer. `?still` freezes motion for screenshots.
+- White mode is one optional toggle, saved in the browser; a first visit stays on the current look. The radial graph stays on its dark field in either look, because the colour ramp is drawn for that ground. White mode lightens the nav, the node cards, and the about panel.
+- Node cards stay hidden until a node is chosen, or until **Show all node cards**. Summaries keep paragraphs (`white-space: pre-line`) and public links.
 - CI: `add-node.py --validate-only` and `scripts/smoke-page.py`.
 - Project data lives under `data/` and `public/data/`.
 

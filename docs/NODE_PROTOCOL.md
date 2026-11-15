@@ -1,6 +1,6 @@
 # Adding a timeline node
 
-Loom is a personal chronological mycelium graph. This repo does not ingest private notes. New nodes arrive as pull requests.
+Loom is a personal radial graph of projects. This repo does not ingest private notes. New nodes arrive as pull requests.
 
 ## Flow
 
@@ -21,6 +21,7 @@ One node per pull request. Leave `main` for the merge.
 | `tags` | ≤ 5 lowercase kebab-case tags |
 | `started` | `YYYY-MM` or `YYYY-MM-DD` |
 | `ended` | `null` or the same date format |
+| `ongoing` | optional. `true`, or omit. `true` means the span runs to today. Pass `--ongoing` to `add-node.py`. Do not infer it from the start date |
 | `parent` | an existing project `id`, or `null` |
 | `connections` | optional list of up to five existing project ids for ad hoc links |
 

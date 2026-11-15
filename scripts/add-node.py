@@ -205,6 +205,9 @@ def validate_node_fields(
                     errs.append(f"connection '{target}' does not exist")
                     break
 
+    if "ongoing" in node and not isinstance(node.get("ongoing"), bool):
+        errs.append("ongoing must be true or false when present")
+
     # Soft content refuse (new nodes only)
     if soft_content:
         blob = " ".join(
@@ -218,7 +221,7 @@ def validate_node_fields(
                 "title/summary/tags look like secrets, credentials, or absolute paths — redact"
             )
 
-    unknown = set(node) - (set(required) | {"connections"})
+    unknown = set(node) - (set(required) | {"connections", "ongoing"})
     if unknown:
         errs.append(f"unknown fields: {sorted(unknown)}")
 
@@ -420,6 +423,8 @@ def build_node(args: argparse.Namespace) -> dict[str, Any]:
     }
     if args.connect_to:
         node["connections"] = list(args.connect_to)
+    if args.ongoing:
+        node["ongoing"] = True
     return node
 
 
@@ -479,6 +484,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         dest="connect_to",
         default=None,
         help="existing project id for an optional ad hoc link (repeat, ≤ 5 total)",
+    )
+    p.add_argument(
+        "--ongoing",
+        action="store_true",
+        help="mark the project ongoing so its span runs to today (omit for ended work)",
     )
     p.add_argument(
         "--dry-run",

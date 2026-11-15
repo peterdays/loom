@@ -7,6 +7,7 @@
       "title": "Jarvas",
       "started": "2026-05-12",
       "ended": null,
+      "ongoing": true,
       "parent": null,
       "summary": "Privacy-first Hermes Agent assistant on a self-hosted ThinkCentre behind Tailscale, turning sources and workflows into project memory.",
       "tags": ["personal-ai", "second-brain", "agent-workflows", "knowledge-systems", "productivity"]
@@ -16,6 +17,7 @@
       "title": "Jarvas Mnemoteca",
       "started": "2026-06-14",
       "ended": null,
+      "ongoing": true,
       "parent": "jarvas",
       "summary": "A living LLM wiki where sources, notes, decisions, and WIP gravity wells preserve continuity: https://gist.github.com/peterdays/54a8fd9f8a01355ec27a43ac3c49650a",
       "tags": ["second-brain", "llm-wiki", "knowledge-systems", "wip"]
@@ -55,6 +57,7 @@
       "title": "LOOM",
       "started": "2026-09-28",
       "ended": null,
+      "ongoing": true,
       "parent": null,
       "summary": "Personal project map: living timeline where projects grow like mycelium/neural/universe, linking agents, features, experiments, shipped work; no private notes.",
       "tags": ["portfolio", "timeline", "graph", "projects"],

@@ -1,6 +1,6 @@
 # loom
 
-Personal **mycelium graph** of projects. Each root project grows as its own colony; children branch off as hyphae that taper toward the child. Age shows as tissue maturity: dim, dense knots are older, bright tips are recent growth.
+Personal **radial graph** of projects. Colour is time: violet at the edge for the oldest work, white-gold at the bright core of now. Rings mark how long each body of work lived.
 
 ## Status
 
@@ -53,9 +53,11 @@ python3 scripts/add-node.py \
 
 ## Temporal graph
 
-`public/` draws a **mycelium graph** with `public/organic-net.js` (no dependencies): roots relax apart, children grow along seeded, self-avoiding hyphal walks (some fork off a sibling hypha), and one SVG filter fuses the tissue so joins are continuous and gives it texture, volume and lighting. Age is a colour ramp from dim slate (oldest) to bright tips (newest), shown in the legend. Optional `connections` render as faint dotted links between existing nodes, without altering the primary lineage. The same data always gives the same layout. `?layout=spine` keeps the previous chronological spine. Nested sibling lanes stay quieter. Node cards stay hidden on load. Click a node to show its card; click that same node again to hide it. **Show all node cards** reveals every card; the same control hides them again. Project data lives in `data/projects.json` and `public/data/projects.json`.
+`public/graph.js` draws a **radial graph** (no dependencies, no CDN). Older work sits further from the centre. One colour ramp runs from violet to white-gold. Each root project draws a ring for its lifespan: from `started` to the start of its newest descendant, or a single burst when it has none. Optional `connections` are solid strands and do not change lineage. A project with `"ongoing": true` runs to today and glows into the core; every other project is ended. The same data gives the same layout. Hover or tap a project to open its detail (a bottom sheet on a phone). **All / Ongoing / Ended** filters the field. `prefers-reduced-motion` skips the entry and the shimmer.
 
-The page loads in skin **Spores** (deep blue + lime capillary hyphae, hyphal-tip nodes) and fork style **Ribbon** (soft tapered stroke, gentle S-curves). A **White mode** control switches to a white ground with readable text and the same strokes, layout, and behavior. The choice is saved in the browser; a first visit stays on Spores. There is no skin or fork picker.
+Node cards stay hidden on load. Choosing a project reveals its card; **Show all node cards** reveals every card. Summaries keep paragraphs and public links. Project data lives in `data/projects.json` and `public/data/projects.json` — the page fetches `public/data/projects.json` and does not ship a second copy in JavaScript.
+
+`<html>` still declares skin **Spores** and fork **Ribbon**. There is no skin or fork picker, and those tokens do not draw another graph. A **White mode** control lightens the nav, the node cards, and the about panel. The radial field stays on its dark ground in either look, because the colour ramp is drawn for that ground. The choice is saved in the browser; a first visit stays on the dark page.
 
 ## Layout
 
@@ -69,7 +71,7 @@ schemas/projects.schema.json
 .github/workflows/pages.yml
 .github/ISSUE_TEMPLATE/new-timeline-node.md
 data/projects.json
-public/index.html|styles.css|app.js|data/projects.json
+public/index.html|styles.css|app.js|graph.js|fonts/|data/projects.json
 scripts/add-node.py
 scripts/proposal-to-node.py
 scripts/smoke-page.py
