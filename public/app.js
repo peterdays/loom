@@ -1,6 +1,4 @@
 const DEFAULT_SKIN = "spores";
-const DEFAULT_LOOK = "current";
-const LOOK_STORAGE_KEY = "loom-look";
 const DEFAULT_FORK_STYLE = "ribbon";
 
 let projectsCache = [];
@@ -20,32 +18,9 @@ function linkifyPublicUrls(s) {
   );
 }
 
-function savedLook() {
-  try {
-    return localStorage.getItem(LOOK_STORAGE_KEY) === "white" ? "white" : DEFAULT_LOOK;
-  } catch (err) {
-    return DEFAULT_LOOK;
-  }
-}
-
-function applyLook(look) {
-  const next = look === "white" ? "white" : DEFAULT_LOOK;
+function applyChrome() {
   document.documentElement.setAttribute("data-skin", DEFAULT_SKIN);
   document.documentElement.setAttribute("data-fork-style", DEFAULT_FORK_STYLE);
-  document.documentElement.setAttribute("data-look", next);
-  const toggle = document.getElementById("look-toggle");
-  if (toggle) toggle.setAttribute("aria-pressed", next === "white" ? "true" : "false");
-  if (window.RadialGraph) RadialGraph.relayout();
-}
-
-function toggleLook() {
-  const next = document.documentElement.getAttribute("data-look") === "white" ? DEFAULT_LOOK : "white";
-  try {
-    localStorage.setItem(LOOK_STORAGE_KEY, next);
-  } catch (err) {
-    /* storage unavailable — the look still changes for this view */
-  }
-  applyLook(next);
 }
 
 /** Cards stay hidden until a node is chosen, or until every card is shown. */
@@ -170,7 +145,6 @@ document.querySelectorAll(".tab").forEach((btn) => {
 });
 
 document.getElementById("cards-toggle").addEventListener("click", toggleAllCards);
-document.getElementById("look-toggle").addEventListener("click", toggleLook);
 
-applyLook(savedLook());
+applyChrome();
 load();
