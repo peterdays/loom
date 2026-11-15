@@ -1,18 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-skin="spores" data-fork-style="ribbon" data-look="current">
+<html lang="en" data-skin="spores" data-fork-style="ribbon">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>loom — a record of making</title>
-  <script>
-    (function () {
-      try {
-        if (localStorage.getItem("loom-look") === "white") {
-          document.documentElement.setAttribute("data-look", "white");
-        }
-      } catch (err) {}
-    })();
-  </script>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -21,10 +12,6 @@
     <nav class="tabs" aria-label="Sections">
       <button class="tab active" data-tab="timeline" type="button">Timeline</button>
       <button class="tab" data-tab="about" type="button" disabled title="Later">About</button>
-      <button type="button" id="look-toggle" class="look-toggle" aria-pressed="false" aria-label="White mode">
-        <span class="look-toggle-label">White mode</span>
-        <span class="look-toggle-track" aria-hidden="true"><span class="look-toggle-knob"></span></span>
-      </button>
     </nav>
     <main>
       <div class="graph-field" id="graph-field">

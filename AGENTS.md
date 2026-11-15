@@ -90,7 +90,7 @@ The scripts only edit files locally. Open a pull request for the node.
 
 - Default skin **Spores** and fork **Ribbon** stay declared on `<html>` (`data-skin`, `data-fork-style`). No skin or fork picker. They do not draw a second graph.
 - The homepage graph is the radial field in `public/graph.js`. Colour is one ramp (violet at the edge, white-gold at now). Older work sits further out. Each root draws a lifespan ring. Links are solid strands. A span runs from `started` to the start of the newest descendant; a project with no descendants is a single burst. `ongoing: true` runs the span to today and glows into the core. `prefers-reduced-motion` skips the entry and the shimmer. `?still` freezes motion for screenshots.
-- White mode is one optional toggle, saved in the browser; a first visit stays on the current look. The radial graph stays on its dark field in either look, because the colour ramp is drawn for that ground. White mode lightens the nav, the node cards, and the about panel.
+- The page is dark only. There is no theme toggle and no light theme. The radial graph stays on its dark field.
 - Node cards stay hidden until a node is chosen, or until **Show all node cards**. Summaries keep paragraphs (`white-space: pre-line`) and public links.
 - CI: `add-node.py --validate-only` and `scripts/smoke-page.py`.
 - Project data lives under `data/` and `public/data/`.

@@ -11,7 +11,7 @@ python3 -m http.server 8080 --directory public
 python3 scripts/smoke-page.py
 ```
 
-`scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#cards-toggle`, `#look-toggle`, `#about`, `.tab`) plus the Spores / Ribbon / current-look defaults on `<html>` are still in the HTML. The show-all control starts as "Show all node cards". The White mode switch starts off. It also runs `node --check public/app.js` when `node` is on `PATH`.
+`scripts/smoke-page.py` serves `public/` on a random localhost port and checks that `index.html` is 200, that linked `styles.css` and `app.js` are fetchable, that the projects JSON `app.js` fetches has a `projects` array, and that startup DOM hooks (`#graph`, `#cards`, `#cards-toggle`, `#about`, `.tab`) plus the Spores / Ribbon defaults on `<html>` are still in the HTML. The show-all control starts as "Show all node cards". It also runs `node --check public/app.js` when `node` is on `PATH`.
 
 ## Add a project node
 
@@ -57,7 +57,7 @@ python3 scripts/add-node.py \
 
 Node cards stay hidden on load. Choosing a project reveals its card; **Show all node cards** reveals every card. Summaries keep paragraphs and public links. Project data lives in `data/projects.json` and `public/data/projects.json` — the page fetches `public/data/projects.json` and does not ship a second copy in JavaScript.
 
-`<html>` still declares skin **Spores** and fork **Ribbon**. There is no skin or fork picker, and those tokens do not draw another graph. A **White mode** control lightens the nav, the node cards, and the about panel. The radial field stays on its dark ground in either look, because the colour ramp is drawn for that ground. The choice is saved in the browser; a first visit stays on the dark page.
+`<html>` declares skin **Spores** and fork **Ribbon**. There is no skin or fork picker, and those tokens do not draw another graph. The page is dark only.
 
 ## Layout
 
